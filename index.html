@@ -189,9 +189,107 @@ function renderPulpit() {
 }
 
 function save() { localStorage.setItem('logistic_v10', JSON.stringify(DB)); }
+/* ==========================================================================
+   MODUŁ 2: MAPY, GPS I RUCH LAWET (LOGISTYKA LIVE)
+   ========================================================================== */
 
-// -- DOKLEJAJ MODUŁY PONIŻEJ TEJ LINII --
+// 1. KOORDYNATY MIAST DO RYSOWANIA (Procenty ekranu)
+const MAP_COORDS = {
+    "Warszawa": { x: 70, y: 45 },
+    "Poznań": { x: 30, y: 40 },
+    "Gdańsk": { x: 50, y: 15 },
+    "Kraków": { x: 65, y: 80 },
+    "Wrocław": { x: 35, y: 70 }
+};
 
+// 2. RENDEROWANIE MAPY GPS
+function renderMap() {
+    const container = document.getElementById('map-container');
+    const fleetList = document.getElementById('fleet-list');
+    
+    // Czyścimy mapę i rysujemy tło (Drogi)
+    container.innerHTML = '<div style="position:absolute; width:100%; height:100%; border:5px solid #fff; border-radius:15px; box-sizing:border-box;"></div>';
+
+    // Rysujemy miasta
+    for (let name in MAP_COORDS) {
+        const c = MAP_COORDS[name];
+        const isBase = (name === DB.city);
+        container.innerHTML += `
+            <div style="position:absolute; left:${c.x}%; top:${c.y}%; transform:translate(-50%, -50%); z-index:10;">
+                <div style="width:12px; height:12px; background:${isBase ? 'var(--ios-blue)' : '#fff'}; border:3px solid #000; border-radius:50%;"></div>
+                <span style="font-size:9px; font-weight:900; background:rgba(255,255,255,0.8); padding:1px 3px; border-radius:4px; display:block; margin-top:2px;">${name.toUpperCase()}</span>
+            </div>
+        `;
+    }
+
+    // Rysujemy aktywne trasy i lawety
+    DB.activeJobs.forEach((job, index) => {
+        const start = MAP_COORDS[job.from] || {x:50, y:50};
+        const end = MAP_COORDS[job.to] || {x:50, y:50};
+        
+        // Obliczanie pozycji lawety na podstawie progresu (0-100)
+        const curX = start.x + (end.x - start.x) * (job.prog / 100);
+        const curY = start.y + (end.y - start.y) * (job.prog / 100);
+
+        container.innerHTML += `
+            <div style="position:absolute; left:${curX}%; top:${curY}%; transform:translate(-50%, -50%); z-index:20; color:var(--ios-red); transition:all 1s linear;">
+                <i class="fa-solid fa-truck-moving" style="font-size:18px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));"></i>
+                <div style="background:#000; color:#fff; font-size:8px; padding:2px 4px; border-radius:4px; white-space:nowrap; position:absolute; top:-15px;">${job.driver.name}</div>
+            </div>
+        `;
+    });
+
+    // Lista floty pod mapą
+    fleetList.innerHTML = `<h3>Aktywne Transporty (${DB.activeJobs.length})</h3>`;
+    if(DB.activeJobs.length === 0) {
+        fleetList.innerHTML += `<p style="color:#888;">Brak aktywnych transportów. Kup auto w Otomoto.</p>`;
+    } else {
+        DB.activeJobs.forEach(job => {
+            fleetList.innerHTML += `
+                <div class="pl-card" style="padding:10px; font-size:13px; border-left: 5px solid var(--ios-blue);">
+                    <b>${job.car.m}</b><br>
+                    Trasa: ${job.from} ➔ ${job.to}<br>
+                    <div style="width:100%; height:6px; background:#eee; border-radius:3px; margin-top:5px;">
+                        <div style="width:${job.prog}%; height:100%; background:var(--ios-blue); border-radius:3px; transition:0.5s;"></div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+}
+
+// 3. SILNIK LOGISTYCZNY (Odpalany co sekundę)
+setInterval(() => {
+    let changed = false;
+    DB.activeJobs.forEach((job, index) => {
+        job.prog += 2; // Szybkość jazdy (2% na sekundę)
+        changed = true;
+
+        if (job.prog >= 100) {
+            // Dostawa zakończona
+            DB.inventory.push(job.car);
+            job.driver.status = "WOLNY";
+            DB.activeJobs.splice(index, 1);
+            alert("DOSTAWA: " + job.car.m + " dotarł do bazy w " + DB.city + "!");
+        }
+    });
+
+    if (changed) {
+        if(document.getElementById('win-map').style.display === 'flex') renderMap();
+        updateIsland();
+        save();
+    }
+}, 1000);
+
+// 4. AKTUALIZACJA DYNAMIC ISLAND (Status GPS)
+function updateIsland() {
+    const isl = document.getElementById('isl-content');
+    if (DB.activeJobs.length > 0) {
+        isl.innerHTML = `<i class="fa-solid fa-truck-fast"></i> Transport: ${DB.activeJobs.length} aut`;
+    } else {
+        isl.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> GPS Gotowy`;
+    }
+}
 </script>
 </body>
 </html>
