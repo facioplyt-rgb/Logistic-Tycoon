@@ -91,6 +91,321 @@ function renderIcons() {
         </div>
     `).join('');
 }
+    /* ==========================================================================
+   MODUŁ 1: SYSTEM POWIADOMIEŃ I NAWIGACJA
+   ========================================================================== */
+
+// 1. STYLE DLA OKIEN (Dodajemy dynamicznie do dokumentu)
+const styleSheet = document.createElement('style');
+styleSheet.innerHTML = `
+    .win { 
+        position: absolute; 
+        inset: 0; 
+        background: #f2f2f7; 
+        z-index: 500; 
+        display: none; 
+        flex-direction: column; 
+        animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+    .win-header { 
+        padding: 50px 20px 15px; 
+        background: #fff; 
+        border-bottom: 1px solid #d1d1d6; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+    }
+    .win-body { flex: 1; overflow-y: auto; padding: 20px; }
+    .close-btn { 
+        color: var(--ios-blue); 
+        background: none; 
+        border: none; 
+        font-size: 17px; 
+        font-weight: 600; 
+        cursor: pointer; 
+    }
+    #island {
+        transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+`;
+document.head.appendChild(styleSheet);
+
+// 2. FUNKCJA AKTUALIZACJI DYNAMIC ISLAND
+function updateIsland(text = "") {
+    const isl = document.getElementById('isl-content');
+    const container = document.getElementById('island');
+    
+    // Jeśli nie podano tekstu, pokazuj stan konta
+    if (!text) {
+        isl.innerHTML = `<i class="fa-solid fa-wallet" style="color:#34c759"></i> ${DB.money.toLocaleString()} PLN`;
+    } else {
+        isl.innerHTML = text;
+        // Efekt "puchnięcia" wyspy przy powiadomieniu
+        container.style.width = "220px";
+        setTimeout(() => { container.style.width = "150px"; updateIsland(); }, 3000);
+    }
+}
+
+// 3. GENEROWANIE STRUKTURY OKIEN DLA KAŻDEJ APKI
+function createWindows() {
+    const iphone = document.getElementById('iphone');
+    const appIds = ['olx', 'bank', 'map', 'garage', 'gov', 'profile', 'messages', 'hr', 'logs', 'settings', 'camera'];
+    
+    appIds.forEach(id => {
+        const win = document.createElement('div');
+        win.id = `win-${id}`;
+        win.className = 'win';
+        win.innerHTML = `
+            <div class="win-header">
+                <h2 style="margin:0; font-size:17px;">${id.toUpperCase()}</h2>
+                <button class="close-btn" onclick="closeApp()">Gotowe</button>
+            </div>
+            <div class="win-body" id="body-${id}">
+                <p style="text-align:center; color:#888; margin-top:50px;">
+                    Aplikacja w trakcie wdrażania...
+                </p>
+            </div>
+        `;
+        iphone.appendChild(win);
+    });
+}
+
+// 4. OBSŁUGA OTWIERANIA APKI (Nadpisujemy starą funkcję)
+function openApp(id) {
+    const win = document.getElementById(`win-${id}`);
+    if (win) {
+        win.style.display = 'flex';
+        // Wywołaj specyficzny render jeśli istnieje (np. render_olx)
+        if (typeof window['render_' + id] === 'function') {
+            window['render_' + id]();
+        }
+    }
+}
+
+function closeApp() {
+    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
+}
+
+// Inicjalizacja przy starcie
+const originalBoot = bootSystem;
+bootSystem = function() {
+    originalBoot();
+    createWindows();
+    updateIsland();
+};
+    /* ==========================================================================
+   MODUŁ 2: GIEŁDA OTOMOTO (SYSTEM ZAKUPÓW)
+   ========================================================================== */
+
+// 1. DANE RYNKOWE
+let marketCars = [
+    { id: 1, m: "Audi A4 B6", p: 12500, loc: "Radom", cond: "Igła", color: "#34c759" },
+    { id: 2, m: "VW Passat B5", p: 6800, loc: "Siedlce", cond: "Do opłat", color: "#ff9500" },
+    { id: 3, m: "BMW E46 320d", p: 18900, loc: "Gdynia", cond: "Uszkodzony", color: "#ff3b30" },
+    { id: 4, m: "Fiat Punto II", p: 3200, loc: "Łódź", cond: "Igła", color: "#34c759" },
+    { id: 5, m: "Mercedes W211", p: 24000, loc: "Berlin", cond: "Lekko bity", color: "#ff9500" }
+];
+
+// 2. STYLE DLA KART POJAZDÓW
+const marketStyles = document.createElement('style');
+marketStyles.innerHTML = `
+    .car-card { 
+        background: #fff; 
+        border-radius: 18px; 
+        padding: 15px; 
+        margin-bottom: 15px; 
+        border: 1px solid #e5e5ea;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .car-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .car-title { font-size: 17px; font-weight: 700; margin: 0; }
+    .car-price { color: #ff5a10; font-size: 18px; font-weight: 800; }
+    .car-tag { 
+        font-size: 10px; 
+        font-weight: 800; 
+        padding: 4px 8px; 
+        border-radius: 6px; 
+        text-transform: uppercase; 
+        color: #fff;
+    }
+    .car-info { font-size: 12px; color: #8e8e93; margin-bottom: 12px; }
+    .buy-btn { 
+        width: 100%; 
+        background: #000; 
+        color: #fff; 
+        border: none; 
+        padding: 12px; 
+        border-radius: 12px; 
+        font-weight: 700; 
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .buy-btn:active { transform: scale(0.96); opacity: 0.8; }
+`;
+document.head.appendChild(marketStyles);
+
+// 3. FUNKCJA RENDERUJĄCA LISTĘ AUT
+function render_olx() {
+    const container = document.getElementById('body-olx');
+    container.innerHTML = `
+        <div style="margin-bottom: 15px;">
+            <small style="color: #8e8e93; font-weight: 600;">DOSTĘPNE OFERTY (${marketCars.length})</small>
+        </div>
+        ${marketCars.map((car, index) => `
+            <div class="car-card">
+                <div class="car-header">
+                    <div>
+                        <h3 class="car-title">${car.m}</h3>
+                        <span class="car-tag" style="background: ${car.color}">${car.cond}</span>
+                    </div>
+                    <span class="car-price">${car.p.toLocaleString()} zł</span>
+                </div>
+                <div class="car-info">
+                    <i class="fa-solid fa-location-dot"></i> ${car.loc} &nbsp; | &nbsp; 
+                    <i class="fa-solid fa-truck"></i> Transport: 800 zł
+                </div>
+                <button class="buy-btn" onclick="buyCar(${index})">KUPUJĘ</button>
+            </div>
+        `).join('')}
+    `;
+}
+
+// 4. LOGIKA ZAKUPU
+function buyCar(index) {
+    const car = marketCars[index];
+    if (DB.money >= car.p) {
+        DB.money -= car.p;
+        // Dodajemy auto do Twojego garażu
+        DB.inventory.push(car);
+        // Usuwamy z giełdy
+        marketCars.splice(index, 1);
+        
+        alert("Zakupiono: " + car.m + "! Auto czeka na transport.");
+        render_olx(); // Odświeżamy listę
+        updateIsland(); // Odświeżamy kasę na Dynamic Island
+    } else {
+        alert("Za mało kasy! Spróbuj coś tańszego.");
+    }
+}
+
+// 5. AKTUALIZACJA DYNAMIC ISLAND
+function updateIsland() {
+    const isl = document.getElementById('island');
+    isl.style.color = "#fff";
+    isl.style.fontSize = "12px";
+    isl.innerHTML = `<div style="display:flex; align-items:center; gap:5px; justify-content:center; height:100%;">
+        <i class="fa-solid fa-wallet" style="color:#34c759"></i> ${DB.money.toLocaleString()} zł
+    </div>`;
+}
+
+// Nadpisujemy funkcję otwierania, by wywołać render_olx
+const oldOpenApp = openApp;
+openApp = function(id) {
+    oldOpenApp(id);
+    if(id === 'olx') render_olx();
+    if(id === 'bank') render_bank(); // Przygotowanie pod mBank
+    updateIsland();
+};
+    /* ==========================================================================
+   MODUŁ 3: SILNIK OKIEN (WINDOW ENGINE)
+   ========================================================================== */
+
+// 1. DODAJEMY STYLE DLA OKIEN (iOS Style)
+const winStyles = document.createElement('style');
+winStyles.innerHTML = `
+    .win { 
+        position: absolute; 
+        inset: 0; 
+        background: #f2f2f7; 
+        z-index: 500; 
+        display: none; 
+        flex-direction: column; 
+        animation: iosSlide 0.3s ease-out;
+    }
+    @keyframes iosSlide {
+        from { transform: translateY(100px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .win-header { 
+        padding: 50px 20px 15px; 
+        background: rgba(255,255,255,0.8); 
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid #d1d1d6; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+    }
+    .win-header h2 { margin: 0; font-size: 18px; letter-spacing: -0.5px; }
+    .win-body { flex: 1; overflow-y: auto; padding: 20px; color: #000; }
+    .back-btn { 
+        background: none; 
+        color: var(--ios-blue); 
+        border: none; 
+        font-size: 16px; 
+        font-weight: 500; 
+        cursor: pointer; 
+        padding: 0;
+        width: auto; /* Nadpisujemy globalny button */
+    }
+    .placeholder-msg {
+        text-align: center;
+        margin-top: 100px;
+        color: #8e8e93;
+    }
+`;
+document.head.appendChild(winStyles);
+
+// 2. TWORZYMY SZABLON OKIEN DLA KAŻDEJ APKI
+const mainScreen = document.getElementById('screen');
+APPS.forEach(app => {
+    const win = document.createElement('div');
+    win.id = `win-${app.id}`;
+    win.className = 'win';
+    win.innerHTML = `
+        <div class="win-header">
+            <button class="back-btn" onclick="closeApp()"><i class="fa-solid fa-chevron-left"></i> Wróć</button>
+            <h2>${app.name}</h2>
+            <div style="width:50px"></div> </div>
+        <div class="win-body" id="body-${app.id}">
+            <div class="placeholder-msg">
+                <i class="fa-solid ${app.icon}" style="font-size: 40px; margin-bottom: 15px; opacity: 0.2;"></i>
+                <p>Moduł <b>${app.name}</b> zostanie aktywowany w kolejnym kroku.</p>
+            </div>
+        </div>
+    `;
+    mainScreen.appendChild(win);
+});
+
+// 3. FUNKCJE STERUJĄCE
+function openApp(id) {
+    document.getElementById(`win-${id}`).style.display = 'flex';
+}
+
+function closeApp() {
+    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
+}
+
+// 4. AKTUALIZUJEMY REAKCJĘ NA KLIKNIĘCIE (Nadpisujemy renderIcons)
+function renderIcons() {
+    const grid = document.getElementById('homescreen');
+    grid.innerHTML = APPS.map(app => `
+        <div class="app-wrapper" onclick="openApp('${app.id}')">
+            <div class="app-icon" style="background:${app.bg}">
+                <i class="fa-solid ${app.icon}"></i>
+            </div>
+            <div class="app-label">${app.name}</div>
+        </div>
+    `).join('');
+}
 </script>
 
 </body>
