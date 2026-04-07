@@ -291,7 +291,27 @@ function render_garage() {
             <span style="color:green; font-size:12px;">Status: Gotowe do sprzedaży</span>
         </div>
     `).join('') : "<p>Plac jest pusty. Kup coś na Otomoto!</p>");
-}
+}/* ==========================================================================
+   PATCH: AKTUALIZACJA IKON PULPITU
+   ========================================================================== */
+
+// 1. ROZSZERZAMY LISTĘ APLIKACJI O NOWE MODUŁY
+DB.apps = [
+    { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
+    { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' },
+    { id: 'garage', name: 'Garaż', icon: 'fa-warehouse', bg: '#5856d6' },
+    { id: 'logs', name: 'Powiad.', icon: 'fa-bell', bg: '#ff3b30' },
+    { id: 'map', name: 'Mapy', icon: 'fa-map-location-dot', bg: '#34c759' },
+    { id: 'messages', name: 'SMS', icon: 'fa-comment', bg: '#2ecc71' }
+];
+
+// 2. WYMUSZAMY PONOWNE STWORZENIE OKIEN (Dla nowych apek)
+createWindows();
+
+// 3. ODŚWIEŻAMY PULPIT
+renderIcons();
+
+console.log("Pulpit zaktualizowany o nowe aplikacje!");
 </script>
 
 </body>
