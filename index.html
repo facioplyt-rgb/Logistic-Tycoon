@@ -969,6 +969,46 @@ openApp = function(id) {
     originalOpenLogs(id);
     if(id === 'logs') renderLogs();
 };
+    /* ==========================================================================
+   FIX: RE-RENDER PULPITU (WSZYSTKIE IKONY)
+   ========================================================================== */
+
+function refreshPulpitIcons() {
+    const apps = [
+        { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
+        { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' },
+        { id: 'map', name: 'Mapy', icon: 'fa-map-location-dot', bg: '#34c759' },
+        { id: 'garage', name: 'Garaż', icon: 'fa-warehouse', bg: '#5856d6' },
+        { id: 'gov', name: 'e-Urząd', icon: 'fa-landmark', bg: '#8e8e93' },
+        { id: 'profile', name: 'Profil', icon: 'fa-id-card', bg: '#af52de' },
+        { id: 'messages', name: 'SMS', icon: 'fa-comment', bg: '#2ecc71' },
+        { id: 'hr', name: 'Biuro', icon: 'fa-users-gear', bg: '#5ac8fa' },
+        { id: 'darknet', name: 'DarkNet', icon: 'fa-user-secret', bg: '#1c1c1e' },
+        { id: 'logs', name: 'Powiad.', icon: 'fa-bell', bg: '#ff3b30' }
+    ];
+
+    const hs = document.getElementById('homescreen');
+    if (hs) {
+        hs.innerHTML = apps.map(app => `
+            <div class="app-wrapper" onclick="openApp('${app.id}')">
+                <div class="app-icon" style="background:${app.bg}">
+                    <i class="fa-solid ${app.icon}"></i>
+                </div>
+                <div class="app-label">${app.name}</div>
+            </div>
+        `).join('');
+    }
+}
+
+// Nadpisujemy funkcję bootSystem, aby zawsze ładowała komplet ikon
+const originalBoot = bootSystem;
+bootSystem = function() {
+    originalBoot();
+    refreshPulpitIcons();
+};
+
+// Jeśli gra już trwa, odśwież ikony natychmiast
+refreshPulpitIcons();
 </script>
 </body>
 </html>
