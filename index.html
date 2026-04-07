@@ -1120,7 +1120,107 @@ setInterval(() => {
         renderFullMap();
     }
 }, 500);
+/* ==========================================================================
+   16. MODUŁ 11: SYSTEM KERNEL & APP BRIDGE (ŁĄCZNIK WSZYSTKICH APPLIKACJI)
+   ========================================================================== */
 
+// 1. MAPOWANIE PRZYCISKÓW DO FUNKCJI (To sprawia, że apki ożyją)
+function openApp(id) {
+    // Ukryj wszystkie okna przed otwarciem nowego
+    const windows = document.querySelectorAll('.win');
+    windows.forEach(w => w.style.display = 'none');
+
+    const targetWin = document.getElementById('win-' + id);
+    if (!targetWin) {
+        showNotification("SYSTEM", "Aplikacja w budowie...", "gray");
+        return;
+    }
+
+    targetWin.style.display = 'flex';
+
+    // WYWOŁANIE LOGIKI DLA KONKRETNEJ APKI:
+    switch(id) {
+        case 'olx': 
+            if(typeof renderOLX === 'function') renderOLX(); 
+            break;
+        case 'bank': 
+            if(typeof renderDetailedBank === 'function') renderDetailedBank(); 
+            break;
+        case 'map': 
+            if(typeof renderFullMap === 'function') renderFullMap(); 
+            break;
+        case 'gov': 
+            if(typeof renderHR === 'function') renderHR(); // HR jest w e-Urzędzie
+            break;
+        case 'garage': 
+            if(typeof renderGarage === 'function') renderGarage(); 
+            break;
+        case 'cargo': 
+            if(typeof renderCargoExchange === 'function') renderCargoExchange(); 
+            break;
+        case 'notes': 
+            if(typeof renderNotes === 'function') renderNotes(); 
+            break;
+        case 'calc': 
+            if(typeof renderCalc === 'function') renderCalc(); 
+            break;
+        case 'messages': 
+            if(typeof renderDarkMarket === 'function') renderDarkMarket(); 
+            break;
+    }
+}
+
+// 2. NAPRAWA STRUKTURY HTML (Upewnij się, że masz te ID w HTML-u)
+/* Jeśli Twoje okna mają inne ID, ten kod je zsynchronizuje. 
+   Wszystkie okna .win muszą mieć ID typu: win-olx, win-bank, win-map itd.
+*/
+
+// 3. GŁÓWNY TICKER SYSTEMOWY (Odświeżanie danych w tle)
+function systemTick() {
+    // Postęp transportu (Logistyka)
+    DB.activeJobs.forEach((job, index) => {
+        job.progress += (2 * (DB.globalSpeedMult || 1)); // Prędkość zależna od pogody (Moduł 10)
+        
+        if (job.progress >= 100) {
+            // Finalizacja zlecenia
+            if(job.isCargo) {
+                if(typeof handleCargoFinish === 'function') handleCargoFinish(job);
+            } else {
+                DB.inventory.push(job.car);
+                showNotification("DOSTAWA", `Auto ${job.car.m} dotarło na plac!`, "var(--ios-green)");
+            }
+            
+            // Zwolnienie kierowcy
+            if(job.driver) job.driver.status = "WOLNY";
+            DB.activeJobs.splice(index, 1);
+        }
+    });
+
+    // Aktualizacja Island (jeśli coś jedzie)
+    updateIsland();
+    
+    // Auto-save co 10 sekund
+    save();
+}
+
+// Odpalanie tickera co sekundę
+setInterval(systemTick, 1000);
+
+// 4. FUNKCJA ZAMYKANIA "HOME BAR"
+function closeW() {
+    const windows = document.querySelectorAll('.win');
+    windows.forEach(w => {
+        w.style.animation = "win-down 0.3s ease-in"; // Opcjonalna animacja wyjścia
+        setTimeout(() => w.style.display = 'none', 250);
+    });
+}
+
+// 5. DODANIE STYLU DLA ANIMACJI WYJŚCIA
+const style = document.createElement('style');
+style.innerHTML = `
+    @keyframes win-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
+`;
+document.head.appendChild(style);
 </script>
 </body>
 </html>
