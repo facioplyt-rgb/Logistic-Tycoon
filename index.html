@@ -3,42 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Logistic OS 10 - Czysta Instalacja</title>
+    <title>Logistic OS 10 - Moduł 3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --ios-blue: #007aff; --ios-bg: #f2f2f7; }
+        :root { --ios-blue: #007aff; --ios-bg: #f2f2f7; --wa-green: #25D366; }
         * { box-sizing: border-box; font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
         body { background: #1a1a1a; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
-        /* IPHONE */
         #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; }
         #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; }
-        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 160px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 160px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: 0.3s; }
 
-        /* SETUP */
-        #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 30px; display: flex; flex-direction: column; justify-content: center; }
         #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 20px; gap: 20px; }
         
-        /* APKI */
         .app-wrapper { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-        .app-icon { width: 60px; height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; margin-bottom: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .app-icon { width: 60px; height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: white; margin-bottom: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .app-label { color: white; font-size: 11px; text-shadow: 0 1px 2px #000; }
 
-        /* OKNA */
         .win { position: absolute; inset: 0; background: #f2f2f7; z-index: 500; display: none; flex-direction: column; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .win-header { padding: 45px 20px 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
         .win-body { flex: 1; overflow-y: auto; padding: 15px; }
 
-        /* WHATSAPP STYLE */
-        .chat-container { background: #e5ddd5; flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .msg { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-        .msg-in { background: #fff; align-self: flex-start; }
-        .msg-out { background: #dcf8c6; align-self: flex-end; }
+        /* UI */
+        .card { background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
+        .btn-main { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
         
-        /* PRZYCISKI */
-        select, button { width: 100%; padding: 15px; border-radius: 12px; font-size: 16px; border: 1px solid #ccc; margin-top: 10px; }
-        .wa-btn { background: #25D366; color: white; border: none; font-weight: bold; padding: 10px; cursor: pointer; }
+        /* TRANSPORT PROGRESS */
+        .progress-box { width: 100%; height: 8px; background: #ddd; border-radius: 4px; margin-top: 10px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--ios-blue); width: 0%; transition: width 0.5s; }
     </style>
 </head>
 <body>
@@ -47,11 +41,9 @@
     <div id="island" style="display:none;"></div>
 
     <div id="setup-layer">
-        <i class="fa-solid fa-broom" style="font-size: 40px; color: var(--ios-blue); margin-bottom: 15px;"></i>
-        <h1>Wszystko wyczyszczone</h1>
-        <p>System jest gotowy. Wybierz miasto bazy:</p>
-        <select id="city-select"></select>
-        <button onclick="startApp()" style="background:var(--ios-blue); color:white; font-weight:bold; border:none;">START</button>
+        <h2 style="margin-bottom:10px;">Wybierz Bazę</h2>
+        <select id="city-select" style="width:100%; padding:12px; border-radius:10px; margin-bottom:20px;"></select>
+        <button class="btn-main" style="background:var(--ios-blue); color:white;" onclick="startApp()">ROZPOCZNIJ</button>
     </div>
 
     <div id="screen">
@@ -60,22 +52,24 @@
 </div>
 
 <script>
-    // --- CZYSZCZENIE NA DZIEŃ DOBRY ---
+    // 1. CZYSZCZENIE I MIASTA
     localStorage.clear();
-    console.clear();
-
-    const CITIES = ["Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin", "Bydgoszcz", "Lublin", "Białystok"].sort();
+    const CITIES = ["Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin", "Bydgoszcz", "Lublin", "Białystok", "Katowice", "Gdynia", "Częstochowa", "Radom", "Toruń", "Sosnowiec", "Rzeszów", "Kielce", "Gliwice", "Olsztyn", "Zabrze", "Bielsko-Biała", "Bytom", "Zielona Góra", "Rybnik", "Ruda Śląska", "Opole", "Tychy", "Gorzów Wlkp.", "Elbląg", "Płock", "Dąbrowa Górnicza", "Wałbrzych", "Włocławek", "Tarnów", "Chorzów", "Koszalin", "Kalisz", "Legnica", "Grudziądz", "Jaworzno", "Słupsk", "Jastrzębie-Zdrój", "Nowy Sącz", "Jelenia Góra", "Siedlce", "Konin", "Piotrków Tryb.", "Inowrocław", "Lubin", "Mysłowice", "Piła", "Ostrowiec Św.", "Ostrów Wlkp.", "Siemianowice Śl.", "Stargard", "Pabianice", "Gniezno", "Suwałki", "Głogów", "Chełm", "Przemyśl", "Zamość", "Tomaszów Maz.", "Stalowa Wola", "Kędzierzyn-Koźle", "Łomża", "Leszno", "Żory", "Bełchatów", "Mielec", "Tarnowskie Góry", "Tczew", "Świdnica", "Piekary Śląskie", "Będzin", "Zgierz", "Biała Podlaska", "Racibórz", "Ełk", "Pruszków", "Świętochłowice", "Ostrołęka", "Legionowo", "Zawiercie", "Tarnobrzeg", "Puławy", "Wodzisław Śl.", "Radomsko", "Skarżysko-Kamienna", "Starachowice", "Krosno", "Kołobrzeg", "Dębica", "Kutno", "Nysa", "Ciechanów", "Otwock", "Sieradz"].sort();
+    
     let DB = {
         money: 50000,
         city: "",
+        garage: [],
+        transports: [],
         apps: [
             { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
             { id: 'whatsapp', name: 'WhatsApp', icon: 'fa-whatsapp', bg: '#25D366' },
+            { id: 'garage', name: 'Garaż', icon: 'fa-warehouse', bg: '#5856d6' },
+            { id: 'map', name: 'Laweta', icon: 'fa-truck-pickup', bg: '#34c759' },
             { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' }
         ]
     };
 
-    // Generuj miast
     const sel = document.getElementById('city-select');
     CITIES.forEach(c => sel.innerHTML += `<option>${c}</option>`);
 
@@ -84,19 +78,24 @@
         document.getElementById('setup-layer').style.display = 'none';
         document.getElementById('screen').style.display = 'block';
         document.getElementById('island').style.display = 'flex';
-        
         updateIsland();
         renderIcons();
         createWindows();
     }
 
-    function updateIsland() {
-        document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
+    function updateIsland(msg = "") {
+        const isl = document.getElementById('island');
+        if(msg) {
+            isl.innerHTML = msg;
+            isl.style.background = "var(--ios-blue)";
+            setTimeout(() => { updateIsland(); isl.style.background = "#000"; }, 3000);
+        } else {
+            isl.innerHTML = `<i class="fa-solid fa-wallet" style="color:var(--wa-green)"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
+        }
     }
 
     function renderIcons() {
-        const hs = document.getElementById('homescreen');
-        hs.innerHTML = DB.apps.map(app => `
+        document.getElementById('homescreen').innerHTML = DB.apps.map(app => `
             <div class="app-wrapper" onclick="openApp('${app.id}')">
                 <div class="app-icon" style="background:${app.bg}"><i class="fa-solid ${app.icon}"></i></div>
                 <div class="app-label">${app.name}</div>
@@ -106,19 +105,11 @@
 
     function createWindows() {
         DB.apps.forEach(app => {
-            if(!document.getElementById('win-'+app.id)) {
-                const w = document.createElement('div');
-                w.id = 'win-' + app.id;
-                w.className = 'win';
-                w.innerHTML = `
-                    <div class="win-header">
-                        <b>${app.name}</b>
-                        <button onclick="closeApp()" style="background:none; border:none; color:var(--ios-blue); font-weight:bold;">Gotowe</button>
-                    </div>
-                    <div class="win-body" id="body-${app.id}"></div>
-                `;
-                document.getElementById('iphone').appendChild(w);
-            }
+            const w = document.createElement('div');
+            w.id = 'win-' + app.id;
+            w.className = 'win';
+            w.innerHTML = `<div class="win-header"><b>${app.name}</b><button onclick="closeApp()" style="background:none;border:none;color:var(--ios-blue);font-weight:bold;">Gotowe</button></div><div class="win-body" id="body-${app.id}"></div>`;
+            document.getElementById('iphone').appendChild(w);
         });
     }
 
@@ -127,51 +118,53 @@
         document.getElementById('win-' + id).style.display = 'flex';
         if(id === 'olx') renderOLX();
         if(id === 'bank') renderBank();
+        if(id === 'garage') renderGarage();
+        if(id === 'map') renderMap();
     }
 
     function closeApp() { document.querySelectorAll('.win').forEach(w => w.style.display = 'none'); }
 
-    // --- LOGIKA OTOMOTO & WHATSAPP ---
+    // --- LOGIKA APLIKACJI ---
     function renderOLX() {
-        const cars = [
-            { m: "Audi A4 B6", p: 12500, loc: "Radom" },
-            { m: "BMW E46", p: 18900, loc: "Gdynia" },
-            { m: "VW Passat", p: 6800, loc: "Siedlce" }
-        ];
-        document.getElementById('body-olx').innerHTML = `<h3>Giełda</h3>` + cars.map(c => `
-            <div style="background:#fff; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #eee;">
-                <b>${c.m}</b> - ${c.p.toLocaleString()} PLN<br>
-                <button class="wa-btn" onclick="startChat('${c.m}', ${c.p})">NEGOCJUJ NA WA</button>
-            </div>
-        `).join('');
+        const cars = [{m:"Audi A4", p:12000, l:"Radom"}, {m:"BMW E46", p:18000, l:"Gdynia"}, {m:"Passat B5", p:7000, l:"Siedlce"}];
+        document.getElementById('body-olx').innerHTML = cars.map(c => `<div class="card"><b>${c.m}</b> - ${c.p.toLocaleString()} PLN<br><small>${c.l}</small><button class="btn-main" style="background:var(--wa-green);color:white;" onclick="buyCar('${c.m}', ${c.p}, '${c.l}')">KUP TERAZ</button></div>`).join('');
     }
 
-    function startChat(name, price) {
-        openApp('whatsapp');
-        const body = document.getElementById('body-whatsapp');
-        body.innerHTML = `
-            <div class="chat-container">
-                <div class="msg msg-in">Dzień dobry, interesuje mnie ten ${name}. Ile do oddania?</div>
-                <div class="msg msg-out">Za ${name} mogę zejść maksymalnie o 500 zł.</div>
-            </div>
-            <div style="padding:10px; background:#fff;">
-                <button onclick="buyCar('${name}', ${price-500})" style="background:#25D366; color:white; font-weight:bold; border:none;">KUPUJĘ ZA ${(price-500).toLocaleString()} PLN</button>
-            </div>
-        `;
-    }
-
-    function buyCar(name, price) {
+    function buyCar(name, price, loc) {
         if(DB.money >= price) {
             DB.money -= price;
-            updateIsland();
-            alert("KUPIONO: " + name + "! Kasa pobrana.");
+            updateIsland("MAREK WYJECHAŁ!");
+            DB.transports.push({ name, progress: 0, from: loc });
+            startTransport();
             closeApp();
         } else { alert("Brak kasy!"); }
     }
 
+    function startTransport() {
+        const t = DB.transports[DB.transports.length - 1];
+        const timer = setInterval(() => {
+            t.progress += 10;
+            if(document.getElementById('win-map').style.display === 'flex') renderMap();
+            if(t.progress >= 100) {
+                clearInterval(timer);
+                DB.garage.push(t.name);
+                DB.transports = DB.transports.filter(x => x !== t);
+                updateIsland("AUTO NA PLACU!");
+            }
+        }, 1000);
+    }
+
+    function renderMap() {
+        const b = document.getElementById('body-map');
+        b.innerHTML = DB.transports.length ? DB.transports.map(t => `<div class="card"><b>Transport: ${t.name}</b><br><small>Z: ${t.from} -> Twoja Baza</small><div class="progress-box"><div class="progress-bar" style="width:${t.progress}%"></div></div></div>`).join('') : "<p style='text-align:center'>Brak aktywnych lawet.</p>";
+    }
+
+    function renderGarage() {
+        document.getElementById('body-garage').innerHTML = `<h3>Twój Plac (${DB.garage.length})</h3>` + DB.garage.map(c => `<div class="card">🚗 <b>${c}</b><br><small>Stan: Do przygotowania</small></div>`).join('');
+    }
+
     function renderBank() {
-        document.getElementById('body-bank').innerHTML = `<div style="background:red; color:white; padding:25px; border-radius:15px; text-align:center;">
-            <small>Saldo</small><h1>${DB.money.toLocaleString()} PLN</h1></div>`;
+        document.getElementById('body-bank').innerHTML = `<div style="background:red;color:white;padding:25px;border-radius:15px;text-align:center;"><small>Saldo</small><h1>${DB.money.toLocaleString()} PLN</h1></div>`;
     }
 </script>
 </body>
