@@ -100,6 +100,26 @@
 
 <script>
 /**
+ * MODULE 11: MOBILE_STABILIZER & ALERT_DEBUGGER
+ * Wklej na samym początku script!
+ */
+window.onerror = function(msg, url, line) {
+    alert("BŁĄD SYSTEMU: " + msg + "\nLinia: " + line);
+    return false;
+};
+
+// Failsafe dla braku pamięci na telefonie
+const MEMORY_SHIELD = {
+    check: () => {
+        if (window.performance && window.performance.memory) {
+            if (window.performance.memory.usedJSHeapSize > 100 * 1048576) {
+                console.warn("High Memory Usage!");
+            }
+        }
+    }
+};
+
+/**
  * WARSAW OMNI ENGINE v1.0
  * ---------------------------------------------------------
  * ARCHITEKTURA MODULARNA: Wklejaj kolejne moduły w oznaczone miejsca.
