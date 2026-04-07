@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Logistic OS 10.0 | Symulator Handlarza</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --ios-blue: #007aff; --ios-green: #34c759; --ios-red: #ff3b30;
+            --olx-blue: #002f34; --olx-mint: #23e5db; --font-main: 'Sora', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: #1a1a1a; font-family: var(--font-main); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+        /* RAMKA IPHONA */
+        #phone {
+            width: 390px; height: 844px; background: #000; border: 12px solid #333; border-radius: 60px;
+            position: relative; box-shadow: 0 50px 100px rgba(0,0,0,0.5); overflow: hidden;
+        }
+
+        /* EKRAN POWITALNY / SETUP */
+        #setup-layer {
+            position: absolute; inset: 0; z-index: 999; background: #fff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center;
+        }
+
+        /* SYSTEMOWY EKRAN */
+        #screen {
+            display: none; width: 100%; height: 100%; position: relative;
+            background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000&auto=format&fit=crop') center/cover;
+        }
+
+        /* DYNAMIC ISLAND */
+        #island-wrap {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            width: 120px; height: 35px; background: #000; border-radius: 20px; z-index: 1000;
+            transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer;
+        }
+        #island-wrap.active { width: 350px; height: 80px; border-radius: 35px; flex-direction: column; padding: 10px; }
+
+        /* PULPIT I IKONY */
+        #homescreen {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 80px 20px;
+        }
+        .app-wrapper { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; }
+        .app-icon { 
+            width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; 
+            font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .app-label { color: white; font-size: 11px; font-weight: 600; text-shadow: 0 1px 2px #000; }
+
+        /* DOCK */
+        #dock {
+            position: absolute; bottom: 25px; left: 20px; right: 20px; height: 90px;
+            background: rgba(255,255,255,0.3); backdrop-filter: blur(20px); border-radius: 35px;
+            display: flex; align-items: center; justify-content: space-around; padding: 0 10px;
+        }
+
+        /* OKNA APLIKACJI */
+        .win {
+            position: absolute; inset: 0; background: #fff; z-index: 500; display: none; flex-direction: column;
+            animation: win-up 0.3s ease-out;
+        }
+        @keyframes win-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .win-header { height: 100px; padding: 50px 20px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .win-body { flex: 1; overflow-y: auto; padding-bottom: 50px; }
+
+        /* UI COMPONENTS */
+        .pl-card { background: #fff; border-radius: 15px; padding: 15px; margin: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; }
+        .btn-action { width: 100%; padding: 12px; border-radius: 12px; border: none; background: var(--ios-blue); color: #fff; font-weight: 800; cursor: pointer; margin-top: 10px; }
+        .price { color: var(--ios-green); font-weight: 800; font-family: var(--font-code); }
+        #map-canvas { height: 300px; background: #e0e0e0; position: relative; overflow: hidden; border-radius: 15px; margin: 10px; }
+        
+        select, input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin: 10px 0; font-family: inherit; }
+    </style>
+</head>
+<body>
+
+<div id="phone">
+    <div id="setup-layer">
+        <i class="fa-solid fa-truck-fast" style="font-size: 50px; color: var(--ios-blue);"></i>
+        <h1 style="margin: 20px 0;">Logistic OS</h1>
+        <p>Witaj w symulatorze polskiego handlarza.</p>
+        <select id="city-select">
+            <option value="">-- Wybierz miasto bazy --</option>
+            <option value="Warszawa">Warszawa (W)</option>
+            <option value="Poznań">Poznań (PO)</option>
+            <option value="Gdańsk">Gdańsk (GD)</option>
+            <option value="Kraków">Kraków (KR)</option>
+            <option value="Wrocław">Wrocław (DW)</option>
+        </select>
+        <select id="base-select">
+            <option value="Podwórko">Podwórko (1 miejsce, 50k PLN)</option>
+            <option value="Hala">Hala (5 miejsc, 20k PLN)</option>
+        </select>
+        <button onclick="startApp()" class="btn-action">ROZPOCZNIJ KARIERĘ</button>
+    </div>
+
+    <div id="screen">
+        <div id="island-wrap" onclick="expandIsland()">
+            <div id="isl-min" style="font-size: 10px;"><i class="fa-solid fa-bolt"></i> System OK</div>
+            <div id="isl-max" style="display:none; text-align:center;">
+                <b id="isl-status" style="font-size: 12px;">Brak aktywnych tras</b>
+                <div style="width:200px; height:4px; background:#333; margin-top:8px; border-radius:2px;">
+                    <div id="isl-bar" style="width:0%; height:100%; background:var(--ios-green);"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="homescreen"></div>
+        <div id="dock"></div>
+
+        <div id="win-olx" class="win"><div class="win-header"><b>OTOMOTO</b><button onclick="closeW()">X</button></div><div class="win-body" id="market-list"></div></div>
+        <div id="win-bank" class="win"><div class="win-header"><b>mBank</b><button onclick="closeW()">X</button></div><div class="win-body" id="bank-body"></div></div>
+        <div id="win-map" class="win"><div class="win-header"><b>NAWIGACJA</b><button onclick="closeW()">X</button></div><div class="win-body"><div id="map-canvas"></div><div id="fleet-status"></div></div></div>
+        <div id="win-gov" class="win"><div class="win-header"><b>e-URZĄD</b><button onclick="closeW()">X</button></div><div class="win-body" id="gov-body"></div></div>
+        <div id="win-calc" class="win"><div class="win-header"><b>KALKULATOR</b><button onclick="closeW()">X</button></div><div class="win-body" id="calc-body"></div></div>
+        <div id="win-notes" class="win"><div class="win-header"><b>NOTATNIK</b><button onclick="closeW()">X</button></div><div class="win-body" id="notes-body"></div></div>
+        <div id="win-cargo" class="win"><div class="win-header"><b>CARGO.PL</b><button onclick="closeW()">X</button></div><div class="win-body" id="cargo-body"></div></div>
+        <div id="win-messages" class="win"><div class="win-header"><b>SMS</b><button onclick="closeW()">X</button></div><div class="win-body" id="messages-body"></div></div>
+        
+        <div style="position:absolute; bottom:5px; left:50%; transform:translateX(-50%); width:120px; height:5px; background:rgba(255,255,255,0.5); border-radius:10px; z-index:10000;" onclick="closeW()"></div>
+    </div>
+</div>
+
+<script>
+/* ==========================================================================
+   CORE ENGINE: LOGISTIC OS 10.0
+   ========================================================================== */
+
+let DB = {
+    money: 0, city: '', baseType: '', inventory: [], activeJobs: [],
+    marketData: [], taxDebt: 0, points: 0, reputation: 50,
+    currentFuelPrice: 6.54,
+    gasStation: { owned: false, fuelStock: 0, pricePerL: 5.20 },
+    employees: [
+        { name: 'Marek', role: 'Kierowca', salary: 3500, mood: 100, status: 'WOLNY' },
+        { name: 'Mietek', role: 'Mechanik', salary: 4200, mood: 80 }
+    ],
+    cities: {
+        'Warszawa': { x: 60, y: 45 }, 'Poznań': { x: 30, y: 40 }, 'Gdańsk': { x: 45, y: 15 },
+        'Kraków': { x: 55, y: 80 }, 'Wrocław': { x: 25, y: 65 }, 'Białystok': { x: 80, y: 30 }
+    }
+};
+
+// --- START SYSTEMU ---
+function startApp() {
+    const city = document.getElementById('city-select').value;
+    const base = document.getElementById('base-select').value;
+    if(!city) return alert("Wybierz miasto!");
+
+    DB.city = city;
+    DB.baseType = base;
+    DB.money = (base === 'Podwórko') ? 50000 : 20000;
+
+    document.getElementById('setup-layer').style.display = 'none';
+    document.getElementById('screen').style.display = 'block';
+    
+    initSystem();
+    rebuildSpringboard();
+    saveGame();
+}
+
+function initSystem() {
+    generateMarket();
+    startKernel();
+}
+
+// --- UI: PULPIT ---
+function rebuildSpringboard() {
+    const hs = document.getElementById('homescreen');
+    const dk = document.getElementById('dock');
+    hs.innerHTML = ''; dk.innerHTML = '';
+
+    const apps = [
+        { id: 'olx', name: 'Otomoto', icon: 'fa-cart-shopping', bg: 'var(--olx-blue)' },
+        { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' },
+        { id: 'map', name: 'Mapa PL', icon: 'fa-map-location-dot', bg: 'var(--ios-green)' },
+        { id: 'gov', name: 'e-Urząd', icon: 'fa-file-invoice', bg: '#666' },
+        { id: 'calc', name: 'Kalkulator', icon: 'fa-calculator', bg: '#ff9500' },
+        { id: 'notes', name: 'Notes', icon: 'fa-note-sticky', bg: '#ffcc00' },
+        { id: 'cargo', name: 'Cargo.pl', icon: 'fa-boxes-stacked', bg: '#003399' },
+        { id: 'messages', name: 'SMS', icon: 'fa-comment', bg: '#34c759' }
+    ];
+
+    apps.forEach((app, i) => {
+        const html = `
+            <div class="app-wrapper" onclick="openW('${app.id}')">
+                <div class="app-icon" style="background:${app.bg}; color:#fff;"><i class="fa-solid ${app.icon}"></i></div>
+                <div class="app-label">${app.name}</div>
+            </div>`;
+        if(i < 4) dk.innerHTML += `<div class="app-icon" style="background:${app.bg}; color:#fff;" onclick="openW('${app.id}')"><i class="fa-solid ${app.icon}"></i></div>`;
+        hs.innerHTML += html;
+    });
+}
+
+// --- OKNA ---
+function openW(id) {
+    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
+    document.getElementById('win-' + id).style.display = 'flex';
+    if(id === 'olx') renderOLX();
+    if(id === 'bank') renderBank();
+    if(id === 'gov') renderGov();
+    if(id === 'map') renderMap();
+}
+
+function closeW() { document.querySelectorAll('.win').forEach(w => w.style.display = 'none'); }
+
+// --- LOGIKA: OTOMOTO ---
+function generateMarket() {
+    const cars = ['Passat B6', 'Audi A4', 'Skoda Octavia', 'BMW 3', 'Fiat Tipo'];
+    DB.marketData = [];
+    for(let i=0; i<6; i++) {
+        DB.marketData.push({
+            id: Math.random().toString(36).substr(2,5).toUpperCase(),
+            m: cars[Math.floor(Math.random()*cars.length)],
+            p: 10000 + Math.floor(Math.random()*30000),
+            loc: Object.keys(DB.cities)[Math.floor(Math.random()*5)],
+            damaged: Math.random() < 0.3
+        });
+    }
+}
+
+function renderOLX() {
+    const list = document.getElementById('market-list');
+    list.innerHTML = '<div style="padding:15px; font-weight:800;">Wszystkie ogłoszenia:</div>';
+    DB.marketData.forEach(car => {
+        list.innerHTML += `
+            <div class="pl-card">
+                <b>${car.m}</b> <span class="price">${car.p} PLN</span><br>
+                <small>Lokalizacja: ${car.loc} | Stan: ${car.damaged ? 'Uszkodzony' : 'Igła'}</small>
+                <button class="btn-action" onclick="buyCar('${car.id}')">KUP I TRANSPORTUJ</button>
+            </div>`;
+    });
+}
+
+function buyCar(id) {
+    const car = DB.marketData.find(c => c.id === id);
+    if(DB.money < car.p) return alert("Brak kasy!");
+    
+    DB.money -= car.p;
+    DB.taxDebt += Math.floor(car.p * 0.02);
+    
+    const driver = DB.employees.find(e => e.status === 'WOLNY');
+    if(driver) {
+        driver.status = 'W TRASIE';
+        DB.activeJobs.push({ car, driver, progress: 0, from: car.loc, to: DB.city });
+        alert("Marek ruszył lawetą!");
+    }
+    generateMarket();
+    renderOLX();
+}
+
+// --- MAPA ---
+function renderMap() {
+    const canvas = document.getElementById('map-canvas');
+    canvas.innerHTML = '';
+    for(let c in DB.cities) {
+        const city = DB.cities[c];
+        canvas.innerHTML += `<div style="position:absolute; left:${city.x}%; top:${city.y}%; width:10px; height:10px; background:#000; border-radius:50%;"></div>
+                             <div style="position:absolute; left:${city.x}%; top:${city.y+2}%; font-size:8px;">${c}</div>`;
+    }
+    DB.activeJobs.forEach(job => {
+        const s = DB.cities[job.from]; const e = DB.cities[job.to];
+        const cx = s.x + (e.x - s.x) * (job.progress/100);
+        const cy = s.y + (e.y - s.y) * (job.progress/100);
+        canvas.innerHTML += `<div style="position:absolute; left:${cx}%; top:${cy}%; color:blue;"><i class="fa-solid fa-truck"></i></div>`;
+    });
+}
+
+// --- BANK & URZĄD ---
+function renderBank() {
+    document.getElementById('bank-body').innerHTML = `
+        <div style="background:#ff0000; color:#fff; padding:30px; text-align:center;"><h1>${DB.money} PLN</h1></div>
+        <div class="pl-card"><b>Paliwo (ON):</b> ${DB.currentFuelPrice} PLN/L</div>
+        <div class="pl-card"><h3>Historia</h3><p>Ostatni zakup: OK</p></div>`;
+}
+
+function renderGov() {
+    document.getElementById('gov-body').innerHTML = `
+        <div class="pl-card"><h3>Podatki (PCC-3)</h3><p>Zaległość: ${DB.taxDebt} PLN</p>
+        <button onclick="payTax()" class="btn-action">OPŁAĆ</button></div>
+        <div class="pl-card"><h3>Punkty Karne</h3><p>${DB.points} / 24</p></div>`;
+}
+
+function payTax() {
+    if(DB.money >= DB.taxDebt) { DB.money -= DB.taxDebt; DB.taxDebt = 0; renderGov(); }
+}
+
+// --- KERNEL ---
+function startKernel() {
+    setInterval(() => {
+        DB.activeJobs.forEach((job, i) => {
+            job.progress += 5;
+            if(job.progress >= 100) {
+                job.driver.status = 'WOLNY';
+                DB.inventory.push(job.car);
+                DB.activeJobs.splice(i, 1);
+                triggerPush("LOGISTYKA", `Dowieziono ${job.car.m}!`);
+            }
+        });
+        
+        // Island update
+        if(DB.activeJobs.length > 0) {
+            document.getElementById('isl-status').innerText = `Transport: ${DB.activeJobs[0].car.m}`;
+            document.getElementById('isl-bar').style.width = DB.activeJobs[0].progress + "%";
+        } else {
+            document.getElementById('isl-status').innerText = "Wszystkie lawety w bazie";
+            document.getElementById('isl-bar').style.width = "0%";
+        }
+
+        if(Math.random() < 0.01) {
+            DB.money -= 500;
+            triggerPush("MANDAT", "Fotoradar! -500 PLN.");
+        }
+    }, 1000);
+}
+
+function triggerPush(t, m) {
+    const island = document.getElementById('island-wrap');
+    island.style.background = 'var(--ios-red)';
+    setTimeout(() => island.style.background = '#000', 2000);
+    console.log(t, m);
+}
+
+function expandIsland() { document.getElementById('island-wrap').classList.toggle('active'); 
+                         const max = document.getElementById('isl-max');
+                         max.style.display = max.style.display === 'none' ? 'block' : 'none'; }
+
+function saveGame() { localStorage.setItem('log_save', JSON.stringify(DB)); }
+function loadGame() { 
+    const s = localStorage.getItem('log_save'); 
+    if(s) { DB = JSON.parse(s); startKernel(); rebuildSpringboard(); }
+}
+
+window.onload = () => { if(localStorage.getItem('log_save')) { loadGame(); document.getElementById('setup-layer').style.display='none'; document.getElementById('screen').style.display='block'; } };
+/* ==========================================================================
+   MODUŁ 2: LOGISTIC CORE (SILNIK TRANSPORTOWY I FLOTA)
+   ========================================================================== */
+
+// 1. ROZSZERZENIE BAZY DANYCH O PARAMETRY TRAS
+DB.routes = {
+    'Warszawa-Poznań': { dist: 310, time: 180 },
+    'Warszawa-Gdańsk': { dist: 340, time: 200 },
+    'Warszawa-Kraków': { dist: 290, time: 170 },
+    'Warszawa-Wrocław': { dist: 350, time: 210 },
+    'Poznań-Gdańsk': { dist: 300, time: 180 },
+    'Kraków-Gdańsk': { dist: 580, time: 350 },
+    // System automatycznie wyliczy powrót (A-B = B-A)
+};
+
+// 2. SYSTEM KIEROWCÓW I LAWET
+DB.fleet = [
+    { id: 1, driver: "Marek", type: "Laweta Standard", capacity: 1, fuelCons: 12, condition: 100, status: "WOLNY" },
+    { id: 2, driver: "Sławek", type: "Lohra", capacity: 3, fuelCons: 25, condition: 100, status: "NIEDOSTĘPNY" } // Do odblokowania
+];
+
+// 3. FUNKCJA OBLICZANIA TRASY (REALISTYCZNA)
+function calculateTravelStats(from, to) {
+    const routeKey = `${from}-${to}`;
+    const reverseKey = `${to}-${from}`;
+    const data = DB.routes[routeKey] || DB.routes[reverseKey] || { dist: 400, time: 240 }; // Default jeśli brak w DB
+    
+    return {
+        distance: data.dist,
+        duration: data.time,
+        fuelCost: (data.dist / 100) * DB.fleet[0].fuelCons * DB.fuelPrice
+    };
+}
+
+// 4. ROZBUDOWANY PROCES ZAKUPU I WYSYŁKI (NADPISUJE POPRZEDNI)
+window.buyCar = function(id) {
+    const car = DB.market.find(c => c.id === id);
+    const driver = DB.fleet.find(d => d.status === "WOLNY");
+
+    if (!car) return;
+    if (DB.money < car.p) {
+        showNotification("BANK", "Brak środków na zakup!", "var(--ios-red)");
+        return;
+    }
+    if (!driver) {
+        showNotification("LOGISTYKA", "Wszyscy kierowcy są w trasie!", "orange");
+        return;
+    }
+
+    const stats = calculateTravelStats(car.loc, DB.city);
+
+    // Potwierdzenie kosztów transportu
+    if (confirm(`Kupić ${car.m}?\nKoszt auta: ${car.p} PLN\nSzacowany koszt paliwa: ${Math.round(stats.fuelCost)} PLN`)) {
+        DB.money -= car.p;
+        DB.money -= stats.fuelCost; // Paliwo płacone z góry (zaliczka)
+        DB.taxDebt += Math.floor(car.p * 0.02);
+        
+        driver.status = "W TRASIE";
+        DB.activeJobs.push({
+            car: car,
+            driver: driver,
+            progress: 0,
+            from: car.loc,
+            to: DB.city,
+            distTotal: stats.distance,
+            timeLeft: stats.duration,
+            step: 100 / (stats.duration / 5) // Prędkość postępu zależna od czasu trasy
+        });
+
+        DB.market = DB.market.filter(c => c.id !== id);
+        renderOLX();
+        notify("ZAKUP", `Marek jedzie do ${car.loc}. Dystans: ${stats.distance}km`);
+        save();
+    }
+};
+
+// 5. ZAAWANSOWANY SYSTEM POWIADOMIEŃ (PUSH)
+function showNotification(title, msg, color = "var(--ios-blue)") {
+    const island = document.getElementById('island-wrap');
+    const content = document.getElementById('isl-content');
+    
+    island.classList.add('active');
+    island.style.background = color;
+    content.innerHTML = `<b>${title}</b><br>${msg}`;
+    
+    setTimeout(() => {
+        island.classList.remove('active');
+        island.style.background = "#000";
+        updateIsland(); // Wraca do statusu GPS
+    }, 4000);
+}
+
+// 6. FUNKCJA REGENERACJI RYNKU (Co 2 minuty nowe auta)
+setInterval(() => {
+    if (DB.market.length < 8) {
+        const models = ['VW Golf V', 'Audi A3', 'Opel Astra', 'Ford Focus', 'Renault Clio'];
+        DB.market.push({
+            id: 'VIN-'+Math.random().toString(36).substr(2,5).toUpperCase(),
+            m: models[Math.floor(Math.random()*models.length)],
+            p: 8000 + Math.floor(Math.random()*15000),
+            loc: Object.keys(DB.cities)[Math.floor(Math.random()*5)],
+            damaged: Math.random() < 0.5
+        });
+        if(document.getElementById('win-olx').style.display === 'flex') renderOLX();
+    }
+}, 120000);
+/* ==========================================================================
+   MODUŁ 3: HR & STAFF MANAGEMENT (KADRY I PŁACE)
+   ========================================================================== */
+
+// 1. ROZSZERZENIE DANYCH PRACOWNIKÓW
+DB.employees = [
+    { id: 101, name: "Marek", role: "Kierowca", salary: 3800, mood: 100, exp: 10, status: "WOLNY", lastBonus: 0 },
+    { id: 102, name: "Mietek", role: "Mechanik", salary: 4500, mood: 85, exp: 50, status: "WOLNY", lastBonus: 0 }
+];
+
+DB.candidates = [
+    { name: "Sławek", role: "Kierowca", salary: 4200, exp: 80, icon: "fa-truck-pickup" },
+    { name: "Zbyszek", role: "Lachociąg (Pomoc)", salary: 2100, exp: 5, icon: "fa-hand-holding-dots" }
+];
+
+// 2. RENDEROWANIE OKNA KADR (Wewnątrz istniejącego e-Urzędu lub jako nowa apka)
+function renderHR() {
+    const body = document.getElementById('gov-body'); // Używamy gov-body jako centrum administracyjnego
+    body.innerHTML = `
+        <div style="background:var(--ios-blue); color:#fff; padding:20px; border-radius:0 0 20px 20px;">
+            <h3>Zarządzanie Zespołem</h3>
+            <p>Twoi ludzie to Twoja siła (albo koszt).</p>
+        </div>
+        <div id="staff-list" style="padding:10px;"></div>
+        <hr>
+        <div id="candidates-list" style="padding:10px;">
+            <h4>Dostępni kandydaci (OLX Praca)</h4>
+        </div>
+    `;
+
+    // Wyświetlanie aktualnych pracowników
+    DB.employees.forEach((emp, i) => {
+        const moodColor = emp.mood > 70 ? 'var(--ios-green)' : (emp.mood > 30 ? 'orange' : 'red');
+        document.getElementById('staff-list').innerHTML += `
+            <div class="pl-card" style="border-left: 5px solid ${moodColor};">
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${emp.name} (${emp.role})</b>
+                    <span>Wyplata: ${emp.salary} PLN</span>
+                </div>
+                <div style="margin:10px 0; background:#eee; height:8px; border-radius:4px; overflow:hidden;">
+                    <div style="width:${emp.mood}%; background:${moodColor}; height:100%; transition:0.5s;"></div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button class="btn-action" style="font-size:11px; background:#444;" onclick="giveBonus(${i})">DAJ PREMIĘ (500)</button>
+                    <button class="btn-action" style="font-size:11px; background:var(--ios-red);" onclick="fireEmployee(${i})">ZWOLNIJ</button>
+                </div>
+            </div>
+        `;
+    });
+
+    // Wyświetlanie kandydatów
+    DB.candidates.forEach((cand, i) => {
+        document.getElementById('candidates-list').innerHTML += `
+            <div class="pl-card" style="background:#f9f9f9;">
+                <i class="fa-solid ${cand.icon}"></i> <b>${cand.name}</b><br>
+                Oczekiwania: ${cand.salary} PLN | Dośw: ${cand.exp}%
+                <button class="btn-action" style="background:var(--ios-green);" onclick="hireEmployee(${i})">ZATRUDNIJ</button>
+            </div>
+        `;
+    });
+}
+
+// 3. LOGIKA HR
+function giveBonus(i) {
+    if (DB.money < 500) return showNotification("BANK", "Brak kasy na premie!", "red");
+    DB.money -= 500;
+    DB.employees[i].mood = Math.min(100, DB.employees[i].mood + 25);
+    DB.employees[i].lastBonus = Date.now();
+    renderHR();
+    showNotification("HR", `${DB.employees[i].name} jest zachwycony!`, "var(--ios-green)");
+}
+
+function hireEmployee(i) {
+    const cand = DB.candidates[i];
+    if (DB.money < 2000) return alert("Brak kasy na opłaty rekrutacyjne!");
+    
+    DB.money -= 2000;
+    DB.employees.push({
+        ...cand,
+        id: Date.now(),
+        mood: 100,
+        status: "WOLNY",
+        lastBonus: 0
+    });
+    DB.candidates.splice(i, 1);
+    renderHR();
+    notify("HR", `Zatrudniono nowego pracownika: ${cand.name}`);
+}
+
+function fireEmployee(i) {
+    if (confirm(`Czy na pewno chcesz zwolnić ${DB.employees[i].name}?`)) {
+        notify("HR", `${DB.employees[i].name} opuścił firmę.`);
+        DB.employees.splice(i, 1);
+        renderHR();
+    }
+}
+
+// 4. PĘTLA ŻYCIA PRACOWNIKA (Wrzucamy do setInterval w Kernelu)
+setInterval(() => {
+    DB.employees.forEach(emp => {
+        // Naturalny spadek morale (praca męczy)
+        if (emp.status === "W TRASIE") emp.mood -= 0.5;
+        else emp.mood -= 0.1;
+
+        // Bunt pracownika
+        if (emp.mood < 10 && Math.random() < 0.05) {
+            showNotification("BUNT!", `${emp.name} odmawia pracy bez podwyżki!`, "red");
+            emp.status = "STRAJK";
+        }
+    });
+}, 10000); // Co 10 sekund aktualizacja nastrojów
+/* ==========================================================================
+   MODUŁ 4: FUEL & INFRASTRUCTURE (STACJA I MAGAZYN)
+   ========================================================================== */
+
+function renderGasStation() {
+    const body = document.getElementById('cargo-body'); // Używamy Cargo jako bazy obiektów
+    body.innerHTML = `
+        <div style="background:#e5e5ea; padding:20px; text-align:center;">
+            <i class="fa-solid fa-gas-pump" style="font-size:40px; color:#333;"></i>
+            <h2>CPN - TWOJA STACJA</h2>
+        </div>
+    `;
+
+    if (!DB.gasStation.owned) {
+        body.innerHTML += `
+            <div class="pl-card" style="text-align:center;">
+                <p>Nie posiadasz własnej stacji. Kupując ją, obniżasz koszty transportu o 30%.</p>
+                <b style="font-size:20px;">Cena: 150,000 PLN</b>
+                <button class="btn-action" onclick="buyGasStation()">INWESTUJ W STACJĘ</button>
+            </div>`;
+    } else {
+        body.innerHTML += `
+            <div class="pl-card">
+                <div style="display:flex; justify-content:space-between;">
+                    <span>Zapas paliwa:</span>
+                    <b>${DB.gasStation.fuelStock} L</b>
+                </div>
+                <div style="width:100%; background:#eee; height:15px; border-radius:10px; margin:10px 0; overflow:hidden;">
+                    <div style="width:${(DB.gasStation.fuelStock/5000)*100}%; background:var(--ios-blue); height:100%;"></div>
+                </div>
+                <button class="btn-action" style="background:#444;" onclick="refillStock()">ZAMÓW CYSTERNĘ (10,000 PLN)</button>
+            </div>
+            <div class="pl-card">
+                <p>Twoja cena dla klientów: <b>${DB.gasStation.pricePerL} PLN</b></p>
+                <input type="range" min="4.50" max="8.50" step="0.01" value="${DB.gasStation.pricePerL}" 
+                       onchange="DB.gasStation.pricePerL = this.value; renderGasStation()">
+            </div>`;
+    }
+}
+
+function buyGasStation() {
+    if (DB.money < 150000) return showNotification("BANK", "Brak funduszy na inwestycję!", "red");
+    DB.money -= 150000;
+    DB.gasStation.owned = true;
+    DB.gasStation.fuelStock = 2000;
+    renderGasStation();
+    notify("INWESTYCJA", "Stacja Paliw przejęta!");
+}
+
+function refillStock() {
+    if (DB.money < 10000) return alert("Brak kasy!");
+    DB.money -= 10000;
+    DB.gasStation.fuelStock += 2000;
+    renderGasStation();
+}
+/* ==========================================================================
+   MODUŁ 5: CARGO EXCHANGE & FREIGHT LOGISTICS (SYSTEM SPEDYCJI)
+   ========================================================================== */
+
+// 1. GENERATOR ZLECEŃ CARGO
+function generateCargoLeads() {
+    const cargoTypes = [
+        { n: 'Palety z AGD', w: 1200, risk: 0.1, icon: 'fa-tv' },
+        { n: 'Części samochodowe', w: 800, risk: 0.05, icon: 'fa-gears' },
+        { n: 'Materiały budowlane', w: 2500, risk: 0.02, icon: 'fa-trowel-bricks' },
+        { n: 'Elektronika Premium', w: 400, risk: 0.25, icon: 'fa-laptop' }
+    ];
+
+    DB.cargoLeads = [];
+    for(let i=0; i<4; i++) {
+        const type = cargoTypes[Math.floor(Math.random()*cargoTypes.length)];
+        const from = Object.keys(DB.cities)[Math.floor(Math.random()*5)];
+        const to = Object.keys(DB.cities).filter(c => c !== from)[Math.floor(Math.random()*4)];
+        
+        // Obliczanie stawki: (Dystans * 12 PLN) + Bonus za wagę
+        const dist = 300; // Uproszczone dla bazy
+        const payout = (dist * 12) + (type.w * 2);
+
+        DB.cargoLeads.push({
+            id: 'CRG-' + Math.floor(Math.random()*999),
+            name: type.n,
+            weight: type.w,
+            from: from,
+            to: to,
+            pay: Math.round(payout),
+            risk: type.risk,
+            icon: type.icon
+        });
+    }
+}
+
+// 2. RENDEROWANIE GIEŁDY
+function renderCargoExchange() {
+    const body = document.getElementById('cargo-body');
+    body.innerHTML = `
+        <div style="background:#003399; color:#fff; padding:20px; text-align:center;">
+            <i class="fa-solid fa-truck-ramp-box" style="font-size:30px;"></i>
+            <h3>GIEŁDA TRANSPORTOWA</h3>
+            <small>Dostępne ładunki w systemie Trans.pl</small>
+        </div>
+        <div id="cargo-list" style="padding:10px;"></div>
+    `;
+
+    if(DB.cargoLeads.length === 0) generateCargoLeads();
+
+    DB.cargoLeads.forEach((job, i) => {
+        document.getElementById('cargo-list').innerHTML += `
+            <div class="pl-card" style="border-left: 6px solid #003399;">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <span><i class="fa-solid ${job.icon}"></i> <b>${job.name}</b></span>
+                    <b style="color:var(--ios-green);">${job.pay} PLN</b>
+                </div>
+                <div style="font-size:12px; margin:8px 0; color:#555;">
+                    <b>TRASA:</b> ${job.from} <i class="fa-solid fa-arrow-right"></i> ${job.to}<br>
+                    <b>WAGA:</b> ${job.weight} kg | <b>RYZYKO:</b> ${Math.round(job.risk*100)}%
+                </div>
+                <button class="btn-action" style="background:#003399; font-size:12px;" 
+                        onclick="acceptCargoJob(${i})">PRZYJMIJ ŁADUNEK</button>
+            </div>
+        `;
+    });
+}
+
+// 3. LOGIKA PRZYJMOWANIA ZLECENIA
+function acceptCargoJob(i) {
+    const job = DB.cargoLeads[i];
+    const driver = DB.employees.find(e => e.status === "WOLNY" && e.role === "Kierowca");
+
+    if(!driver) {
+        showNotification("BRAK AUT", "Wszyscy kierowcy są zajęci!", "red");
+        return;
+    }
+
+    // Dodanie do aktywnych zadań
+    DB.activeJobs.push({
+        car: { m: job.name, p: 0, isCargo: true }, // p:0 bo to nie nasz towar
+        driver: driver,
+        progress: 0,
+        from: job.from,
+        to: job.to,
+        payout: job.pay,
+        risk: job.risk
+    });
+
+    driver.status = "W TRASIE";
+    DB.cargoLeads.splice(i, 1);
+    
+    closeW();
+    showNotification("CARGO", `Marek podjął ładunek: ${job.name}`, "var(--ios-blue)");
+    save();
+}
+
+// 4. ROZSZERZENIE KERNELA O FINALIZACJĘ CARGO
+// (Tę logikę dopisz do swojej głównej pętli setInterval, gdzie sprawdzasz progress >= 100)
+function handleCargoFinish(job) {
+    // Sprawdzanie czy towar nie został uszkodzony
+    if(Math.random() < job.risk) {
+        const penalty = Math.round(job.payout * 0.4);
+        DB.money += (job.payout - penalty);
+        showNotification("SZKODA", `Towar uszkodzony! Kara: -${penalty} PLN`, "red");
+    } else {
+        DB.money += job.payout;
+        showNotification("ZYSK", `Zlecenie wykonane! +${job.payout} PLN`, "var(--ios-green)");
+    }
+    DB.stats.totalEarned += job.payout;
+}
+
+// Odświeżaj giełdę co 3 minuty
+setInterval(generateCargoLeads, 180000);
+/* ==========================================================================
+   11. MODUŁ 6: DARK MARKET & RISKY BUSINESS (CZARNY RYNEK)
+   ========================================================================== */
+
+// --- DANE CZARNEGO RYNKU ---
+DB.darkMarketActive = false;
+DB.hackersAvailability = true;
+
+// --- RENDEROWANIE UKRYTEJ APLIKACJI ---
+function renderDarkMarket() {
+    const body = document.getElementById('messages-body'); // Kamuflaż wewnątrz SMS
+    body.innerHTML = `
+        <div style="background:#050505; color:#00ff00; padding:20px; font-family:'JetBrains Mono', monospace; border-bottom: 2px solid #00ff00;">
+            <h2 style="text-transform:uppercase; letter-spacing:2px;">Terminal v4.1.0</h2>
+            <small>Status: Połączenie szyfrowane przez TOR</small>
+        </div>
+        <div style="padding:15px; background:#111; min-height:400px;">
+            
+            <div class="pl-card" style="background:#222; border:1px solid #333; color:#0f0;">
+                <b style="font-size:14px;">WYZERUJ KONTO (POLICJA.PL)</b><br>
+                <p style="font-size:11px; color:#aaa; margin:5px 0;">Haker włamał się do bazy CEPIK. Usuwa wszystkie punkty karne.</p>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:#fff; font-weight:bold;">Cena: 8,500 PLN</span>
+                    <button onclick="darkHack('points')" style="background:#0f0; border:none; padding:5px 10px; cursor:pointer; font-weight:800;">WYKONAJ</button>
+                </div>
+            </div>
+
+            <div class="pl-card" style="background:#222; border:1px solid #333; color:#0f0;">
+                <b style="font-size:14px;">KOREKTA PRZEBIEGU (BATCH)</b><br>
+                <p style="font-size:11px; color:#aaa; margin:5px 0;">Zmniejsza "zużycie" wszystkich aut na placu. Wartość rynkowa +25%.</p>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:#fff; font-weight:bold;">Cena: 12,000 PLN</span>
+                    <button onclick="darkHack('odometer')" style="background:#0f0; border:none; padding:5px 10px; cursor:pointer; font-weight:800;">WYKONAJ</button>
+                </div>
+            </div>
+
+            <div class="pl-card" style="background:#222; border:1px solid #333; color:#0f0;">
+                <b style="font-size:14px;">OKAZJA DNIA (PASER)</b><br>
+                <p style="font-size:11px; color:#aaa; margin:5px 0;">Luksusowe auto z Niemiec. Brak dokumentów. Ryzyko konfiskaty: 40%.</p>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:#fff; font-weight:bold;">Cena: 15,000 PLN</span>
+                    <button onclick="darkHack('stolen')" style="background:#0f0; border:none; padding:5px 10px; cursor:pointer; font-weight:800;">KUPUJ</button>
+                </div>
+            </div>
+
+            <p style="color:#444; font-size:10px; text-align:center; margin-top:20px;">Wszystkie transakcje są ostateczne. Płatność w BTC (Auto-konwersja z PLN).</p>
+        </div>
+    `;
+}
+
+// --- LOGIKA HAKOWANIA ---
+function darkHack(type) {
+    if (type === 'points') {
+        if (DB.money < 8500) return alert("Brak środków na anonimowym koncie!");
+        DB.money -= 8500;
+        DB.points = 0;
+        showNotification("DARKNET", "Punkty karne zostały wyczyszczone.", "#0f0");
+    }
+
+    if (type === 'odometer') {
+        if (DB.money < 12000) return alert("Za mało kasy!");
+        DB.money -= 12000;
+        DB.inventory.forEach(car => {
+            car.p = Math.floor(car.p * 1.25); // Podbicie wartości
+        });
+        showNotification("DARKNET", "Liczniki skorygowane we flocie.", "#0f0");
+    }
+
+    if (type === 'stolen') {
+        if (DB.money < 15000) return alert("Paser nie czeka!");
+        DB.money -= 15000;
+        const stolenCar = {
+            id: 'DARK-' + Math.random().toString(36).substring(7).toUpperCase(),
+            m: 'BMW M5 (Gorące)',
+            p: 85000, // Bardzo wysoka wartość sprzedaży
+            loc: 'Gdańsk',
+            damaged: false,
+            illegal: true
+        };
+        DB.inventory.push(stolenCar);
+        showNotification("DARKNET", "Auto czeka na parkingu podziemnym w Gdańsku.", "#0f0");
+    }
+    
+    renderDarkMarket();
+    save();
+}
+
+// --- SYSTEM RYZYKA (POLICJA) ---
+function policeRiskCheck() {
+    // Sprawdzaj co jakiś czas, czy nie masz nielegalnych aut
+    const hasIllegal = DB.inventory.some(c => c.illegal);
+    if (hasIllegal && Math.random() < 0.15) {
+        const illegalIndex = DB.inventory.findIndex(c => c.illegal);
+        DB.inventory.splice(illegalIndex, 1);
+        DB.money -= 10000;
+        DB.points += 12;
+        showNotification("NALOT!", "Policja skonfiskowała nielegalne auto! Grzywna: 10,000 PLN", "red");
+    }
+}
+
+// Uruchamiaj kontrolę co 2 minuty
+setInterval(policeRiskCheck, 120000);
+/* ==========================================================================
+   12. MODUŁ 7: FINANCIAL ENGINE (SYSTEM ROZLICZEŃ I KONIEC GRY)
+   ========================================================================== */
+
+// --- DANE FINANSOWE ---
+DB.cycleCount = 0; // Ile "miesięcy" (minut) upłynęło
+DB.loans = 0;      // Kwota kredytu do spłacenia
+DB.totalExpenses = 0;
+
+// --- RENDEROWANIE SZCZEGÓŁÓW BANKOWYCH ---
+function renderDetailedBank() {
+    const body = document.getElementById('bank-body');
+    const monthlyCosts = calculateMonthlyCosts();
+    
+    body.innerHTML = `
+        <div style="background:linear-gradient(to bottom, #ff0000, #b00000); color:#fff; padding:25px; text-align:center;">
+            <small>SALDO BIEŻĄCE</small>
+            <h1 style="font-size:32px;">${Math.floor(DB.money).toLocaleString()} PLN</h1>
+        </div>
+        
+        <div class="pl-card">
+            <h3>📈 PODSUMOWANIE MIESIĄCA</h3>
+            <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                <span>Pensje (HR):</span>
+                <b style="color:red;">-${monthlyCosts.salaries} PLN</b>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>Utrzymanie bazy:</span>
+                <b style="color:red;">-${monthlyCosts.rent} PLN</b>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>Podatki zaległe:</span>
+                <b style="color:orange;">${DB.taxDebt} PLN</b>
+            </div>
+        </div>
+
+        <div class="pl-card" style="background:#f2f2f7;">
+            <h3>🏦 KREDYT OBNROTOWY</h3>
+            <p style="font-size:12px;">Możesz pożyczyć do 100,000 PLN. Prowizja: 15%.</p>
+            <button class="btn-action" onclick="takeLoan()" ${DB.loans > 0 ? 'disabled' : ''} 
+                    style="background:${DB.loans > 0 ? '#ccc' : 'var(--ios-blue)'};">
+                ${DB.loans > 0 ? 'KREDYT AKTYWNY' : 'WEŹ 50,000 PLN'}
+            </button>
+            ${DB.loans > 0 ? `<p style="color:red; font-size:11px; margin-top:5px;">Do spłaty: ${DB.loans} PLN</p>` : ''}
+        </div>
+    `;
+}
+
+// --- LOGIKA FINANSOWA ---
+function calculateMonthlyCosts() {
+    let salaries = 0;
+    DB.employees.forEach(e => salaries += e.salary);
+    let rent = DB.baseType === 'Hala' ? 5000 : 1000;
+    return { salaries, rent };
+}
+
+function takeLoan() {
+    if(DB.loans > 0) return;
+    DB.money += 50000;
+    DB.loans = 57500; // 50k + 15% odsetek
+    showNotification("BANK", "Przyznano kredyt: +50,000 PLN", "var(--ios-green)");
+    renderDetailedBank();
+}
+
+// --- GŁÓWNA PĘTLA ROZLICZENIOWA (CO 60 SEKUND = 1 MIESIĄC) ---
+function runFinancialCycle() {
+    const costs = calculateMonthlyCosts();
+    const total = costs.salaries + costs.rent;
+    
+    DB.money -= total;
+    DB.cycleCount++;
+
+    // Spłata kredytu w ratach (jeśli aktywny)
+    if(DB.loans > 0) {
+        let installment = 5000;
+        DB.loans -= installment;
+        DB.money -= installment;
+        if(DB.loans < 0) DB.loans = 0;
+    }
+
+    // Warunek BANKRUCTWA
+    if(DB.money < -25000) {
+        gameOver("BANKRUCTWO", "Długi Cię przerosły. Komornik zajął lawety.");
+    }
+
+    // Warunek ZWYCIĘSTWA (Magnat)
+    if(DB.money > 1000000) {
+        gameOver("MAGNAT", "Gratulacje! Twoje imperium jest warte miliony.");
+    }
+
+    showNotification("FINANSE", `Koniec miesiąca. Koszty: -${total} PLN`, "orange");
+    save();
+}
+
+// --- SYSTEM GAME OVER ---
+function gameOver(type, reason) {
+    document.body.innerHTML = `
+        <div style="background:#000; color:#fff; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-family:sans-serif; padding:20px;">
+            <h1 style="font-size:50px; color:${type === 'MAGNAT' ? 'gold' : 'red'};">${type}</h1>
+            <p style="font-size:20px; margin:20px 0;">${reason}</p>
+            <button onclick="location.reload()" style="padding:15px 30px; border-radius:50px; border:none; background:#fff; font-weight:bold; cursor:pointer;">ZAGRAJ PONOWNIE</button>
+        </div>
+    `;
+    localStorage.clear();
+}
+
+// Inicjalizacja pętli finansowej
+setInterval(runFinancialCycle, 60000); 
+
+// Automatyczne odświeżanie banku jeśli otwarty
+setInterval(() => {
+    if(document.getElementById('win-bank').style.display === 'flex') renderDetailedBank();
+}, 2000);
+/* ==========================================================================
+   13. MODUŁ 8: UTILITY SUITE (NOTATNIK & KALKULATOR)
+   ========================================================================== */
+
+// --- LOGIKA NOTATNIKA ---
+DB.notes = localStorage.getItem('log_notes') || "Twoje notatki handlarza...";
+
+function renderNotes() {
+    const body = document.getElementById('notes-body');
+    body.innerHTML = `
+        <div style="padding:20px; background:#fff9c4; min-height:100%; font-family:'Sora', sans-serif;">
+            <h3 style="border-bottom:1px solid #ccc; padding-bottom:10px;">📝 NOTATNIK</h3>
+            <textarea id="note-area" oninput="saveNotes(this.value)" 
+                style="width:100%; height:400px; border:none; background:transparent; font-size:16px; outline:none; resize:none; line-height:1.5;">${DB.notes}</textarea>
+            <p style="font-size:10px; color:#888; margin-top:10px;">Autozapis aktywny...</p>
+        </div>
+    `;
+}
+
+function saveNotes(val) {
+    DB.notes = val;
+    localStorage.setItem('log_notes', val);
+}
+
+// --- LOGIKA KALKULATORA ---
+let calcDisplay = "0";
+
+function renderCalc() {
+    const body = document.getElementById('calc-body');
+    body.innerHTML = `
+        <div style="background:#000; color:#fff; padding:20px; text-align:right; font-size:40px; font-family:monospace; height:100px; display:flex; align-items:end; justify-content:end;">
+            <span id="calc-screen">${calcDisplay}</span>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:1px; background:#333; padding:1px;">
+            ${['7','8','9','/','4','5','6','*','1','2','3','-','C','0','=','+'].map(btn => `
+                <button onclick="calcInput('${btn}')" style="height:70px; border:none; background:${isNaN(btn) && btn !== '0' ? '#ff9500' : '#444'}; color:#fff; font-size:20px; font-weight:bold; cursor:pointer;">${btn}</button>
+            `).join('')}
+        </div>
+        <div style="padding:15px; font-size:12px; color:#666; text-align:center;">Szybkie liczenie marży VAT-Marża</div>
+    `;
+}
+
+function calcInput(btn) {
+    const screen = document.getElementById('calc-screen');
+    if(btn === 'C') calcDisplay = "0";
+    else if(btn === '=') {
+        try { calcDisplay = eval(calcDisplay).toString(); } catch { calcDisplay = "Error"; }
+    } else {
+        if(calcDisplay === "0") calcDisplay = btn;
+        else calcDisplay += btn;
+    }
+    screen.innerText = calcDisplay;
+}
+/* ==========================================================================
+   MODUŁ 9: ATLAS POLSKI PRO (FULL MAP ENGINE)
+   ========================================================================== */
+
+// 1. ROZSZERZONA DEFINICJA GEOGRAFICZNA (Współrzędne % na ekranie)
+DB.world = {
+    cities: {
+        'Warszawa': { x: 65, y: 45, icon: 'fa-city', color: '#333' },
+        'Poznań': { x: 25, y: 42, icon: 'fa-landmark', color: '#333' },
+        'Gdańsk': { x: 45, y: 10, icon: 'fa-anchor', color: '#0055ff' },
+        'Kraków': { x: 60, y: 85, icon: 'fa-castle', color: '#333' },
+        'Wrocław': { x: 30, y: 75, icon: 'fa-archway', color: '#333' },
+        'Białystok': { x: 85, y: 25, icon: 'fa-tree', color: '#2ecc71' },
+        'Szczecin': { x: 10, y: 20, icon: 'fa-ship', color: '#333' }
+    },
+    pois: [
+        { name: "Mietek - Serwis", x: 62, y: 48, type: 'repair', desc: 'Naprawa aut powypadkowych' },
+        { name: "Orlen - Hurt", x: 40, y: 40, type: 'fuel', desc: 'Tanie paliwo dla lawet' }
+    ]
+};
+
+// 2. GŁÓWNA FUNKCJA RENDERUJĄCA MAPĘ
+function renderFullMap() {
+    const mapArea = document.getElementById('map-canvas');
+    if (!mapArea) return;
+
+    // Stylizacja tła (Grid i kolor lądu)
+    mapArea.style.background = "#e0e0e0";
+    mapArea.style.backgroundImage = "radial-gradient(#ccc 1px, transparent 1px)";
+    mapArea.style.backgroundSize = "20px 20px";
+    mapArea.style.position = "relative";
+    mapArea.style.overflow = "hidden";
+    mapArea.innerHTML = "";
+
+    // A. RYSOWANIE DRÓG (Sieć połączeń)
+    const routes = [
+        ['Gdańsk', 'Warszawa'], ['Warszawa', 'Kraków'], ['Warszawa', 'Białystok'],
+        ['Poznań', 'Warszawa'], ['Wrocław', 'Kraków'], ['Szczecin', 'Gdańsk'],
+        ['Poznań', 'Wrocław'], ['Gdańsk', 'Poznań']
+    ];
+
+    routes.forEach(route => {
+        const c1 = DB.world.cities[route[0]];
+        const c2 = DB.world.cities[route[1]];
+        drawMapLine(c1.x, c1.y, c2.x, c2.y, 'rgba(0,0,0,0.1)', 2);
+    });
+
+    // B. RYSOWANIE MIAST
+    for (let cityName in DB.world.cities) {
+        const city = DB.world.cities[cityName];
+        const isBase = (cityName === DB.city);
+        
+        mapArea.innerHTML += `
+            <div onclick="mapClick('${cityName}', 'city')" style="position:absolute; left:${city.x}%; top:${city.y}%; transform:translate(-50%, -50%); z-index:10; cursor:pointer; text-align:center;">
+                <div class="map-pin" style="background:${isBase ? 'var(--ios-blue)' : '#fff'}; border:2px solid #333; width:12px; height:12px; border-radius:50%; margin:0 auto; box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>
+                <span style="font-size:9px; font-weight:bold; background:rgba(255,255,255,0.8); padding:1px 3px; border-radius:3px; display:block; margin-top:2px;">${cityName.toUpperCase()}</span>
+            </div>
+        `;
+    }
+
+    // C. RYSOWANIE POI (Warsztaty, Stacje)
+    DB.world.pois.forEach(poi => {
+        const icon = poi.type === 'repair' ? 'fa-wrench' : 'fa-gas-pump';
+        const color = poi.type === 'repair' ? 'orange' : '#e74c3c';
+        mapArea.innerHTML += `
+            <div onclick="mapClick('${poi.name}', 'poi')" style="position:absolute; left:${poi.x}%; top:${poi.y}%; transform:translate(-50%, -50%); z-index:15; cursor:help; color:${color};">
+                <i class="fa-solid ${icon}" style="font-size:14px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));"></i>
+            </div>
+        `;
+    });
+
+    // D. LIVE TRACKING LAWET (Ruch w czasie rzeczywistym)
+    DB.activeJobs.forEach(job => {
+        const start = DB.world.cities[job.from] || {x:50, y:50};
+        const end = DB.world.cities[job.to] || {x:50, y:50};
+        const p = job.progress / 100;
+        
+        const curX = start.x + (end.x - start.x) * p;
+        const curY = start.y + (end.y - start.y) * p;
+
+        mapArea.innerHTML += `
+            <div style="position:absolute; left:${curX}%; top:${curY}%; transform:translate(-50%, -50%); z-index:30; color:var(--ios-red); transition:0.5s linear;">
+                <i class="fa-solid fa-truck-moving" style="font-size:18px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));"></i>
+                <div style="background:#000; color:#fff; font-size:8px; padding:2px 5px; border-radius:5px; white-space:nowrap; position:absolute; top:-18px; left:0;">
+                    ${job.driver.name} | ${Math.round(job.timeLeft)} min
+                </div>
+            </div>
+        `;
+    });
+}
+
+// 3. FUNKCJA POMOCNICZA: RYSOWANIE LINII (DRÓG)
+function drawMapLine(x1, y1, x2, y2, color, width) {
+    const map = document.getElementById('map-canvas');
+    const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+    const line = document.createElement('div');
+    line.className = "map-road";
+    line.style.position = "absolute";
+    line.style.left = x1 + "%";
+    line.style.top = y1 + "%";
+    line.style.width = length + "%";
+    line.style.height = width + "px";
+    line.style.background = color;
+    line.style.transformOrigin = "0 50%";
+    line.style.transform = `rotate(${angle}deg)`;
+    line.style.zIndex = "1";
+    map.appendChild(line);
+}
+
+// 4. INTERAKCJA Z MAPĄ
+function mapClick(name, type) {
+    if(type === 'city') {
+        showNotification("MIASTO", `Wjazd do: ${name}. Sprawdzam ogłoszenia...`, "var(--ios-blue)");
+    } else {
+        const poi = DB.world.pois.find(p => p.name === name);
+        showNotification("PUNKT", `${poi.name}: ${poi.desc}`, "orange");
+    }
+}
+
+// 5. AUTO-ODŚWIEŻANIE (Dodaj to do swojej głównej pętli renderującej)
+setInterval(() => {
+    if(document.getElementById('win-maps').style.display === 'flex') {
+        renderFullMap();
+    }
+}, 500);
+
+</script>
+</body>
+</html>
