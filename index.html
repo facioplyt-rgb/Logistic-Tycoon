@@ -116,6 +116,205 @@
     function updateIsland() {
         document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet" style="color:#34c759"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
     }
+    /* ==========================================================================
+   MODUŁ 1: SYSTEM OKIEN I OTOMOTO
+   ========================================================================== */
+
+// 1. STYLE DLA OKIEN (iOS Style)
+const winStyle = document.createElement('style');
+winStyle.innerHTML = `
+    .win { 
+        position: absolute; inset: 0; background: #f2f2f7; z-index: 500; 
+        display: none; flex-direction: column; animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    
+    .win-header { 
+        padding: 45px 20px 15px; background: #fff; border-bottom: 1px solid #ddd; 
+        display: flex; justify-content: space-between; align-items: center; 
+    }
+    .win-body { flex: 1; overflow-y: auto; padding: 15px; }
+    
+    .car-card { 
+        background: #fff; border-radius: 15px; padding: 15px; margin-bottom: 12px; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #eee; 
+    }
+    .buy-btn { 
+        width: 100%; background: #ff5a10; color: #fff; border: none; 
+        padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px;
+    }
+    .close-btn { color: var(--ios-blue); background: none; border: none; font-weight: bold; cursor: pointer; }
+    
+    #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 20px; gap: 20px; }
+`;
+document.head.appendChild(winStyle);
+
+// 2. REJESTRACJA APLIKACJI OTOMOTO
+DB.apps.push({ id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' });
+
+// 3. TWORZENIE OKNA OTOMOTO W HTML
+const winOlx = document.createElement('div');
+winOlx.id = 'win-olx';
+winOlx.className = 'win';
+winOlx.innerHTML = `
+    <div class="win-header">
+        <b style="font-size: 17px;">Otomoto</b>
+        <button class="close-btn" onclick="closeApp()">Gotowe</button>
+    </div>
+    <div class="win-body" id="body-olx"></div>
+`;
+document.getElementById('iphone').appendChild(winOlx);
+
+// 4. LOGIKA OTWIERANIA I ZAMYKANIA
+function openApp(id) {
+    document.getElementById('win-' + id).style.display = 'flex';
+    if(id === 'olx') renderOLX();
+}
+
+function closeApp() {
+    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
+}
+
+// 5. RENDEROWANIE LISTY AUT
+function renderOLX() {
+    const cars = [
+        { brand: "Audi A4 B6", price: 12000, loc: "Radom" },
+        { brand: "VW Passat B5", price: 7500, loc: "Siedlce" },
+        { brand: "BMW E46", price: 18500, loc: "Gdańsk" }
+    ];
+    
+    const body = document.getElementById('body-olx');
+    body.innerHTML = `<h3>Polecane ogłoszenia</h3>` + cars.map(c => `
+        <div class="car-card">
+            <div style="display:flex; justify-content:space-between;">
+                <b>${c.brand}</b>
+                <span style="color:#ff5a10; font-weight:bold;">${c.price.toLocaleString()} PLN</span>
+            </div>
+            <p style="font-size:12px; color:#666; margin-top:5px;">Lokalizacja: ${c.loc}</p>
+            <button class="buy-btn" onclick="buyCar('${c.brand}', ${c.price})">KUP TERAZ</button>
+        </div>
+    `).join('');
+}
+
+// 6. LOGIKA ZAKUPU
+function buyCar(brand, price) {
+    if(DB.money >= price) {
+        DB.money -= price;
+        updateIsland(); // Odśwież kasę na czarnym pasku
+        alert("Gratulacje! Kupiono " + brand + ". Auto trafiło na Twój plac.");
+    } else {
+        alert("Brak środków na koncie!");
+    }
+}
+
+// WYMUSZENIE ODŚWIEŻENIA PULPITU PO DODANIU APKI
+renderIcons();
+    /* ==========================================================================
+   MODUŁ 2: WHATSAPP I SYSTEM NEGOCJACJI (LOSOWOŚĆ)
+   ========================================================================== */
+
+// 1. REJESTRACJA APKI
+DB.apps.push({ id: 'whatsapp', name: 'WhatsApp', icon: 'fa-whatsapp', bg: '#25D366' });
+
+// 2. DANE LOSOWE (OSOBOWOŚCI SPRZEDAWCÓW)
+const PERSONALITIES = [
+    { type: "Służbista", greet: "Dzień dobry, cena jest ostateczna.", discountMax: 0.02 },
+    { type: "Handlarz", greet: "Siemano kierowniku, auto igła, płakałem jak sprzedawałem!", discountMax: 0.10 },
+    { type: "Prywatny", greet: "Witam, sprzedaję bo kupiłem nowe. Możemy się dogadać.", discountMax: 0.05 }
+];
+
+// 3. TWORZENIE OKNA WHATSAPP
+const winWA = document.createElement('div');
+winWA.id = 'win-whatsapp';
+winWA.className = 'win';
+winWA.innerHTML = `
+    <div class="win-header" style="background:#075e54; color:white;">
+        <b id="wa-contact-name">WhatsApp</b>
+        <button class="close-btn" style="color:white;" onclick="closeApp()">Cofnij</button>
+    </div>
+    <div class="win-body" id="body-whatsapp" style="background:#e5ddd5; display:flex; flex-direction:column;">
+        <div id="wa-chat-box" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:10px;"></div>
+        <div id="wa-input-area" style="padding:10px; background:#fff; display:none; gap:5px;">
+            <button onclick="sendMsg('Ile do oddania?')" style="font-size:12px; padding:8px;">Ile do oddania?</button>
+            <button onclick="sendMsg('Biorę w tej cenie')" style="font-size:12px; padding:8px;">Biorę!</button>
+        </div>
+    </div>
+`;
+document.getElementById('iphone').appendChild(winWA);
+
+// 4. LOGIKA CZATU
+let currentDeal = null;
+
+function startChat(carName, price, loc) {
+    const perso = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
+    currentDeal = { carName, price, loc, perso, currentPrice: price, stage: 0 };
+    
+    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
+    document.getElementById('win-whatsapp').style.display = 'flex';
+    document.getElementById('wa-contact-name').innerText = "Sprzedawca: " + carName;
+    document.getElementById('wa-input-area').style.display = 'flex';
+    
+    const chat = document.getElementById('wa-chat-box');
+    chat.innerHTML = `<div style="background:#dcf8c6; padding:10px; border-radius:10px; align-self:flex-start; max-width:80%; font-size:14px; box-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+        <b>Sprzedawca:</b> ${perso.greet} Ogłoszenie dotyczy ${carName} za ${price.toLocaleString()} PLN w miejscowości ${loc}.
+    </div>`;
+}
+
+function sendMsg(text) {
+    const chat = document.getElementById('wa-chat-box');
+    chat.innerHTML += `<div style="background:#fff; padding:10px; border-radius:10px; align-self:flex-end; max-width:80%; font-size:14px; box-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+        ${text}
+    </div>`;
+
+    setTimeout(() => {
+        let reply = "";
+        if(text.includes('Ile do oddania?')) {
+            if(currentDeal.stage === 0) {
+                const discount = Math.floor(currentDeal.price * (Math.random() * currentDeal.perso.discountMax));
+                currentDeal.currentPrice -= discount;
+                currentDeal.stage = 1;
+                reply = `No dobra, za ${currentDeal.currentPrice.toLocaleString()} PLN oddam, ale ani grosza mniej!`;
+            } else {
+                reply = "Przecież już opuściłem! Nie bądź Pan nachalny.";
+            }
+        } else {
+            reply = "To zapraszam na oględziny. Kliknij przycisk zakupu w Otomoto, żeby sfinalizować.";
+            // Tutaj odblokowujemy możliwość finalizacji w DB
+            DB.money -= currentDeal.currentPrice;
+            updateIsland();
+            alert(`SFINALIZOWANO! Kupiono ${currentDeal.carName} za ${currentDeal.currentPrice.toLocaleString()} PLN. Kasa pobrana.`);
+            closeApp();
+        }
+        
+        chat.innerHTML += `<div style="background:#dcf8c6; padding:10px; border-radius:10px; align-self:flex-start; max-width:80%; font-size:14px;">
+            <b>Sprzedawca:</b> ${reply}
+        </div>`;
+        chat.scrollTop = chat.scrollHeight;
+    }, 800);
+}
+
+// 5. AKTUALIZACJA OTOMOTO (ZMIANA PRZYCISKU NA "NAPISZ")
+function renderOLX() {
+    const cars = [
+        { brand: "Audi A4 B6", price: 12000, loc: "Radom" },
+        { brand: "Passat (Igła)", price: 8900, loc: "Siedlce" },
+        { brand: "BMW E46", price: 19500, loc: "Gdańsk" },
+        { brand: "Mercedes W211", price: 25000, loc: "Warszawa" }
+    ];
+    
+    const body = document.getElementById('body-olx');
+    body.innerHTML = `<h3 style="margin-bottom:10px;">Giełda</h3>` + cars.map(c => `
+        <div class="car-card">
+            <b>${c.brand}</b> - <span style="color:#ff5a10;">${c.price.toLocaleString()} PLN</span>
+            <button class="buy-btn" style="background:#25D366;" onclick="startChat('${c.brand}', ${c.price}, '${c.loc}')">
+                <i class="fa-brands fa-whatsapp"></i> NEGOCJUJ NA WA
+            </button>
+        </div>
+    `).join('');
+}
+
+// Odśwież ikony
+renderIcons();
 </script>
 
 </body>
