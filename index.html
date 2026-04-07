@@ -406,6 +406,60 @@ function renderIcons() {
         </div>
     `).join('');
 }
+    /* ==========================================================================
+   FIX: NAPRAWA OTWIERANIA OKIEN I RENDEROWANIA TREŚCI
+   ========================================================================== */
+
+// 1. NADPISUJEMY FUNKCJĘ OTWIERANIA (USUWA ALERTY)
+function openApp(id) {
+    // Ukrywamy wszystkie okna na start
+    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
+    
+    const targetWin = document.getElementById('win-' + id);
+    if (targetWin) {
+        targetWin.style.display = 'flex'; // Pokazujemy okno
+        
+        // Wywołujemy odpowiednią funkcję renderującą treść dla danej apki
+        if (id === 'olx') {
+            render_olx(); 
+        } else if (id === 'bank') {
+            render_bank();
+        } else {
+            // Dla reszty apek, których jeszcze nie zakodowaliśmy:
+            const body = document.getElementById('body-' + id);
+            if(body) body.innerHTML = `<div style="text-align:center; padding-top:50px; color:#888;">
+                <i class="fa-solid fa-screwdriver-wrench" style="font-size:40px;"></i><br><br>
+                Aplikacja <b>${id.toUpperCase()}</b> będzie dostępna w kolejnym module.</div>`;
+        }
+    } else {
+        console.error("Nie znaleziono okna o ID: win-" + id);
+    }
+}
+
+// 2. FUNKCJA RENDERUJĄCA MBANK (Żeby nie było pusto)
+function render_bank() {
+    const body = document.getElementById('body-bank');
+    if(!body) return;
+    body.innerHTML = `
+        <div style="background: linear-gradient(135deg, #ff0000, #b30000); color: #fff; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(255,0,0,0.3);">
+            <small style="opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Dostępne środki</small>
+            <h1 style="margin: 10px 0; font-size: 32px;">${DB.money.toLocaleString()} PLN</h1>
+            <div style="margin-top: 20px; font-size: 12px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+                <i class="fa-solid fa-check-double"></i> Konto Aktywne
+            </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <h4 style="color:#333;">Ostatnie operacje</h4>
+            <div style="background:#fff; padding:15px; border-radius:15px; font-size:13px; color:#666; border:1px solid #eee;">
+                Brak ostatnich transakcji.
+            </div>
+        </div>
+    `;
+}
+
+// 3. ODŚWIEŻENIE PULPITU (Aby ikony używały nowej funkcji)
+renderPulpit(); 
+updateIsland();
 </script>
 
 </body>
