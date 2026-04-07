@@ -1219,6 +1219,32 @@ if (typeof Omni !== 'undefined') {
     }, 2000);
 }
 
+// CAŁKOWITE POMINIĘCIE ŁADOWANIA - BEZPOŚREDNI START
+window.addEventListener('load', () => {
+    console.log("🛠️ System: Próba wymuszenia startu bez ładowania...");
+    
+    // Upewniamy się, że obiekt Omni istnieje
+    if (typeof Omni !== 'undefined') {
+        try {
+            // Ręczne podpięcie brakujących klas (ubezpieczenie)
+            if (!Omni.INTERNAL_STATE && typeof DB !== 'undefined') Omni.INTERNAL_STATE = DB;
+            if (!Omni.StationClass && typeof Station !== 'undefined') Omni.StationClass = Station;
+
+            // Odpalenie silnika
+            Omni.init(); 
+            
+            // Jeśli init() nie ma w sobie startu renderera, dodajemy go tutaj:
+            // requestAnimationFrame((t) => Omni.Renderer.draw(t));
+            
+            console.log("✅ Silnik odpalony!");
+        } catch (e) {
+            // Na telefonie to wyskoczy jako okienko - powie nam co jest źle
+            alert("Błąd krytyczny przy starcie: " + e.message + "\nLinia: " + e.lineNumber);
+        }
+    } else {
+        alert("Błąd: Nie znaleziono obiektu Omni! Sprawdź czy nie usunąłeś go przy wklejaniu.");
+    }
+});
 
 
 </script>
