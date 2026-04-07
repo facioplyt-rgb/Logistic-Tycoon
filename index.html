@@ -1127,6 +1127,58 @@ console.warn = function(...args) {
     DebugConsole.log("WARN: " + args.join(' '), 'warn');
     _originalWarn.apply(console, args);
 };
+/**
+ * MODULE 10: EMERGENCY_FORCE_KICKSTART
+ * Jeśli po 3 sekundach nic się nie dzieje, ten moduł "kopie" silnik do startu.
+ */
+(() => {
+    console.log("⚡ FORCE_KICKSTART: Monitoring engine heartbeat...");
+
+    const forceStart = () => {
+        const preloader = document.getElementById('preloader');
+        const startBtn = document.getElementById('start-trigger');
+        
+        if (preloader) {
+            DebugConsole.log("⚡ KICKSTART: Engine stuck. Forcing manual override...", "warn");
+            
+            // 1. Czyścimy preloader siłowo
+            preloader.style.display = 'none';
+            preloader.remove();
+
+            // 2. Szukamy obiektu Omni i próbujemy go odpalić
+            if (typeof Omni !== 'undefined') {
+                try {
+                    Omni.init();
+                    DebugConsole.log("🚀 KICKSTART: Omni.init() executed successfully.", "info");
+                } catch (e) {
+                    DebugConsole.log("❌ KICKSTART_FAILED: " + e.message, "error");
+                    console.error(e);
+                }
+            } else {
+                DebugConsole.log("💀 FATAL: Object 'Omni' not found in global scope!", "error");
+            }
+        }
+    };
+
+    // Czekamy 3 sekundy. Jeśli preloader nadal tam jest - uderzamy.
+    setTimeout(() => {
+        if (document.getElementById('preloader')) {
+            forceStart();
+        } else {
+            console.log("✅ Engine started normally. Kickstart standing by.");
+        }
+    }, 3000);
+
+    // DODATKOWO: Sprawdźmy czy Canvas w ogóle żyje
+    setTimeout(() => {
+        const canvas = document.getElementById('stage');
+        if (canvas && canvas.width === 0) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            DebugConsole.log("🔧 FIXED: Canvas dimensions were zero.", "warn");
+        }
+    }, 1000);
+})();
 
 
 
