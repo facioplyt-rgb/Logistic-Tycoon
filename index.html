@@ -106,7 +106,68 @@
         </select>
         <button onclick="bootSystem()" style="background:var(--ios-blue); color:#fff; border:none; padding:18px; border-radius:15px; margin-top:20px; font-weight:bold; cursor:pointer;">START</button>
     </div>
-
+<div id="win-garage" class="win">
+    <div class="win-header">
+        <h2 style="margin:0; font-size:18px;">Mój Plac / Garaż</h2>
+        <button onclick="closeW()" style="border:none; background:#eee; padding:8px 15px; border-radius:10px;">Zamknij</button>
+    </div>
+    <div class="win-body" id="garage-body">
+        </div>
+</div>
+    <div id="win-gov" class="win">
+    <div class="win-header">
+        <h2 style="margin:0; font-size:18px;">e-Urząd Skarbowy</h2>
+        <button onclick="closeW()" style="border:none; background:#eee; padding:8px 15px; border-radius:10px;">Zamknij</button>
+    </div>
+    <div id="gov-alert" style="background:var(--ios-red); color:#fff; padding:10px; font-size:12px; text-align:center; display:none;">
+        ⚠️ MASZ ZALEGŁOŚCI PODATKOWE!
+    </div>
+    <div class="win-body" id="gov-body">
+        </div>
+</div>
+    <div id="win-profile" class="win">
+    <div class="win-header">
+        <h2 style="margin:0; font-size:18px;">Mój Profil Handlarza</h2>
+        <button onclick="closeW()" style="border:none; background:#eee; padding:8px 15px; border-radius:10px;">Zamknij</button>
+    </div>
+    <div class="win-body" id="profile-body">
+        </div>
+</div>
+    <div id="win-messages" class="win">
+    <div class="win-header">
+        <h2 style="margin:0; font-size:18px;">Wiadomości</h2>
+        <button onclick="closeW()" style="border:none; background:#eee; padding:8px 15px; border-radius:10px;">Zamknij</button>
+    </div>
+    <div class="win-body" id="messages-body" style="background:#fff;">
+        </div>
+</div>
+    <div id="win-hr" class="win">
+    <div class="win-header">
+        <h2 style="margin:0; font-size:18px;">Biuro i Rekrutacja</h2>
+        <button onclick="closeW()" style="border:none; background:#eee; padding:8px 15px; border-radius:10px;">Zamknij</button>
+    </div>
+    <div class="win-body" id="hr-body">
+        </div>
+</div>
+    <div id="win-darknet" class="win" style="background:#1a1a1a; color:#fff;">
+    <div class="win-header" style="background:#222; border-bottom:1px solid #444;">
+        <h2 style="margin:0; font-size:18px; color:#ff3b30;">DarkNet Cars</h2>
+        <button onclick="closeW()" style="border:none; background:#444; color:#fff; padding:8px 15px; border-radius:10px;">X</button>
+    </div>
+    <div style="background:#ff3b30; color:#fff; font-size:10px; padding:5px; text-align:center; font-weight:bold;">
+        ANONIMOWE POŁĄCZENIE SZYFROWANE... OK
+    </div>
+    <div class="win-body" id="darknet-body">
+        </div>
+</div>
+    <div id="win-logs" class="win">
+    <div class="win-header">
+        <h2 style="margin:0; font-size:18px;">Powiadomienia Systemowe</h2>
+        <button onclick="closeW()" style="border:none; background:#eee; padding:8px 15px; border-radius:10px;">Zamknij</button>
+    </div>
+    <div class="win-body" id="logs-body">
+        </div>
+</div>
     <div id="screen">
         <div id="homescreen"></div>
 
@@ -175,11 +236,18 @@ function openApp(id) {
 }
 
 function renderPulpit() {
-    const apps = [
-        { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
-        { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' },
-        { id: 'map', name: 'Mapy', icon: 'fa-map-location-dot', bg: '#34c759' }
-    ];
+const apps = [
+  const apps = [
+ const apps = [
+    { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
+    { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' },
+    { id: 'map', name: 'Mapy', icon: 'fa-map-location-dot', bg: '#34c759' },
+    { id: 'garage', name: 'Garaż', icon: 'fa-warehouse', bg: '#5856d6' },
+    { id: 'gov', name: 'e-Urząd', icon: 'fa-landmark', bg: '#8e8e93' },
+    { id: 'messages', name: 'SMS', icon: 'fa-comment', bg: '#2ecc71' },
+    { id: 'hr', name: 'Biuro', icon: 'fa-users-gear', bg: '#5ac8fa' },
+    { id: 'logs', name: 'Powiadomienia', icon: 'fa-bell', bg: '#ff3b30' }
+];
     document.getElementById('homescreen').innerHTML = apps.map(app => `
         <div class="app-wrapper" onclick="openApp('${app.id}')">
             <div class="app-icon" style="background:${app.bg}"><i class="fa-solid ${app.icon}"></i></div>
@@ -290,6 +358,617 @@ function updateIsland() {
         isl.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> GPS Gotowy`;
     }
 }
+    /* ==========================================================================
+   MODUŁ 3: GARAŻ, MECHANIK I SPRZEDAŻ
+   ========================================================================== */
+
+// 1. RENDEROWANIE PLACU (TWOJE AUTA)
+function renderGarage() {
+    const body = document.getElementById('garage-body');
+    
+    if (DB.inventory.length === 0) {
+        body.innerHTML = `
+            <div style="text-align:center; padding:40px; color:#888;">
+                <i class="fa-solid fa-car-rear" style="font-size:40px; margin-bottom:10px;"></i>
+                <p>Twój plac jest pusty.<br>Kup coś na Otomoto i poczekaj na dostawę!</p>
+            </div>`;
+        return;
+    }
+
+    body.innerHTML = `
+        <div style="background:var(--ios-blue); color:#fff; padding:15px; border-radius:15px; margin-bottom:15px;">
+            <small>Twoje auta:</small>
+            <h3 style="margin:0;">${DB.inventory.length} sztuk na placu</h3>
+        </div>
+    `;
+
+    body.innerHTML += DB.inventory.map((car, i) => `
+        <div class="pl-card" style="border-left: 5px solid ${car.damaged ? 'var(--ios-red)' : 'var(--ios-green)'};">
+            <div style="display:flex; justify-content:space-between;">
+                <span class="badge ${car.damaged ? 'damaged' : 'igla'}">${car.damaged ? 'DO NAPRAWY' : 'IGŁA'}</span>
+                <b>VIN: ${car.id}</b>
+            </div>
+            <h3 style="margin:5px 0;">${car.m}</h3>
+            
+            <div style="background:#f9f9f9; padding:10px; border-radius:10px; font-size:12px; margin:5px 0;">
+                ${car.damaged ? '⚠️ Silnik kopci, zawieszenie stuka.' : '✅ Lakier lśni, silnik pracuje równo.'}
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                ${car.damaged ? 
+                    `<button onclick="repairCar(${i})" style="padding:12px; border-radius:10px; border:none; background:#ff9500; color:#fff; font-weight:bold;">NAPRAW (2500 zł)</button>` : 
+                    `<button disabled style="padding:12px; border-radius:10px; border:none; background:#ccc; color:#fff;">SPRAWNY</button>`
+                }
+                <button onclick="sellCar(${i})" style="padding:12px; border-radius:10px; border:none; background:var(--ios-green); color:#fff; font-weight:bold;">SPRZEDAJ</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 2. LOGIKA NAPRAWY
+function repairCar(i) {
+    const cost = 2500;
+    if (DB.money < cost) return alert("Brak środków na mechanika!");
+
+    DB.money -= cost;
+    DB.inventory[i].damaged = false;
+    DB.inventory[i].desc = "Niemiec płakał jak sprzedawał. Stan: IGŁA!";
+    
+    alert("Mechanik Mietek wyklepał auto! Teraz jest warte więcej.");
+    renderGarage();
+    save();
+}
+
+// 3. LOGIKA SPRZEDAŻY (ZYSK)
+function sellCar(i) {
+    const car = DB.inventory[i];
+    
+    // Obliczanie ceny sprzedaży (marża)
+    // Jeśli auto jest uszkodzone, dostajesz mało. Jeśli igła - zarabiasz.
+    let sellPrice = car.p;
+    if (car.damaged) {
+        sellPrice = Math.floor(car.p * 0.8); // Strata 20% na trupie
+        alert("Sprzedałeś uszkodzone auto handlarzowi. Zarobek marny...");
+    } else {
+        sellPrice = Math.floor(car.p * 1.3); // Zysk 30% na igle
+        alert("Klient zachwycony stanem IGŁA! Solidny zarobek.");
+    }
+
+    DB.money += sellPrice;
+    DB.stats.sold += 1;
+    
+    // Powiadomienie w Dynamic Island
+    const isl = document.getElementById('isl-content');
+    isl.innerHTML = `<span style="color:var(--ios-green)">+$${sellPrice.toLocaleString()}</span>`;
+    setTimeout(updateIsland, 3000);
+
+    DB.inventory.splice(i, 1);
+    renderGarage();
+    renderBank(); // Odśwież stan konta jeśli otwarte
+    save();
+}
+
+// 4. AKTUALIZACJA FUNKCJI OTWIERANIA APKI
+// (Podmień fragment w openApp z Modułu 0 lub doklej to zabezpieczenie)
+const originalOpenApp = openApp;
+openApp = function(id) {
+    originalOpenApp(id);
+    if(id === 'garage') renderGarage();
+};
+    /* ==========================================================================
+   MODUŁ 4: URZĄD SKARBOWY, PCC-3 I SYSTEM MANDATÓW
+   ========================================================================== */
+
+// 1. ROZSZERZENIE LOGIKI KUPNA O PODATEK PCC (Dodaj to do buyCar w Module 1)
+// Przy każdym zakupie naliczamy 2% podatku PCC-3
+const originalBuyCar = buyCar;
+buyCar = function(i) {
+    const carPrice = DB.market[i].p;
+    const tax = Math.floor(carPrice * 0.02); // 2% PCC
+    DB.taxDebt += tax;
+    originalBuyCar(i);
+};
+
+// 2. RENDEROWANIE URZĘDU
+function renderGov() {
+    const body = document.getElementById('gov-body');
+    const alertBar = document.getElementById('gov-alert');
+    
+    alertBar.style.display = DB.taxDebt > 5000 ? 'block' : 'none';
+
+    body.innerHTML = `
+        <div class="pl-card" style="border-top: 4px solid #333;">
+            <p style="margin:0; color:#666;">Zaległy podatek PCC-3:</p>
+            <h2 style="margin:5px 0; color:${DB.taxDebt > 0 ? 'var(--ios-red)' : 'var(--ios-green)'}">
+                ${DB.taxDebt.toLocaleString()} PLN
+            </h2>
+            <button onclick="payTax()" style="width:100%; padding:12px; border-radius:10px; border:none; background:var(--ios-blue); color:#fff; font-weight:bold; margin-top:10px;">
+                OPŁAĆ PODATKI
+            </button>
+        </div>
+
+        <div class="pl-card">
+            <h4>Historia Kontroli ITD:</h4>
+            <div id="itd-log" style="font-size:11px; color:#555;">
+                Ostatnia kontrola: brak uwag.
+            </div>
+        </div>
+        
+        <p style="font-size:10px; color:#999; text-align:center; padding:10px;">
+            Pamiętaj: Nieopłacenie podatku powyżej 10,000 PLN skutkuje blokadą konta bankowego!
+        </p>
+    `;
+}
+
+// 3. LOGIKA PŁACENIA PODATKU
+function payTax() {
+    if (DB.money < DB.taxDebt) return alert("Nie masz tyle kasy na koncie!");
+    if (DB.taxDebt <= 0) return alert("Wszystkie podatki opłacone. Jesteś wzorowym obywatelem.");
+
+    DB.money -= DB.taxDebt;
+    DB.taxDebt = 0;
+    alert("Podatki zapłacone. Możesz spać spokojnie.");
+    renderGov();
+    save();
+}
+
+// 4. LOSOWE ZDARZENIA: MANDATY I KONTROLE (Tick co 30 sek)
+setInterval(() => {
+    if (DB.activeJobs.length > 0) {
+        const r = Math.random();
+        
+        // 10% szansy na mandat podczas transportu
+        if (r < 0.1) {
+            const fine = 500 + Math.floor(Math.random() * 1500);
+            DB.money -= fine;
+            
+            // Powiadomienie
+            const isl = document.getElementById('isl-content');
+            isl.innerHTML = `<span style="color:var(--ios-red)">MANDAT ITD: -${fine} PLN</span>`;
+            
+            alert("Marek został zatrzymany przez ITD! Przeładowana laweta. Mandat: " + fine + " PLN.");
+            save();
+            setTimeout(updateIsland, 5000);
+        }
+    }
+    
+    // Blokada konta przy dużym długu
+    if (DB.taxDebt > 10000 && Math.random() > 0.8) {
+        alert("URZĄD SKARBOWY: Twoje konto zostało zajęte! Kara karna: 2000 PLN.");
+        DB.money -= 2000;
+        save();
+    }
+}, 30000);
+
+// Podpięcie pod system okien
+const originalOpenAppGov = openApp;
+openApp = function(id) {
+    originalOpenAppGov(id);
+    if(id === 'gov') renderGov();
+};
+    /* ==========================================================================
+   MODUŁ 5: SYSTEM RANGI I STATYSTYK
+   ========================================================================== */
+
+// 1. DEFINICJA RANG
+const RANKS = [
+    { name: "Początkujący Handlarz", minSold: 0, color: "#8e8e93" },
+    { name: "Lokalny Pośrednik", minSold: 5, color: "#34c759" },
+    { name: "Król Lawet", minSold: 15, color: "#007aff" },
+    { name: "Rekin Biznesu", minSold: 30, color: "#ff9500" },
+    { name: "Magnat Motoryzacyjny", minSold: 50, color: "#ff3b30" }
+];
+
+// 2. FUNKCJA OBLICZANIA AKTUALNEJ RANGI
+function getMyRank() {
+    let currentRank = RANKS[0];
+    for (let r of RANKS) {
+        if (DB.stats.sold >= r.minSold) currentRank = r;
+    }
+    return currentRank;
+}
+
+// 3. RENDEROWANIE PROFILU
+function renderProfile() {
+    const body = document.getElementById('profile-body');
+    const rank = getMyRank();
+    const nextRank = RANKS[RANKS.indexOf(rank) + 1] || null;
+    
+    let progressPercent = 100;
+    if (nextRank) {
+        const diff = nextRank.minSold - rank.minSold;
+        const currentProgress = DB.stats.sold - rank.minSold;
+        progressPercent = Math.min(Math.round((currentProgress / diff) * 100), 100);
+    }
+
+    body.innerHTML = `
+        <div class="pl-card" style="text-align:center; padding:25px 15px;">
+            <div style="width:80px; height:80px; background:${rank.color}; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            <h2 style="margin:0;">${rank.name}</h2>
+            <p style="color:#666; font-size:13px;">Statystyki Twojego imperium</p>
+        </div>
+
+        <div class="pl-card">
+            <h4>Postęp do następnej rangi:</h4>
+            <div style="width:100%; height:12px; background:#eee; border-radius:6px; overflow:hidden; margin:10px 0;">
+                <div style="width:${progressPercent}%; height:100%; background:${rank.color}; transition:1s;"></div>
+            </div>
+            <small>${nextRank ? `Brakuje ${nextRank.minSold - DB.stats.sold} aut do: ${nextRank.name}` : 'Osiągnąłeś szczyt!'}</small>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="pl-card" style="text-align:center;">
+                <small>Sprzedane auta</small>
+                <h2 style="margin:5px 0;">${DB.stats.sold}</h2>
+            </div>
+            <div class="pl-card" style="text-align:center;">
+                <small>Baza startowa</small>
+                <h2 style="margin:5px 0; font-size:18px;">${DB.city}</h2>
+            </div>
+        </div>
+
+        <div class="pl-card" style="background:#000; color:#fff;">
+            <h4 style="margin:0;">ZADANIE DNIA:</h4>
+            <p style="font-size:12px; margin:5px 0; color:#aaa;">Sprzedaj 5 aut typu IGŁA, aby otrzymać bonus 2000 PLN.</p>
+            <small style="color:var(--ios-green)">Status: W trakcie...</small>
+        </div>
+    `;
+}
+
+// 4. PODPIĘCIE POD SYSTEM OKIEN
+const originalOpenAppProfile = openApp;
+openApp = function(id) {
+    originalOpenAppProfile(id);
+    if(id === 'profile') renderProfile();
+};
+    /* ==========================================================================
+   MODUŁ 6: SYSTEM WIADOMOŚCI I OKAZJI SPOD LADY
+   ========================================================================== */
+
+DB.messages = [
+    { from: "Marek (Kierowca)", msg: "Szefie, melduję gotowość do trasy!", time: "Teraz", type: "info" }
+];
+
+// 1. RENDEROWANIE SMS
+function renderMessages() {
+    const body = document.getElementById('messages-body');
+    
+    body.innerHTML = DB.messages.map((m, i) => `
+        <div onclick="handleMessage(${i})" style="padding:15px; border-bottom:1px solid #eee; display:flex; gap:15px; align-items:center; cursor:pointer;">
+            <div style="width:45px; height:45px; background:#ddd; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; color:#666;">
+                <i class="fa-solid ${m.type === 'deal' ? 'fa-user-secret' : 'fa-user'}"></i>
+            </div>
+            <div style="flex:1;">
+                <div style="display:flex; justify-content:space-between;">
+                    <b style="font-size:14px;">${m.from}</b>
+                    <small style="color:#999;">${m.time}</small>
+                </div>
+                <p style="margin:3px 0 0 0; font-size:13px; color:#666; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;">
+                    ${m.msg}
+                </p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 2. GENERATOR LOSOWYCH OKAZJI (Co 60 sekund)
+setInterval(() => {
+    const r = Math.random();
+    if (r < 0.3) { // 30% szansy na wiadomość
+        const names = ["Szwagier", "Handlarz Mirek", "Nieznany", "Paser Leon"];
+        const name = names[Math.floor(Math.random() * names.length)];
+        
+        const deal = {
+            from: name,
+            msg: "Mam cynk na tanie auto. Chcesz szczegóły?",
+            time: "Teraz",
+            type: "deal",
+            car: { m: "Audi A6 (Okazja)", p: 8000, loc: "Radom", damaged: false, secret: true }
+        };
+        
+        DB.messages.unshift(deal);
+        if(DB.messages.length > 10) DB.messages.pop();
+        
+        // Powiadomienie na Island
+        const isl = document.getElementById('isl-content');
+        isl.innerHTML = `<i class="fa-solid fa-comment-dots"></i> Nowa wiadomość!`;
+        save();
+        if(document.getElementById('win-messages').style.display === 'flex') renderMessages();
+    }
+}, 60000);
+
+// 3. OBSŁUGA KLIKNIĘCIA W WIADOMOŚĆ
+function handleMessage(i) {
+    const m = DB.messages[i];
+    if (m.type === 'deal') {
+        const conf = confirm(`${m.from} pisze: "${m.msg}"\n\nAuto: ${m.car.m}\nCena: ${m.car.p} PLN\n\nKupujesz w ciemno?`);
+        if (conf) {
+            if (DB.money >= m.car.p) {
+                const driver = DB.employees.find(e => e.status === "WOLNY");
+                if (driver) {
+                    DB.money -= m.car.p;
+                    driver.status = "W TRASIE";
+                    DB.activeJobs.push({
+                        car: m.car,
+                        driver: driver,
+                        prog: 0,
+                        from: m.car.loc,
+                        to: DB.city
+                    });
+                    DB.messages.splice(i, 1);
+                    alert("Ryzykowny zakup dokonany! Marek jedzie do Radomia.");
+                    renderMessages();
+                    save();
+                } else {
+                    alert("Brak wolnych kierowców!");
+                }
+            } else {
+                alert("Nie masz tyle kasy!");
+            }
+        }
+    } else {
+        alert(`${m.from} mówi: ${m.msg}`);
+    }
+}
+
+// Podpięcie pod system okien
+const originalOpenAppMsg = openApp;
+openApp = function(id) {
+    originalOpenAppMsg(id);
+    if(id === 'messages') renderMessages();
+};
+    /* ==========================================================================
+   MODUŁ 7: BIURO, REKRUTACJA I KOSZTY PRACOWNICZE
+   ========================================================================== */
+
+// 1. LISTA KANDYDATÓW (Generowana przy otwarciu okna)
+function renderHR() {
+    const body = document.getElementById('hr-body');
+    
+    // Sekcja: Twoja Ekipa
+    let html = `<h3 style="margin-top:0;">Twoi Kierowcy (${DB.employees.length}/5)</h3>`;
+    DB.employees.forEach((emp, i) => {
+        html += `
+            <div class="pl-card" style="border-left: 5px solid ${emp.status === 'WOLNY' ? 'var(--ios-green)' : 'var(--ios-red)'}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b>${emp.name}</b>
+                    <span style="font-size:10px; font-weight:bold; color:#666;">PENSJA: ${emp.salary} zł</span>
+                </div>
+                <div style="font-size:12px; margin-top:5px;">
+                    Status: <span style="color:${emp.status === 'WOLNY' ? 'green' : 'red'}">${emp.status}</span>
+                </div>
+                ${i > 0 ? `<button onclick="fireEmployee(${i})" style="margin-top:10px; color:red; border:none; background:none; font-size:11px;">Zwolnij pracownika</button>` : ''}
+            </div>
+        `;
+    });
+
+    // Sekcja: Rekrutacja
+    if (DB.employees.length < 5) {
+        html += `<h3 style="margin-top:25px;">Dostępni kandydaci:</h3>`;
+        const candidates = [
+            { name: "Sławek", salary: 3200, icon: "fa-user-tie" },
+            { name: "Piotr", salary: 3500, icon: "fa-user-ninja" }
+        ];
+
+        candidates.forEach(cand => {
+            html += `
+                <div class="pl-card" style="background:#f0f7ff;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span><i class="fa-solid ${cand.icon}"></i> <b>${cand.name}</b></span>
+                        <button onclick="hireEmployee('${cand.name}', ${cand.salary})" style="background:var(--ios-blue); color:#fff; border:none; padding:8px 15px; border-radius:10px; font-size:12px; font-weight:bold;">ZATRUDNIJ</button>
+                    </div>
+                    <small style="color:#666;">Chce zarabiać: ${cand.salary} PLN / miesiąc</small>
+                </div>
+            `;
+        });
+    }
+
+    body.innerHTML = html;
+}
+
+// 2. LOGIKA ZATRUDNIANIA
+function hireEmployee(name, salary) {
+    if (DB.money < 5000) return alert("Musisz mieć min. 5000 PLN zabezpieczenia, by zatrudnić kogoś nowego!");
+    
+    DB.employees.push({
+        id: Date.now(),
+        name: name,
+        status: "WOLNY",
+        salary: salary,
+        mood: 100
+    });
+    
+    alert("Zatrudniono: " + name + "! Teraz możesz kupować więcej aut naraz.");
+    renderHR();
+    save();
+}
+
+// 3. LOGIKA ZWALNIANIA
+function fireEmployee(i) {
+    if (DB.employees[i].status !== "WOLNY") return alert("Nie możesz zwolnić kierowcy, który jest w trasie!");
+    if (confirm("Czy na pewno chcesz zwolnić " + DB.employees[i].name + "?")) {
+        DB.employees.splice(i, 1);
+        renderHR();
+        save();
+    }
+}
+
+// 4. AUTOMATYCZNE WYPŁATY (Co 5 minut czasu rzeczywistego)
+setInterval(() => {
+    let totalSalaries = 0;
+    DB.employees.forEach(emp => totalSalaries += emp.salary);
+    
+    if (DB.money >= totalSalaries) {
+        DB.money -= totalSalaries;
+        const isl = document.getElementById('isl-content');
+        isl.innerHTML = `<i class="fa-solid fa-money-bill-transfer"></i> Wypłaty: -${totalSalaries} zł`;
+        setTimeout(updateIsland, 5000);
+    } else {
+        alert("BRAK ŚRODKÓW NA WYPŁATY! Twoi pracownicy są wściekli.");
+        DB.employees.forEach(emp => emp.mood -= 20);
+    }
+    save();
+    renderBank(); // Odśwież stan konta
+}, 300000); // 300 000 ms = 5 minut
+
+// Podpięcie pod system okien
+const originalOpenAppHR = openApp;
+openApp = function(id) {
+    originalOpenAppHR(id);
+    if(id === 'hr') renderHR();
+};
+    /* ==========================================================================
+   MODUŁ 9: CZARNA GIEŁDA I RYZYKO KRYMINALNE
+   ========================================================================== */
+
+// 1. GENEROWANIE OFERT DARKNET
+function renderDarkNet() {
+    const body = document.getElementById('darknet-body');
+    const darkCars = [
+        { m: "BMW M5 (Bez dokumentów)", p: 15000, risk: 60, profit: "X3" },
+        { m: "Mercedes G-Klasa (Zastaw)", p: 45000, risk: 30, profit: "X2" },
+        { m: "Audi RS6 (VIN nieczytelny)", p: 25000, risk: 85, profit: "X5" }
+    ];
+
+    body.innerHTML = darkCars.map((car, i) => `
+        <div class="pl-card" style="background:#2c2c2e; border:1px solid #444; color:#fff;">
+            <div style="display:flex; justify-content:space-between;">
+                <b style="color:#ff3b30;">RYZYKO: ${car.risk}%</b>
+                <b style="color:var(--ios-green)">ZYSK: ${car.profit}</b>
+            </div>
+            <h3 style="margin:10px 0;">${car.m}</h3>
+            <p style="font-size:12px; color:#aaa;">Auto pochodzi z niepewnego źródła. Brak dokumentacji. Jeśli policja Cię złapie, tracisz auto i płacisz karę.</p>
+            <button onclick="buyDarkCar(${JSON.stringify(car).replace(/"/g, '&quot;')})" 
+                style="width:100%; padding:12px; background:#ff3b30; color:#fff; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">
+                KUPUJ ZA ${car.p} PLN
+            </button>
+        </div>
+    `).join('');
+}
+
+// 2. LOGIKA ZAKUPU Z RYZYKIEM
+function buyDarkCar(car) {
+    if (DB.money < car.p) return alert("Nie masz tyle 'czystej' gotówki!");
+
+    const driver = DB.employees.find(e => e.status === "WOLNY");
+    if (!driver) return alert("Żaden kierowca nie chce podjąć tego ryzyka!");
+
+    DB.money -= car.p;
+    driver.status = "W TRASIE";
+    
+    // Dodajemy właściwość 'hot', która oznacza auto kradzione/nielegalne
+    const hotCar = {...car, id: "UNKNOWN-"+Math.floor(Math.random()*999), hot: true, loc: "Kraków"};
+    
+    DB.activeJobs.push({
+        car: hotCar,
+        driver: driver,
+        prog: 0,
+        from: hotCar.loc,
+        to: DB.city
+    });
+
+    alert("Marek wziął zlecenie po ciemku. Oby nie było blokady na drodze...");
+    closeW();
+    save();
+}
+
+// 3. SYSTEM KONTROLI DROGOWEJ (Modyfikacja silnika transportu)
+// Musimy dodać sprawdzanie 'hot' aut w istniejącym setInterval logistyki
+setInterval(() => {
+    DB.activeJobs.forEach((job, index) => {
+        if (job.car.hot && Math.random() < 0.05) { // 5% szansy na wpadkę co sekundę transportu
+            DB.activeJobs.splice(index, 1);
+            job.driver.status = "WOLNY";
+            const penalty = Math.floor(job.car.p * 0.5);
+            DB.money -= penalty;
+            alert("⚠️ POLICJA! Auto " + job.car.m + " zostało skonfiskowane jako kradzione! Tracisz auto i płacisz " + penalty + " PLN kary.");
+            save();
+            updateIsland();
+        }
+    });
+}, 5000);
+
+// Podpięcie pod system okien
+const originalOpenDark = openApp;
+openApp = function(id) {
+    originalOpenDark(id);
+    if(id === 'darknet') renderDarkNet();
+};
+    /* ==========================================================================
+   MODUŁ 10: SILNIK WYDARZEŃ LOSOWYCH (RANDOM EVENTS)
+   ========================================================================== */
+
+DB.logs = [{ txt: "System Logistic OS 10 uruchomiony.", time: new Date().toLocaleTimeString(), type: "info" }];
+
+// 1. FUNKCJA DODAWANIA LOGU
+function addLog(text, type = "info") {
+    DB.logs.unshift({ txt: text, time: new Date().toLocaleTimeString(), type: type });
+    if(DB.logs.length > 20) DB.logs.pop(); // Max 20 wpisów
+    
+    // Powiadomienie na Dynamic Island
+    const isl = document.getElementById('isl-content');
+    const colors = { error: "#ff3b30", success: "#34c759", info: "#007aff" };
+    isl.style.color = colors[type] || "#fff";
+    isl.innerHTML = text;
+    
+    setTimeout(updateIsland, 4000);
+    save();
+}
+
+// 2. RENDEROWANIE OKNA LOGÓW
+function renderLogs() {
+    const body = document.getElementById('logs-body');
+    body.innerHTML = DB.logs.map(log => `
+        <div style="padding:10px; border-bottom:1px solid #eee; font-size:12px; border-left: 4px solid ${log.type === 'error' ? 'red' : (log.type === 'success' ? 'green' : 'blue')}">
+            <small style="color:#999;">${log.time}</small><br>
+            ${log.txt}
+        </div>
+    `).join('');
+}
+
+// 3. SILNIK LOSUJĄCY (Co 45 sekund szansa na event)
+setInterval(() => {
+    const r = Math.random();
+    
+    // EVENT 1: Znalezisko w aucie (Szczęście)
+    if (r < 0.05 && DB.inventory.length > 0) {
+        const bonus = 500 + Math.floor(Math.random() * 1500);
+        DB.money += bonus;
+        addLog(`Znalazłeś ${bonus} PLN w schowku sprzedanego auta!`, "success");
+    }
+    
+    // EVENT 2: Awaria lawety (Pech)
+    else if (r < 0.10 && DB.activeJobs.length > 0) {
+        const repairCost = 1200;
+        DB.money -= repairCost;
+        addLog(`Awaria lawety w trasie! Naprawa kosztowała ${repairCost} PLN.`, "error");
+    }
+    
+    // EVENT 3: Kontrola Skarbowa (Zależne od długu)
+    else if (DB.taxDebt > 5000 && r < 0.15) {
+        const penalty = Math.floor(DB.taxDebt * 0.2);
+        DB.taxDebt += penalty;
+        addLog(`Kontrola Skarbowa wykryła błędy! Kara: ${penalty} PLN długu.`, "error");
+    }
+
+    // EVENT 4: Spadek cen paliw (Bonus do prędkości)
+    else if (r < 0.03) {
+        addLog("Paliwo staniało! Kierowcy jadą szybciej (tymczasowo).", "success");
+        // Tu można by dodać modyfikator prędkości w DB
+    }
+    
+    renderBank(); // Odśwież kasę jeśli otwarta
+    if(document.getElementById('win-logs').style.display === 'flex') renderLogs();
+}, 45000);
+
+// Podpięcie pod system okien
+const originalOpenLogs = openApp;
+openApp = function(id) {
+    originalOpenLogs(id);
+    if(id === 'logs') renderLogs();
+};
 </script>
 </body>
 </html>
