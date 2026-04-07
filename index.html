@@ -3,92 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Logistic OS 10 - Visual Pack</title>
+    <title>Logistic OS 10 - FINAL FIX</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --ios-blue: #007aff; --ios-bg: #f2f2f7; }
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { margin: 0; background: #1a1a1a; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        * { box-sizing: border-box; font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
+        body { background: #1a1a1a; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
         /* OBUDOWA IPHONE */
-        #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         
-        /* EKRAN */
-        #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; position: relative; }
+        /* EKRAN I TŁO */
+        #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; }
         
         /* DYNAMIC ISLAND */
-        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 120px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; }
+        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 160px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
 
-        /* SIATKA APLIKACJI */
-        #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: min-content; padding: 70px 20px; gap: 25px 15px; }
-
-        .app-wrapper { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.1s; }
-        .app-wrapper:active { transform: scale(0.9); }
-
-        .app-icon { width: 62px; height: 62px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .app-label { color: white; font-size: 11px; margin-top: 6px; font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-
-        /* SETUP */
+        /* SETUP LAYER */
         #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        h1 { font-size: 34px; margin-bottom: 10px; color: #000; }
-        select, button { width: 100%; padding: 16px; border-radius: 14px; margin-top: 12px; font-size: 16px; border: 1px solid #ddd; }
-        button { background: var(--ios-blue); color: #fff; border: none; font-weight: 600; cursor: pointer; }
+        
+        /* SIATKA IKON */
+        #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 20px; gap: 25px 15px; }
+        .app-wrapper { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .app-icon { width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; margin-bottom: 5px; }
+        .app-label { color: white; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        /* OKNA */
+        .win { position: absolute; inset: 0; background: var(--ios-bg); z-index: 500; display: none; flex-direction: column; }
+        .win-header { padding: 45px 20px 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .win-body { flex: 1; overflow-y: auto; padding: 15px; }
+
+        /* UI ELEMENTS */
+        select, button { width: 100%; padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 16px; border: 1px solid #ccc; }
+        #start-btn { background: var(--ios-blue); color: white; border: none; font-weight: bold; }
+        .car-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div id="iphone">
-    <div id="island"></div>
+    <div id="island">50,000 PLN</div>
 
     <div id="setup-layer">
-        <i class="fa-solid fa-truck-ramp-box" style="font-size: 50px; color: var(--ios-blue); margin-bottom: 20px;"></i>
-        <h1>Logistic <span style="color:var(--ios-blue)">OS 10</span></h1>
-        <p style="color: #666;">Zostań królem lawet i handlu. Wybierz miasto bazy:</p>
+        <i class="fa-solid fa-truck-fast" style="font-size: 50px; color: var(--ios-blue); margin-bottom: 15px;"></i>
+        <h1>Logistic OS 10</h1>
+        <p style="color:#666">Wybierz bazę wypadową:</p>
         <select id="city-select">
-            <option>Warszawa (Centrum)</option>
-            <option>Poznań (Handel)</option>
-            <option>Gdańsk (Port)</option>
+            <option value="Warszawa">Warszawa</option>
+            <option value="Poznań">Poznań</option>
+            <option value="Gdańsk">Gdańsk</option>
         </select>
-        <button onclick="startApp()">ZACZNIJ HANDEL</button>
+        <button id="start-btn" onclick="startSystem()">START</button>
     </div>
 
     <div id="screen">
-        <div id="homescreen" id="app-grid">
-            </div>
+        <div id="homescreen"></div>
     </div>
 </div>
 
 <script>
-/* ==========================================================================
-   MASTER LOGIC: POŁĄCZENIE MODUŁÓW 1 ORAZ 2
-   ========================================================================== */
-
-// 1. DANE STARTOWE (TYLKO RAZ)
-let DB = { 
-    money: 50000, 
-    city: "", 
-    inventory: [], 
+// --- DANE GRY ---
+let DB = {
+    money: 50000,
+    city: "",
+    inventory: [],
     apps: [
         { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
         { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' },
-        { id: 'map', name: 'Mapy', icon: 'fa-map-location-dot', bg: '#34c759' },
         { id: 'garage', name: 'Garaż', icon: 'fa-warehouse', bg: '#5856d6' }
-    ] 
+    ]
 };
 
-// 2. FUNKCJA STARTU (BOOT)
-document.getElementById('start-btn').addEventListener('click', function() {
+// --- START SYSTEMU ---
+function startSystem() {
     DB.city = document.getElementById('city-select').value;
     document.getElementById('setup-layer').style.display = 'none';
     document.getElementById('screen').style.display = 'block';
     
-    createWindows(); // Tworzy puste okna dla apek
-    renderPulpit();  // Rysuje ikony
-    updateIsland();  // Pokazuje kasę na górze
-});
+    // Tworzymy okna apek
+    createWindows();
+    // Rysujemy ikony
+    renderIcons();
+    // Odświeżamy kasę
+    updateIsland();
+}
 
-// 3. GENEROWANIE IKON NA PULPICIE
-function renderPulpit() {
+// --- IKONY ---
+function renderIcons() {
     const hs = document.getElementById('homescreen');
     hs.innerHTML = DB.apps.map(app => `
         <div class="app-wrapper" onclick="openApp('${app.id}')">
@@ -98,95 +99,74 @@ function renderPulpit() {
     `).join('');
 }
 
-// 4. SYSTEM OKIEN (OPEN/CLOSE)
+// --- OKNA ---
+function createWindows() {
+    const iphone = document.getElementById('iphone');
+    DB.apps.forEach(app => {
+        const win = document.createElement('div');
+        win.id = 'win-' + app.id;
+        win.className = 'win';
+        win.innerHTML = `
+            <div class="win-header">
+                <b style="font-size:17px">${app.name}</b>
+                <button onclick="closeW()" style="background:none; border:none; color:var(--ios-blue); font-weight:bold; width:auto; margin:0; padding:0;">Gotowe</button>
+            </div>
+            <div class="win-body" id="body-${app.id}"></div>
+        `;
+        iphone.appendChild(win);
+    });
+}
+
 function openApp(id) {
     document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
-    const win = document.getElementById('win-' + id);
-    if (win) {
-        win.style.display = 'flex';
-        // Wywołaj renderowanie treści
-        if (id === 'olx') render_olx();
-        if (id === 'bank') render_bank();
-    }
+    document.getElementById('win-' + id).style.display = 'flex';
+    if(id === 'olx') renderOLX();
+    if(id === 'bank') renderBank();
 }
 
 function closeW() {
     document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
 }
 
-// 5. MODUŁ 2: RENDEROWANIE OTOMOTO
-function render_olx() {
+// --- TREŚĆ APLIKACJI ---
+function renderOLX() {
     const body = document.getElementById('body-olx');
     const cars = [
-        { m: "Audi A4 B6", p: 12500, loc: "Radom", cond: "Igła" },
-        { m: "VW Passat B5", p: 6800, loc: "Siedlce", cond: "Do opłat" },
-        { m: "BMW E46 320d", p: 18900, loc: "Gdynia", cond: "Uszkodzony" }
+        { m: "Audi A4 B6", p: 12000 },
+        { m: "Passat B5 FL", p: 7500 },
+        { m: "BMW E46", p: 19000 }
     ];
-    
-    body.innerHTML = `<h3>Giełda Aut</h3>` + cars.map((c, i) => `
-        <div style="background:#fff; padding:15px; border-radius:15px; margin-bottom:10px; border:1px solid #ddd;">
-            <b style="font-size:16px;">${c.m}</b><br>
+    body.innerHTML = cars.map(c => `
+        <div class="car-item">
+            <b>${c.m}</b><br>
             <span style="color:#ff5a10; font-weight:bold;">${c.p.toLocaleString()} PLN</span><br>
-            <small>Stan: ${c.cond} | ${c.loc}</small><br>
-            <button onclick="buyCar('${c.m}', ${c.p})" style="width:100%; margin-top:10px; padding:8px; background:#000; color:#fff; border-radius:8px; border:none;">KUPUJĘ</button>
+            <button onclick="buyCar('${c.m}', ${c.p})" style="padding:8px; font-size:12px; background:black; color:white;">KUP TERAZ</button>
         </div>
     `).join('');
 }
 
-// 6. LOGIKA ZAKUPU I KASY
-function buyCar(name, price) {
-    if (DB.money >= price) {
-        DB.money -= price;
-        alert("Kupiono " + name + "! Marek jedzie lawetą.");
+function renderBank() {
+    document.getElementById('body-bank').innerHTML = `
+        <div style="background:red; color:white; padding:20px; border-radius:15px; text-align:center;">
+            <small>Twoje Saldo:</small>
+            <h1>${DB.money.toLocaleString()} PLN</h1>
+        </div>
+    `;
+}
+
+function buyCar(m, p) {
+    if(DB.money >= p) {
+        DB.money -= p;
+        alert("Kupiono " + m + "!");
         updateIsland();
-        render_olx(); // odśwież listę
+        renderOLX();
     } else {
-        alert("Nie masz tyle pieniędzy!");
+        alert("Brak kasy!");
     }
 }
 
-function render_bank() {
-    document.getElementById('body-bank').innerHTML = `
-        <div style="background:red; color:#fff; padding:20px; border-radius:20px;">
-            <small>Saldo:</small>
-            <h2>${DB.money.toLocaleString()} PLN</h2>
-        </div>`;
-}
-
 function updateIsland() {
-    const isl = document.getElementById('island');
-    isl.style.color = "#fff";
-    isl.style.fontSize = "12px";
-    isl.style.display = "flex";
-    isl.style.alignItems = "center";
-    isl.style.justifyContent = "center";
-    isl.innerHTML = `<i class="fa-solid fa-wallet"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
-}
-
-// 7. TWORZENIE OKIEN W HTML (NA START)
-function createWindows() {
-    const iphone = document.getElementById('iphone');
-    DB.apps.forEach(app => {
-        if (!document.getElementById('win-' + app.id)) {
-            const win = document.createElement('div');
-            win.id = 'win-' + app.id;
-            win.className = 'win';
-            win.style.position = "absolute";
-            win.style.inset = "0";
-            win.style.background = "#f2f2f7";
-            win.style.display = "none";
-            win.style.flexDirection = "column";
-            win.style.zIndex = "500";
-            win.innerHTML = `
-                <div style="padding:45px 20px 15px; background:#fff; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
-                    <h2 style="margin:0; font-size:17px;">${app.name}</h2>
-                    <button onclick="closeW()" style="background:none; border:none; color:blue; font-weight:bold;">Gotowe</button>
-                </div>
-                <div class="win-body" id="body-${app.id}" style="padding:15px; flex:1; overflow-y:auto;"></div>
-            `;
-            iphone.appendChild(win);
-        }
-    });
+    document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
 }
 </script>
 
