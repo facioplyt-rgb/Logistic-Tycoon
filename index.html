@@ -168,6 +168,9 @@ function buyCar(m, p) {
 function updateIsland() {
     document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
 }
+    // WYMUSZONE CZYSZCZENIE STARYCH ZAPISÓW
+localStorage.clear(); 
+console.log("Pamięć podręczna wyczyszczona!");
 </script>
 
 </body>
