@@ -171,6 +171,127 @@ function updateIsland() {
     // WYMUSZONE CZYSZCZENIE STARYCH ZAPISÓW
 localStorage.clear(); 
 console.log("Pamięć podręczna wyczyszczona!");
+    /* ==========================================================================
+   MODUŁ 3: LOGISTYKA (MAREK I LAWETA)
+   ========================================================================== */
+
+// 1. ROZBUDOWA DANYCH (Dodajemy bazę transportu)
+DB.activeTransports = []; 
+DB.garage = []; // Tu trafią auta po dojechaniu
+
+// 2. STYLE DLA TRANSPORTU
+const logiStyle = document.createElement('style');
+logiStyle.innerHTML = `
+    .transport-card { background: #fff; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--ios-blue); }
+    .progress-bar { width: 100%; height: 6px; background: #e5e5ea; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--ios-blue); width: 0%; transition: width 1s linear; }
+    .status-tag { font-size: 10px; font-weight: bold; color: var(--ios-blue); text-transform: uppercase; }
+`;
+document.head.appendChild(logiStyle);
+
+// 3. NADPISUJEMY FUNKCJĘ KUPNA (buyCar)
+function buyCar(m, p, loc = "Radom") {
+    if(DB.money >= p) {
+        DB.money -= p;
+        updateIsland();
+        
+        // Tworzymy zadanie dla Marka
+        const transportJob = {
+            id: Date.now(),
+            model: m,
+            from: loc,
+            progress: 0,
+            time: 10 // sekund do celu
+        };
+        
+        DB.activeTransports.push(transportJob);
+        alert("Kupiono " + m + ". Marek wyjechał lawetą z: " + loc);
+        
+        startTransport(transportJob.id);
+        renderOLX(); // Odświeżamy giełdę
+    } else {
+        alert("Brak środków na koncie!");
+    }
+}
+
+// 4. SYMULACJA JAZDY LAWETY
+function startTransport(jobId) {
+    const interval = setInterval(() => {
+        const job = DB.activeTransports.find(j => j.id === jobId);
+        if (job) {
+            job.progress += 10; // +10% co sekundę
+            
+            // Jeśli otwarte jest okno mapy lub powiadomień - odświeżamy widok
+            if(document.getElementById('win-logs').style.display === 'flex') render_logs();
+
+            if (job.progress >= 100) {
+                clearInterval(interval);
+                // Przenieś auto do garażu
+                DB.garage.push({ m: job.model, status: "Na placu" });
+                // Usuń z transportu
+                DB.activeTransports = DB.activeTransports.filter(j => j.id !== jobId);
+                
+                // Powiadomienie na Dynamic Island
+                notifyIsland("AUTO DOSTARCZONE!");
+            }
+        } else {
+            clearInterval(interval);
+        }
+    }, 1000);
+}
+
+// 5. POWIADOMIENIA NA CZARNYM PASKU
+function notifyIsland(txt) {
+    const isl = document.getElementById('island');
+    const oldHtml = isl.innerHTML;
+    isl.style.background = "var(--ios-blue)";
+    isl.innerHTML = txt;
+    setTimeout(() => {
+        isl.style.background = "#000";
+        updateIsland();
+    }, 3000);
+}
+
+// 6. RENDEROWANIE OKNA LOGÓW (PODGLĄD TRANSPORTU)
+function render_logs() {
+    const body = document.getElementById('body-logs');
+    if(!body) return;
+    
+    if(DB.activeTransports.length === 0) {
+        body.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px;">Brak aktywnych transportów.</p>`;
+        return;
+    }
+
+    body.innerHTML = `<h3>Aktywne lawety</h3>` + DB.activeTransports.map(j => `
+        <div class="transport-card">
+            <div style="display:flex; justify-content:space-between">
+                <b>${j.model}</b>
+                <span class="status-tag">${j.progress}%</span>
+            </div>
+            <small>Trasa: ${j.from} -> Twoja Baza</small>
+            <div class="progress-bar"><div class="progress-fill" style="width:${j.progress}%"></div></div>
+        </div>
+    `).join('');
+}
+
+// Aktualizacja funkcji otwierania dla logów
+const previousOpenApp = openApp;
+openApp = function(id) {
+    previousOpenApp(id);
+    if(id === 'logs') render_logs();
+    if(id === 'garage') render_garage();
+};
+
+function render_garage() {
+    const body = document.getElementById('body-garage');
+    if(!body) return;
+    body.innerHTML = `<h3>Twój Plac (${DB.garage.length})</h3>` + (DB.garage.length ? DB.garage.map(c => `
+        <div class="car-item">
+            <b>${c.m}</b><br>
+            <span style="color:green; font-size:12px;">Status: Gotowe do sprzedaży</span>
+        </div>
+    `).join('') : "<p>Plac jest pusty. Kup coś na Otomoto!</p>");
+}
 </script>
 
 </body>
