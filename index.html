@@ -3,57 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Logistic OS 10 - FINAL FIX</title>
+    <title>Logistic OS 10 - Rebuild</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --ios-blue: #007aff; --ios-bg: #f2f2f7; }
         * { box-sizing: border-box; font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
         body { background: #1a1a1a; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
-        /* OBUDOWA IPHONE */
-        #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        /* OBUDOWA */
+        #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; }
         
-        /* EKRAN I TŁO */
-        #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; }
-        
-        /* DYNAMIC ISLAND */
-        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 160px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
-
-        /* SETUP LAYER */
+        /* EKRAN POWITALNY */
         #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         
-        /* SIATKA IKON */
+        /* EKRAN GRY */
+        #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; }
+        
+        /* WYSPA I IKONY */
+        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 150px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; }
         #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 20px; gap: 25px 15px; }
+        
         .app-wrapper { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .app-icon { width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; margin-bottom: 5px; }
-        .app-label { color: white; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .app-label { color: white; font-size: 11px; text-shadow: 0 1px 2px #000; }
 
-        /* OKNA */
-        .win { position: absolute; inset: 0; background: var(--ios-bg); z-index: 500; display: none; flex-direction: column; }
-        .win-header { padding: 45px 20px 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-        .win-body { flex: 1; overflow-y: auto; padding: 15px; }
-
-        /* UI ELEMENTS */
-        select, button { width: 100%; padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 16px; border: 1px solid #ccc; }
+        /* STYLE PRZYCISKÓW */
+        button, select { width: 100%; padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 16px; cursor: pointer; }
         #start-btn { background: var(--ios-blue); color: white; border: none; font-weight: bold; }
-        .car-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div id="iphone">
-    <div id="island">50,000 PLN</div>
+    <div id="island" style="display:none;"></div>
 
     <div id="setup-layer">
         <i class="fa-solid fa-truck-fast" style="font-size: 50px; color: var(--ios-blue); margin-bottom: 15px;"></i>
-        <h1>Logistic OS 10</h1>
-        <p style="color:#666">Wybierz bazę wypadową:</p>
+        <h1>Logistic OS</h1>
+        <p>Wybierz miasto startowe:</p>
         <select id="city-select">
-            <option value="Warszawa">Warszawa</option>
-            <option value="Poznań">Poznań</option>
-            <option value="Gdańsk">Gdańsk</option>
+            <option>Warszawa</option>
+            <option>Poznań</option>
+            <option>Gdańsk</option>
         </select>
-        <button id="start-btn" onclick="startSystem()">START</button>
+        <button id="start-btn" onclick="boot()">START</button>
     </div>
 
     <div id="screen">
@@ -62,256 +55,40 @@
 </div>
 
 <script>
-// --- DANE GRY ---
-let DB = {
-    money: 50000,
-    city: "",
-    inventory: [],
-    apps: [
-        { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
-        { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' },
-        { id: 'garage', name: 'Garaż', icon: 'fa-warehouse', bg: '#5856d6' }
-    ]
-};
+    // GLOBALNY STAN (Bez zapisu localStorage)
+    let DB = {
+        money: 50000,
+        city: "",
+        apps: [] // Na razie pusto, dodamy w Module 1
+    };
 
-// --- START SYSTEMU ---
-function startSystem() {
-    DB.city = document.getElementById('city-select').value;
-    document.getElementById('setup-layer').style.display = 'none';
-    document.getElementById('screen').style.display = 'block';
-    
-    // Tworzymy okna apek
-    createWindows();
-    // Rysujemy ikony
-    renderIcons();
-    // Odświeżamy kasę
-    updateIsland();
-}
+    function boot() {
+        DB.city = document.getElementById('city-select').value;
+        document.getElementById('setup-layer').style.display = 'none';
+        document.getElementById('screen').style.display = 'block';
+        document.getElementById('island').style.display = 'flex';
+        updateIsland();
+        renderIcons();
+    }
 
-// --- IKONY ---
-function renderIcons() {
-    const hs = document.getElementById('homescreen');
-    hs.innerHTML = DB.apps.map(app => `
-        <div class="app-wrapper" onclick="openApp('${app.id}')">
-            <div class="app-icon" style="background:${app.bg}"><i class="fa-solid ${app.icon}"></i></div>
-            <div class="app-label">${app.name}</div>
-        </div>
-    `).join('');
-}
+    function updateIsland() {
+        document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
+    }
 
-// --- OKNA ---
-function createWindows() {
-    const iphone = document.getElementById('iphone');
-    DB.apps.forEach(app => {
-        const win = document.createElement('div');
-        win.id = 'win-' + app.id;
-        win.className = 'win';
-        win.innerHTML = `
-            <div class="win-header">
-                <b style="font-size:17px">${app.name}</b>
-                <button onclick="closeW()" style="background:none; border:none; color:var(--ios-blue); font-weight:bold; width:auto; margin:0; padding:0;">Gotowe</button>
+    function renderIcons() {
+        const hs = document.getElementById('homescreen');
+        hs.innerHTML = DB.apps.map(app => `
+            <div class="app-wrapper" onclick="openApp('${app.id}')">
+                <div class="app-icon" style="background:${app.bg}"><i class="fa-solid ${app.icon}"></i></div>
+                <div class="app-label">${app.name}</div>
             </div>
-            <div class="win-body" id="body-${app.id}"></div>
-        `;
-        iphone.appendChild(win);
-    });
-}
-
-function openApp(id) {
-    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
-    document.getElementById('win-' + id).style.display = 'flex';
-    if(id === 'olx') renderOLX();
-    if(id === 'bank') renderBank();
-}
-
-function closeW() {
-    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
-}
-
-// --- TREŚĆ APLIKACJI ---
-function renderOLX() {
-    const body = document.getElementById('body-olx');
-    const cars = [
-        { m: "Audi A4 B6", p: 12000 },
-        { m: "Passat B5 FL", p: 7500 },
-        { m: "BMW E46", p: 19000 }
-    ];
-    body.innerHTML = cars.map(c => `
-        <div class="car-item">
-            <b>${c.m}</b><br>
-            <span style="color:#ff5a10; font-weight:bold;">${c.p.toLocaleString()} PLN</span><br>
-            <button onclick="buyCar('${c.m}', ${c.p})" style="padding:8px; font-size:12px; background:black; color:white;">KUP TERAZ</button>
-        </div>
-    `).join('');
-}
-
-function renderBank() {
-    document.getElementById('body-bank').innerHTML = `
-        <div style="background:red; color:white; padding:20px; border-radius:15px; text-align:center;">
-            <small>Twoje Saldo:</small>
-            <h1>${DB.money.toLocaleString()} PLN</h1>
-        </div>
-    `;
-}
-
-function buyCar(m, p) {
-    if(DB.money >= p) {
-        DB.money -= p;
-        alert("Kupiono " + m + "!");
-        updateIsland();
-        renderOLX();
-    } else {
-        alert("Brak kasy!");
-    }
-}
-
-function updateIsland() {
-    document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
-}
-    // WYMUSZONE CZYSZCZENIE STARYCH ZAPISÓW
-localStorage.clear(); 
-console.log("Pamięć podręczna wyczyszczona!");
-    /* ==========================================================================
-   MODUŁ 3: LOGISTYKA (MAREK I LAWETA)
-   ========================================================================== */
-
-// 1. ROZBUDOWA DANYCH (Dodajemy bazę transportu)
-DB.activeTransports = []; 
-DB.garage = []; // Tu trafią auta po dojechaniu
-
-// 2. STYLE DLA TRANSPORTU
-const logiStyle = document.createElement('style');
-logiStyle.innerHTML = `
-    .transport-card { background: #fff; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--ios-blue); }
-    .progress-bar { width: 100%; height: 6px; background: #e5e5ea; border-radius: 3px; margin-top: 8px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--ios-blue); width: 0%; transition: width 1s linear; }
-    .status-tag { font-size: 10px; font-weight: bold; color: var(--ios-blue); text-transform: uppercase; }
-`;
-document.head.appendChild(logiStyle);
-
-// 3. NADPISUJEMY FUNKCJĘ KUPNA (buyCar)
-function buyCar(m, p, loc = "Radom") {
-    if(DB.money >= p) {
-        DB.money -= p;
-        updateIsland();
-        
-        // Tworzymy zadanie dla Marka
-        const transportJob = {
-            id: Date.now(),
-            model: m,
-            from: loc,
-            progress: 0,
-            time: 10 // sekund do celu
-        };
-        
-        DB.activeTransports.push(transportJob);
-        alert("Kupiono " + m + ". Marek wyjechał lawetą z: " + loc);
-        
-        startTransport(transportJob.id);
-        renderOLX(); // Odświeżamy giełdę
-    } else {
-        alert("Brak środków na koncie!");
-    }
-}
-
-// 4. SYMULACJA JAZDY LAWETY
-function startTransport(jobId) {
-    const interval = setInterval(() => {
-        const job = DB.activeTransports.find(j => j.id === jobId);
-        if (job) {
-            job.progress += 10; // +10% co sekundę
-            
-            // Jeśli otwarte jest okno mapy lub powiadomień - odświeżamy widok
-            if(document.getElementById('win-logs').style.display === 'flex') render_logs();
-
-            if (job.progress >= 100) {
-                clearInterval(interval);
-                // Przenieś auto do garażu
-                DB.garage.push({ m: job.model, status: "Na placu" });
-                // Usuń z transportu
-                DB.activeTransports = DB.activeTransports.filter(j => j.id !== jobId);
-                
-                // Powiadomienie na Dynamic Island
-                notifyIsland("AUTO DOSTARCZONE!");
-            }
-        } else {
-            clearInterval(interval);
-        }
-    }, 1000);
-}
-
-// 5. POWIADOMIENIA NA CZARNYM PASKU
-function notifyIsland(txt) {
-    const isl = document.getElementById('island');
-    const oldHtml = isl.innerHTML;
-    isl.style.background = "var(--ios-blue)";
-    isl.innerHTML = txt;
-    setTimeout(() => {
-        isl.style.background = "#000";
-        updateIsland();
-    }, 3000);
-}
-
-// 6. RENDEROWANIE OKNA LOGÓW (PODGLĄD TRANSPORTU)
-function render_logs() {
-    const body = document.getElementById('body-logs');
-    if(!body) return;
-    
-    if(DB.activeTransports.length === 0) {
-        body.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px;">Brak aktywnych transportów.</p>`;
-        return;
+        `).join('');
     }
 
-    body.innerHTML = `<h3>Aktywne lawety</h3>` + DB.activeTransports.map(j => `
-        <div class="transport-card">
-            <div style="display:flex; justify-content:space-between">
-                <b>${j.model}</b>
-                <span class="status-tag">${j.progress}%</span>
-            </div>
-            <small>Trasa: ${j.from} -> Twoja Baza</small>
-            <div class="progress-bar"><div class="progress-fill" style="width:${j.progress}%"></div></div>
-        </div>
-    `).join('');
-}
-
-// Aktualizacja funkcji otwierania dla logów
-const previousOpenApp = openApp;
-openApp = function(id) {
-    previousOpenApp(id);
-    if(id === 'logs') render_logs();
-    if(id === 'garage') render_garage();
-};
-
-function render_garage() {
-    const body = document.getElementById('body-garage');
-    if(!body) return;
-    body.innerHTML = `<h3>Twój Plac (${DB.garage.length})</h3>` + (DB.garage.length ? DB.garage.map(c => `
-        <div class="car-item">
-            <b>${c.m}</b><br>
-            <span style="color:green; font-size:12px;">Status: Gotowe do sprzedaży</span>
-        </div>
-    `).join('') : "<p>Plac jest pusty. Kup coś na Otomoto!</p>");
-}/* ==========================================================================
-   PATCH: AKTUALIZACJA IKON PULPITU
-   ========================================================================== */
-
-// 1. ROZSZERZAMY LISTĘ APLIKACJI O NOWE MODUŁY
-DB.apps = [
-    { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
-    { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' },
-    { id: 'garage', name: 'Garaż', icon: 'fa-warehouse', bg: '#5856d6' },
-    { id: 'logs', name: 'Powiad.', icon: 'fa-bell', bg: '#ff3b30' },
-    { id: 'map', name: 'Mapy', icon: 'fa-map-location-dot', bg: '#34c759' },
-    { id: 'messages', name: 'SMS', icon: 'fa-comment', bg: '#2ecc71' }
-];
-
-// 2. WYMUSZAMY PONOWNE STWORZENIE OKIEN (Dla nowych apek)
-createWindows();
-
-// 3. ODŚWIEŻAMY PULPIT
-renderIcons();
-
-console.log("Pulpit zaktualizowany o nowe aplikacje!");
+    function openApp(id) {
+        console.log("Otwieram:", id);
+        // Logika okien pojawi się w Module 1
+    }
 </script>
 
 </body>
