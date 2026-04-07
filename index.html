@@ -1429,6 +1429,120 @@ window.onload = function() {
         document.getElementById('screen').style.display = 'block';
     }
 };
+    /* ==========================================================================
+   MODUŁ 15: ULTIMATE TUTORIAL & BOOT REPAIR (NAPRAWA BŁĘDÓW)
+   ========================================================================== */
+
+// 1. KOMPLETNA LISTA OKIEN (Jeśli ich nie ma w HTML, skrypt je stworzy)
+const REQUIRED_WINDOWS = [
+    { id: 'olx', title: 'OTOMOTO' },
+    { id: 'bank', title: 'mBank' },
+    { id: 'map', title: 'MAPA PRO' },
+    { id: 'gov', title: 'E-URZĄD' },
+    { id: 'garage', title: 'WARSZTAT' },
+    { id: 'cargo', title: 'CARGO.PL' },
+    { id: 'notes', title: 'NOTATNIK' },
+    { id: 'calc', title: 'KALKULATOR' },
+    { id: 'messages', title: 'SMS / DARKNET' }
+];
+
+// 2. NAPRAWA STARTU (Bootloader)
+function repairAndBoot() {
+    console.log("Inicjalizacja Logistic OS 10.0...");
+    const screen = document.getElementById('screen');
+    
+    // Sprawdzanie i tworzenie brakujących kontenerów okien
+    REQUIRED_WINDOWS.forEach(win => {
+        if (!document.getElementById('win-' + win.id)) {
+            const winDiv = document.createElement('div');
+            winDiv.id = 'win-' + win.id;
+            winDiv.className = 'win';
+            winDiv.innerHTML = `
+                <div class="win-header">
+                    <h2>${win.title}</h2>
+                    <button onclick="closeW()" style="padding:8px 15px; border-radius:10px; border:none; background:#ddd; cursor:pointer;">X</button>
+                </div>
+                <div class="win-body" id="${win.id}-body" style="padding:15px; overflow-y:auto; flex:1;">
+                    </div>
+            `;
+            screen.appendChild(winDiv);
+            console.log(`Utworzono brakujące okno: ${win.id}`);
+        }
+    });
+
+    // Weryfikacja danych startowych (Safety Net)
+    if (!DB.market || DB.market.length === 0) refreshMarket();
+    if (!DB.globalSpeedMult) DB.globalSpeedMult = 1.0;
+    if (!DB.inventory) DB.inventory = [];
+    if (!DB.activeJobs) DB.activeJobs = [];
+    
+    // Odświeżenie interfejsu
+    renderPulpit();
+    updateIsland();
+}
+
+// 3. NAPRAWA FUNKCJI ZAKUPU (Zabezpieczenie przed "undefined")
+window.buyCar = function(id) {
+    const carIndex = DB.market.findIndex(c => c.id === id);
+    if (carIndex === -1) return;
+    const car = DB.market[carIndex];
+    
+    if (DB.money < car.p) {
+        showNotification("BANK", "Brak kasy!", "red");
+        return;
+    }
+
+    const driver = DB.employees.find(e => e.status === "WOLNY");
+    if (!driver) {
+        showNotification("LOGISTYKA", "Brak wolnych kierowców!", "orange");
+        return;
+    }
+
+    // Proces zakupu
+    DB.money -= car.p;
+    DB.taxDebt += Math.floor(car.p * 0.02);
+    driver.status = "W TRASIE";
+    
+    DB.activeJobs.push({
+        car: car,
+        driver: driver,
+        progress: 0,
+        from: car.loc,
+        to: DB.city,
+        timeLeft: 120 // 2 minuty domyślnie
+    });
+
+    DB.market.splice(carIndex, 1); // Usuń z rynku
+    renderOLX();
+    showNotification("SUKCES", `Kupiono ${car.m}! Marek wraca do bazy.`, "green");
+    save();
+};
+
+// 4. NAPRAWA PRZYCISKU STARTU (Wybór miasta)
+window.bootSystem = function() {
+    const citySelect = document.getElementById('city-select');
+    if(!citySelect) return;
+    
+    DB.city = citySelect.value;
+    document.getElementById('setup-layer').style.display = 'none';
+    document.getElementById('screen').style.display = 'block';
+    
+    repairAndBoot(); // Odpal naprawę przy wejściu do gry
+    save();
+};
+
+// 5. OBSŁUGA BŁĘDÓW (Globalny "Catch")
+window.onerror = function(msg, url, line) {
+    console.error(`BŁĄD SYSTEMU: ${msg} na linii ${line}`);
+    showNotification("CRITICAL ERROR", "System wykrył błąd i spróbuje go naprawić.", "red");
+    repairAndBoot(); // Próba samonaprawy interfejsu
+    return true;
+};
+
+// Wywołaj naprawę przy każdym odświeżeniu, jeśli użytkownik jest już zalogowany
+if(localStorage.getItem('logistic_os_save')) {
+    setTimeout(repairAndBoot, 200);
+}
 </script>
 </body>
 </html>
