@@ -1221,6 +1221,116 @@ style.innerHTML = `
     @keyframes win-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
 `;
 document.head.appendChild(style);
+    /* ==========================================================================
+   MODUŁ 12: SYSTEMOWY ŁĄCZNIK (FIX DLA CARGO, KALKULATORA, NOTATNIKA I SMS)
+   ========================================================================== */
+
+// 1. GŁÓWNA FUNKCJA OTWIERANIA APLIKACJI (NADPISUJE POPRZEDNIE)
+function openApp(id) {
+    // Ukrywamy wszystkie okna
+    const allWindows = document.querySelectorAll('.win');
+    allWindows.forEach(win => win.style.display = 'none');
+
+    // Szukamy okna dla konkretnej apki
+    const targetWin = document.getElementById('win-' + id);
+    
+    if (targetWin) {
+        targetWin.style.display = 'flex';
+        console.log("Otwieram aplikację: " + id);
+
+        // WYWOŁANIE FUNKCJI DLA KAŻDEJ APKI (Te funkcje podałem w poprzednich modułach)
+        switch(id) {
+            case 'cargo':
+                if (typeof renderCargoExchange === 'function') renderCargoExchange();
+                break;
+            case 'calc':
+                if (typeof renderCalc === 'function') renderCalc();
+                break;
+            case 'notes':
+                if (typeof renderNotes === 'function') renderNotes();
+                break;
+            case 'messages':
+                if (typeof renderDarkMarket === 'function') renderDarkMarket();
+                break;
+            case 'olx':
+                if (typeof renderOLX === 'function') renderOLX();
+                break;
+            case 'bank':
+                if (typeof renderDetailedBank === 'function') renderDetailedBank();
+                break;
+            case 'map':
+                if (typeof renderFullMap === 'function') renderFullMap();
+                break;
+            case 'gov':
+                if (typeof renderHR === 'function') renderHR();
+                break;
+            case 'garage':
+                if (typeof renderGarage === 'function') renderGarage();
+                break;
+        }
+    } else {
+        console.error("Nie znaleziono okna o ID: win-" + id);
+        // Jeśli okno nie istnieje w HTML, tworzymy je dynamicznie
+        createMissingWindow(id);
+    }
+}
+
+// 2. FUNKCJA RATUNKOWA: TWORZY BRAKUJĄCE OKNA W HTML
+function createMissingWindow(id) {
+    const screen = document.getElementById('screen');
+    const newWin = document.createElement('div');
+    newWin.id = 'win-' + id;
+    newWin.className = 'win';
+    
+    let title = id.toUpperCase();
+    if(id === 'messages') title = "WIADOMOŚCI / DARKNET";
+    if(id === 'calc') title = "KALKULATOR";
+
+    newWin.innerHTML = `
+        <div class="win-header">
+            <h2>${title}</h2>
+            <button onclick="closeW()" style="background:#ddd; border:none; padding:5px 15px; border-radius:10px;">Zamknij</button>
+        </div>
+        <div class="win-body" id="${id}-body"></div>
+    `;
+    screen.appendChild(newWin);
+    openApp(id); // Ponowne otwarcie po stworzeniu
+}
+
+// 3. ODŚWIEŻENIE PULPITU (DODANIE BRAKUJĄCYCH IKON)
+function renderPulpit() {
+    const hs = document.getElementById('homescreen');
+    const apps = [
+        { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#002f34' },
+        { id: 'cargo', name: 'Cargo.pl', icon: 'fa-truck-ramp-box', bg: '#003399' },
+        { id: 'bank', name: 'mBank', icon: 'fa-piggy-bank', bg: '#ff0000' },
+        { id: 'map', name: 'Mapy Pro', icon: 'fa-location-dot', bg: '#34c759' },
+        { id: 'garage', name: 'Warsztat', icon: 'fa-screwdriver-wrench', bg: '#555' },
+        { id: 'gov', name: 'E-Urząd', icon: 'fa-landmark', bg: '#8e8e93' },
+        { id: 'notes', name: 'Notatnik', icon: 'fa-note-sticky', bg: '#f1c40f' },
+        { id: 'calc', name: 'Kalkulator', icon: 'fa-calculator', bg: '#333' },
+        { id: 'messages', name: 'SMS', icon: 'fa-comment', bg: '#2ecc71' }
+    ];
+    
+    hs.innerHTML = '';
+    apps.forEach(app => {
+        hs.innerHTML += `
+            <div class="app-wrapper" onclick="openApp('${app.id}')">
+                <div class="app-icon" style="background:${app.bg}; color:#fff;"><i class="fa-solid ${app.icon}"></i></div>
+                <div class="app-label">${app.name}</div>
+            </div>`;
+    });
+}
+
+// Wymuś odświeżenie pulpitu przy starcie
+setTimeout(renderPulpit, 100);
+
+// 4. FIX DLA NOTATNIKA (Zapisywanie)
+function saveNotes(val) {
+    DB.notes = val;
+    localStorage.setItem('LOG_OS_NOTES', val);
+    save(); // Główne zapisywanie DB
+}
 </script>
 </body>
 </html>
