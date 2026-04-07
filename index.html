@@ -67,6 +67,90 @@ function renderPulpit() {
         </div>
     `).join('');
 }
+    /* ==========================================================================
+   MODUŁ 2: SYSTEM OKIEN I OTOMOTO (GIEŁDA)
+   ========================================================================== */
+
+// 1. DODAJEMY STYLE DLA OKIEN (Dynamicznie)
+const style = document.createElement('style');
+style.innerHTML = `
+    .win { position: absolute; inset: 0; background: #f2f2f7; z-index: 500; display: none; flex-direction: column; }
+    .win-header { padding: 45px 20px 15px; background: #fff; border-bottom: 1px solid #d1d1d6; display: flex; justify-content: space-between; align-items: center; }
+    .win-header h2 { margin: 0; font-size: 17px; }
+    .win-body { flex: 1; overflow-y: auto; padding: 15px; }
+    .close-btn { background: #e5e5ea; color: #000; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+    .car-card { background: #fff; border-radius: 15px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #ddd; }
+    .car-card h3 { margin: 0 0 5px 0; font-size: 16px; }
+    .buy-btn { width: 100%; background: #ff5a10; color: #fff; border: none; padding: 10px; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+`;
+document.head.appendChild(style);
+
+// 2. TWORZYMY STRUKTURĘ OKIEN W HTML
+const winContainer = document.createElement('div');
+winContainer.innerHTML = `
+    <div id="win-olx" class="win">
+        <div class="win-header"><h2>Otomoto</h2><button class="close-btn" onclick="closeW()">Gotowe</button></div>
+        <div class="win-body" id="olx-body"></div>
+    </div>
+    <div id="win-bank" class="win">
+        <div class="win-header"><h2>mBank</h2><button class="close-btn" onclick="closeW()">Zamknij</button></div>
+        <div class="win-body" id="bank-body"></div>
+    </div>
+`;
+document.getElementById('iphone').appendChild(winContainer);
+
+// 3. LOGIKA OTWIERANIA I RENDEROWANIA
+function openApp(id) {
+    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
+    document.getElementById('win-' + id).style.display = 'flex';
+    if(id === 'olx') renderOLX();
+    if(id === 'bank') renderBank();
+}
+
+function closeW() { 
+    document.querySelectorAll('.win').forEach(w => w.style.display = 'none'); 
+}
+
+// 4. GENEROWANIE AUT NA SPRZEDAŻ
+function renderOLX() {
+    const cars = [
+        { m: "Audi A4 B6", p: 12000, loc: "Radom" },
+        { m: "VW Passat (Igła)", p: 8500, loc: "Siedlce" },
+        { m: "BMW E46 Coupe", p: 19000, loc: "Gdynia" }
+    ];
+    
+    document.getElementById('olx-body').innerHTML = `
+        <p style="color: #666; font-size: 12px;">Znaleziono 3 ogłoszenia w Twojej okolicy:</p>
+        ${cars.map((c, i) => `
+            <div class="car-card">
+                <h3>${c.m}</h3>
+                <b style="color: #ff5a10;">${c.p.toLocaleString()} PLN</b>
+                <div style="font-size: 12px; color: #888;">Lokalizacja: ${c.loc}</div>
+                <button class="buy-btn" onclick="alert('Kupiono ${c.m}! Marek już po nie jedzie.')">KUP TERAZ</button>
+            </div>
+        `).join('')}
+    `;
+}
+
+function renderBank() {
+    document.getElementById('bank-body').innerHTML = `
+        <div style="background: #ff0000; color: #fff; padding: 20px; border-radius: 15px;">
+            <small>Saldo główne</small>
+            <h1 style="margin: 5px 0;">${DB.money.toLocaleString()} PLN</h1>
+        </div>
+    `;
+}
+
+// 5. NADPISUJEMY FUNKCJĘ RENDEROWANIA PULPITU (Żeby ikony reagowały)
+function renderPulpit() {
+    const hs = document.getElementById('homescreen');
+    hs.innerHTML = DB.apps.map(app => `
+        <div class="app-wrapper" onclick="openApp('${app.id}')">
+            <div class="app-icon" style="background:${app.bg}"><i class="fa-solid ${app.icon}"></i></div>
+            <div class="app-label">${app.name}</div>
+        </div>
+    `).join('');
+}
 </script>
 </body>
 </html>
