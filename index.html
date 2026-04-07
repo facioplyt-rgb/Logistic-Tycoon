@@ -1331,6 +1331,104 @@ function saveNotes(val) {
     localStorage.setItem('LOG_OS_NOTES', val);
     save(); // Główne zapisywanie DB
 }
+    /* ==========================================================================
+   MODUŁ 13: NEGOTIATIONS & INSPECTION (SYSTEM HANDLARZA)
+   ========================================================================== */
+
+// 1. ROZSZERZONY RENDER OLX (NADPISUJE POPRZEDNI)
+function renderOLX() {
+    const body = document.getElementById('olx-body');
+    body.innerHTML = '<div style="background:#002f34; color:#fff; padding:15px; margin-bottom:10px;"><h3>OTOMOTO - Wybierz okazję</h3></div>';
+    
+    DB.market.forEach((car, index) => {
+        body.innerHTML += `
+            <div class="pl-card" style="border-bottom: 3px solid #23e5db;">
+                <div style="display:flex; justify-content:space-between;">
+                    <b style="font-size:16px;">${car.m}</b>
+                    <span style="color:#002f34; font-weight:900;">${car.p.toLocaleString()} PLN</span>
+                </div>
+                <p style="font-size:11px; color:#666; margin:5px 0;">
+                    <i class="fa-solid fa-location-dot"></i> ${car.loc} | 
+                    <i class="fa-solid fa-gauge-high"></i> ${car.damaged ? 'Uszkodzony' : 'Bezwypadkowy'}
+                </p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
+                    <button class="btn-action" style="background:#23e5db; color:#002f34; font-size:12px;" onclick="inspectCar(${index})">INSPEKCJA</button>
+                    <button class="btn-action" style="background:#002f34; font-size:12px;" onclick="startNegotiation(${index})">NEGOCJUJ</button>
+                </div>
+                <button class="btn-action" style="margin-top:5px; background:var(--ios-green);" onclick="buyCar('${car.id}')">KUP TERAZ</button>
+            </div>`;
+    });
+}
+
+// 2. LOGIKA INSPEKCJI (SZCZEGÓŁY)
+function inspectCar(i) {
+    const car = DB.market[i];
+    const report = car.damaged ? 
+        "Silnik dymi, zawieszenie stuka. Wymaga wkładu finansowego." : 
+        "Lakier oryginał, silnik suchy. Stan kolekcjonerski.";
+    
+    alert(`RAPORT VIN: ${car.id}\nModel: ${car.m}\nStan: ${report}`);
+}
+
+// 3. LOGIKA NEGOCJACJI
+function startNegotiation(i) {
+    const car = DB.market[i];
+    const discount = Math.floor(Math.random() * 2000) + 500;
+    
+    if (Math.random() > 0.4) {
+        car.p -= discount;
+        showNotification("NEGOCJACJE", `Udało się! Sprzedawca zszedł z ceny o ${discount} PLN`, "var(--ios-green)");
+    } else {
+        showNotification("NEGOCJACJE", "Sprzedawca jest nieugięty. Cena bez zmian.", "var(--ios-red)");
+    }
+    renderOLX();
+}
+    /* ==========================================================================
+   MODUŁ 14: ULTIMATE ENGINE FIX (ZABEZPIECZENIE PRZED BŁĘDAMI)
+   ========================================================================== */
+
+// Zabezpieczenie: Jeśli jakiejś części DB brakuje po odświeżeniu - stwórz ją
+function safetyCheck() {
+    if (!DB.inventory) DB.inventory = [];
+    if (!DB.activeJobs) DB.activeJobs = [];
+    if (!DB.money) DB.money = 40000;
+    if (!DB.taxDebt) DB.taxDebt = 0;
+    if (!DB.stats) DB.stats = { sold: 0, totalEarned: 0 };
+    if (!DB.employees) {
+        DB.employees = [{ id: 101, name: "Marek", role: "Kierowca", salary: 3800, mood: 100, status: "WOLNY" }];
+    }
+    console.log("System Safety Check: OK");
+}
+
+// Globalny FIX dla przycisków "Zamknij"
+window.closeW = function() {
+    const wins = document.querySelectorAll('.win');
+    wins.forEach(w => w.style.display = 'none');
+}
+
+// Globalny FIX dla powiadomień Island
+window.updateIsland = function() {
+    const islContent = document.getElementById('isl-content');
+    if (!islContent) return;
+
+    if (DB.activeJobs.length > 0) {
+        const job = DB.activeJobs[0];
+        islContent.innerHTML = `<i class="fa-solid fa-truck-fast"></i> ${job.car.m} (${Math.round(job.progress)}%)`;
+    } else {
+        islContent.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> GPS Ready`;
+    }
+}
+
+// Inicjalizacja przy starcie
+window.onload = function() {
+    safetyCheck();
+    renderPulpit();
+    // Jeśli gra była już odpalona, pokaż ekran
+    if(localStorage.getItem('logistic_os_save')) {
+        document.getElementById('setup-layer').style.display = 'none';
+        document.getElementById('screen').style.display = 'block';
+    }
+};
 </script>
 </body>
 </html>
