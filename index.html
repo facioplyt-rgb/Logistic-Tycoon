@@ -3,31 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Logistic OS 10 - Rebuild</title>
+    <title>Logistic OS 10 - Czysta Instalacja</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --ios-blue: #007aff; --ios-bg: #f2f2f7; }
         * { box-sizing: border-box; font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
         body { background: #1a1a1a; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
-        /* OBUDOWA IPHONE */
-        #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        
-        /* EKRAN STARTOWY */
-        #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        
-        /* EKRAN GRY (PULPIT) */
-        #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; position: relative; }
-        
-        /* DYNAMIC ISLAND */
-        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 150px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+        /* IPHONE */
+        #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; }
+        #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; }
+        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 160px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
 
-        /* UI ELEMENTS */
-        h1 { font-size: 28px; margin-bottom: 10px; }
-        p { color: #666; margin-bottom: 20px; font-size: 14px; }
-        select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ccc; background: #f9f9f9; font-size: 16px; margin-bottom: 15px; }
-        #start-btn { width: 100%; padding: 15px; border-radius: 12px; background: var(--ios-blue); color: white; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
-        #start-btn:active { transform: scale(0.98); opacity: 0.9; }
+        /* SETUP */
+        #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 20px; gap: 20px; }
+        
+        /* APKI */
+        .app-wrapper { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .app-icon { width: 60px; height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; margin-bottom: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .app-label { color: white; font-size: 11px; text-shadow: 0 1px 2px #000; }
+
+        /* OKNA */
+        .win { position: absolute; inset: 0; background: #f2f2f7; z-index: 500; display: none; flex-direction: column; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .win-header { padding: 45px 20px 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .win-body { flex: 1; overflow-y: auto; padding: 15px; }
+
+        /* WHATSAPP STYLE */
+        .chat-container { background: #e5ddd5; flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .msg-in { background: #fff; align-self: flex-start; }
+        .msg-out { background: #dcf8c6; align-self: flex-end; }
+        
+        /* PRZYCISKI */
+        select, button { width: 100%; padding: 15px; border-radius: 12px; font-size: 16px; border: 1px solid #ccc; margin-top: 10px; }
+        .wa-btn { background: #25D366; color: white; border: none; font-weight: bold; padding: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -36,398 +47,132 @@
     <div id="island" style="display:none;"></div>
 
     <div id="setup-layer">
-        <i class="fa-solid fa-map-location-dot" style="font-size: 50px; color: var(--ios-blue); margin-bottom: 15px;"></i>
-        <h1>Witaj w Firmie</h1>
-        <p>Wybierz miasto, w którym otworzysz swój pierwszy plac:</p>
-        
-        <select id="city-select">
-            </select>
-        
-        <button id="start-btn" onclick="bootSystem()">ROZPOCZNIJ KARIERĘ</button>
+        <i class="fa-solid fa-broom" style="font-size: 40px; color: var(--ios-blue); margin-bottom: 15px;"></i>
+        <h1>Wszystko wyczyszczone</h1>
+        <p>System jest gotowy. Wybierz miasto bazy:</p>
+        <select id="city-select"></select>
+        <button onclick="startApp()" style="background:var(--ios-blue); color:white; font-weight:bold; border:none;">START</button>
     </div>
 
     <div id="screen">
-        <div id="homescreen">
-            </div>
+        <div id="homescreen"></div>
     </div>
 </div>
 
 <script>
-    /* ==========================================================================
-   SANITIZER: USUWANIE STARYCH ŚMIECI
-   ========================================================================== */
-(function() {
-    // 1. Czyścimy pamięć lokalną, żeby stare stany gry nie blokowały nowych modułów
+    // --- CZYSZCZENIE NA DZIEŃ DOBRY ---
     localStorage.clear();
-    sessionStorage.clear();
-
-    // 2. Czyścimy konsolę, żeby widzieć tylko błędy z nowego kodu
     console.clear();
-    console.log("%c LOGISTIC OS: Pamięć wyczyszczona. System gotowy na Moduł 1. ", 
-                "background: #007aff; color: #fff; font-weight: bold; padding: 5px; border-radius: 5px;");
-    
-    // 3. Usuwamy stare okna, jeśli jakimś cudem zostały w DOM (przydatne przy szybkim odświeżaniu)
-    const oldWins = document.querySelectorAll('.win');
-    oldWins.forEach(win => win.remove());
-})();
-    // LISTA 100 NAJWIĘKSZYCH MIAST POLSKI
-    const POLISH_CITIES = [
-        "Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin", "Bydgoszcz", "Lublin", "Białystok",
-        "Katowice", "Gdynia", "Częstochowa", "Radom", "Toruń", "Sosnowiec", "Rzeszów", "Kielce", "Gliwice", "Olsztyn",
-        "Zabrze", "Bielsko-Biała", "Bytom", "Zielona Góra", "Rybnik", "Ruda Śląska", "Opole", "Tychy", "Gorzów Wlkp.", "Elbląg",
-        "Płock", "Dąbrowa Górnicza", "Wałbrzych", "Włocławek", "Tarnów", "Chorzów", "Koszalin", "Kalisz", "Legnica", "Grudziądz",
-        "Jaworzno", "Słupsk", "Jastrzębie-Zdrój", "Nowy Sącz", "Jelenia Góra", "Siedlce", "Konin", "Piotrków Tryb.", "Inowrocław", "Lubin",
-        "Mysłowice", "Piła", "Ostrowiec Św.", "Ostrów Wlkp.", "Siemianowice Śl.", "Stargard", "Pabianice", "Gniezno", "Suwałki", "Głogów",
-        "Chełm", "Przemyśl", "Zamość", "Tomaszów Maz.", "Stalowa Wola", "Kędzierzyn-Koźle", "Łomża", "Leszno", "Żory", "Bełchatów",
-        "Mielec", "Tarnowskie Góry", "Tczew", "Świdnica", "Piekary Śląskie", "Będzin", "Zgierz", "Biała Podlaska", "Racibórz", "Ełk",
-        "Pruszków", "Świętochłowice", "Ostrołęka", "Legionowo", "Zawiercie", "Legionowo", "Tarnobrzeg", "Puławy", "Wodzisław Śl.", "Radomsko",
-        "Skarżysko-Kamienna", "Starachowice", "Krosno", "Kołobrzeg", "Dębica", "Kutno", "Nysa", "Ciechanów", "Otwock", "Sieradz"
-    ].sort();
 
-    // STAN GRY
+    const CITIES = ["Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin", "Bydgoszcz", "Lublin", "Białystok"].sort();
     let DB = {
         money: 50000,
         city: "",
-        apps: []
+        apps: [
+            { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
+            { id: 'whatsapp', name: 'WhatsApp', icon: 'fa-whatsapp', bg: '#25D366' },
+            { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' }
+        ]
     };
 
-    // INICJALIZACJA LISTY
-    const select = document.getElementById('city-select');
-    POLISH_CITIES.forEach(city => {
-        let opt = document.createElement('option');
-        opt.value = city;
-        opt.innerHTML = city;
-        select.appendChild(opt);
-    });
+    // Generuj miast
+    const sel = document.getElementById('city-select');
+    CITIES.forEach(c => sel.innerHTML += `<option>${c}</option>`);
 
-    // URUCHOMIENIE
-    function bootSystem() {
-        DB.city = select.value;
-        
-        // Ukryj setup, pokaż grę
+    function startApp() {
+        DB.city = sel.value;
         document.getElementById('setup-layer').style.display = 'none';
         document.getElementById('screen').style.display = 'block';
         document.getElementById('island').style.display = 'flex';
         
         updateIsland();
-        console.log("System odpalony w mieście: " + DB.city);
+        renderIcons();
+        createWindows();
     }
 
     function updateIsland() {
-        document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet" style="color:#34c759"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
+        document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
     }
-    /* ==========================================================================
-   MODUŁ 1: SYSTEM OKIEN I OTOMOTO
-   ========================================================================== */
 
-// 1. STYLE DLA OKIEN (iOS Style)
-const winStyle = document.createElement('style');
-winStyle.innerHTML = `
-    .win { 
-        position: absolute; inset: 0; background: #f2f2f7; z-index: 500; 
-        display: none; flex-direction: column; animation: slideUp 0.3s ease;
-    }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    
-    .win-header { 
-        padding: 45px 20px 15px; background: #fff; border-bottom: 1px solid #ddd; 
-        display: flex; justify-content: space-between; align-items: center; 
-    }
-    .win-body { flex: 1; overflow-y: auto; padding: 15px; }
-    
-    .car-card { 
-        background: #fff; border-radius: 15px; padding: 15px; margin-bottom: 12px; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #eee; 
-    }
-    .buy-btn { 
-        width: 100%; background: #ff5a10; color: #fff; border: none; 
-        padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px;
-    }
-    .close-btn { color: var(--ios-blue); background: none; border: none; font-weight: bold; cursor: pointer; }
-    
-    #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 20px; gap: 20px; }
-`;
-document.head.appendChild(winStyle);
-
-// 2. REJESTRACJA APLIKACJI OTOMOTO
-DB.apps.push({ id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' });
-
-// 3. TWORZENIE OKNA OTOMOTO W HTML
-const winOlx = document.createElement('div');
-winOlx.id = 'win-olx';
-winOlx.className = 'win';
-winOlx.innerHTML = `
-    <div class="win-header">
-        <b style="font-size: 17px;">Otomoto</b>
-        <button class="close-btn" onclick="closeApp()">Gotowe</button>
-    </div>
-    <div class="win-body" id="body-olx"></div>
-`;
-document.getElementById('iphone').appendChild(winOlx);
-
-// 4. LOGIKA OTWIERANIA I ZAMYKANIA
-function openApp(id) {
-    document.getElementById('win-' + id).style.display = 'flex';
-    if(id === 'olx') renderOLX();
-}
-
-function closeApp() {
-    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
-}
-
-// 5. RENDEROWANIE LISTY AUT
-function renderOLX() {
-    const cars = [
-        { brand: "Audi A4 B6", price: 12000, loc: "Radom" },
-        { brand: "VW Passat B5", price: 7500, loc: "Siedlce" },
-        { brand: "BMW E46", price: 18500, loc: "Gdańsk" }
-    ];
-    
-    const body = document.getElementById('body-olx');
-    body.innerHTML = `<h3>Polecane ogłoszenia</h3>` + cars.map(c => `
-        <div class="car-card">
-            <div style="display:flex; justify-content:space-between;">
-                <b>${c.brand}</b>
-                <span style="color:#ff5a10; font-weight:bold;">${c.price.toLocaleString()} PLN</span>
+    function renderIcons() {
+        const hs = document.getElementById('homescreen');
+        hs.innerHTML = DB.apps.map(app => `
+            <div class="app-wrapper" onclick="openApp('${app.id}')">
+                <div class="app-icon" style="background:${app.bg}"><i class="fa-solid ${app.icon}"></i></div>
+                <div class="app-label">${app.name}</div>
             </div>
-            <p style="font-size:12px; color:#666; margin-top:5px;">Lokalizacja: ${c.loc}</p>
-            <button class="buy-btn" onclick="buyCar('${c.brand}', ${c.price})">KUP TERAZ</button>
-        </div>
-    `).join('');
-}
-
-// 6. LOGIKA ZAKUPU
-function buyCar(brand, price) {
-    if(DB.money >= price) {
-        DB.money -= price;
-        updateIsland(); // Odśwież kasę na czarnym pasku
-        alert("Gratulacje! Kupiono " + brand + ". Auto trafiło na Twój plac.");
-    } else {
-        alert("Brak środków na koncie!");
+        `).join('');
     }
-}
 
-// WYMUSZENIE ODŚWIEŻENIA PULPITU PO DODANIU APKI
-renderIcons();
-    /* ==========================================================================
-   MODUŁ 2: WHATSAPP I SYSTEM NEGOCJACJI (LOSOWOŚĆ)
-   ========================================================================== */
-
-// 1. REJESTRACJA APKI
-DB.apps.push({ id: 'whatsapp', name: 'WhatsApp', icon: 'fa-whatsapp', bg: '#25D366' });
-
-// 2. DANE LOSOWE (OSOBOWOŚCI SPRZEDAWCÓW)
-const PERSONALITIES = [
-    { type: "Służbista", greet: "Dzień dobry, cena jest ostateczna.", discountMax: 0.02 },
-    { type: "Handlarz", greet: "Siemano kierowniku, auto igła, płakałem jak sprzedawałem!", discountMax: 0.10 },
-    { type: "Prywatny", greet: "Witam, sprzedaję bo kupiłem nowe. Możemy się dogadać.", discountMax: 0.05 }
-];
-
-// 3. TWORZENIE OKNA WHATSAPP
-const winWA = document.createElement('div');
-winWA.id = 'win-whatsapp';
-winWA.className = 'win';
-winWA.innerHTML = `
-    <div class="win-header" style="background:#075e54; color:white;">
-        <b id="wa-contact-name">WhatsApp</b>
-        <button class="close-btn" style="color:white;" onclick="closeApp()">Cofnij</button>
-    </div>
-    <div class="win-body" id="body-whatsapp" style="background:#e5ddd5; display:flex; flex-direction:column;">
-        <div id="wa-chat-box" style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:10px;"></div>
-        <div id="wa-input-area" style="padding:10px; background:#fff; display:none; gap:5px;">
-            <button onclick="sendMsg('Ile do oddania?')" style="font-size:12px; padding:8px;">Ile do oddania?</button>
-            <button onclick="sendMsg('Biorę w tej cenie')" style="font-size:12px; padding:8px;">Biorę!</button>
-        </div>
-    </div>
-`;
-document.getElementById('iphone').appendChild(winWA);
-
-// 4. LOGIKA CZATU
-let currentDeal = null;
-
-function startChat(carName, price, loc) {
-    const perso = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
-    currentDeal = { carName, price, loc, perso, currentPrice: price, stage: 0 };
-    
-    document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
-    document.getElementById('win-whatsapp').style.display = 'flex';
-    document.getElementById('wa-contact-name').innerText = "Sprzedawca: " + carName;
-    document.getElementById('wa-input-area').style.display = 'flex';
-    
-    const chat = document.getElementById('wa-chat-box');
-    chat.innerHTML = `<div style="background:#dcf8c6; padding:10px; border-radius:10px; align-self:flex-start; max-width:80%; font-size:14px; box-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
-        <b>Sprzedawca:</b> ${perso.greet} Ogłoszenie dotyczy ${carName} za ${price.toLocaleString()} PLN w miejscowości ${loc}.
-    </div>`;
-}
-
-function sendMsg(text) {
-    const chat = document.getElementById('wa-chat-box');
-    chat.innerHTML += `<div style="background:#fff; padding:10px; border-radius:10px; align-self:flex-end; max-width:80%; font-size:14px; box-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
-        ${text}
-    </div>`;
-
-    setTimeout(() => {
-        let reply = "";
-        if(text.includes('Ile do oddania?')) {
-            if(currentDeal.stage === 0) {
-                const discount = Math.floor(currentDeal.price * (Math.random() * currentDeal.perso.discountMax));
-                currentDeal.currentPrice -= discount;
-                currentDeal.stage = 1;
-                reply = `No dobra, za ${currentDeal.currentPrice.toLocaleString()} PLN oddam, ale ani grosza mniej!`;
-            } else {
-                reply = "Przecież już opuściłem! Nie bądź Pan nachalny.";
+    function createWindows() {
+        DB.apps.forEach(app => {
+            if(!document.getElementById('win-'+app.id)) {
+                const w = document.createElement('div');
+                w.id = 'win-' + app.id;
+                w.className = 'win';
+                w.innerHTML = `
+                    <div class="win-header">
+                        <b>${app.name}</b>
+                        <button onclick="closeApp()" style="background:none; border:none; color:var(--ios-blue); font-weight:bold;">Gotowe</button>
+                    </div>
+                    <div class="win-body" id="body-${app.id}"></div>
+                `;
+                document.getElementById('iphone').appendChild(w);
             }
-        } else {
-            reply = "To zapraszam na oględziny. Kliknij przycisk zakupu w Otomoto, żeby sfinalizować.";
-            // Tutaj odblokowujemy możliwość finalizacji w DB
-            DB.money -= currentDeal.currentPrice;
+        });
+    }
+
+    function openApp(id) {
+        document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
+        document.getElementById('win-' + id).style.display = 'flex';
+        if(id === 'olx') renderOLX();
+        if(id === 'bank') renderBank();
+    }
+
+    function closeApp() { document.querySelectorAll('.win').forEach(w => w.style.display = 'none'); }
+
+    // --- LOGIKA OTOMOTO & WHATSAPP ---
+    function renderOLX() {
+        const cars = [
+            { m: "Audi A4 B6", p: 12500, loc: "Radom" },
+            { m: "BMW E46", p: 18900, loc: "Gdynia" },
+            { m: "VW Passat", p: 6800, loc: "Siedlce" }
+        ];
+        document.getElementById('body-olx').innerHTML = `<h3>Giełda</h3>` + cars.map(c => `
+            <div style="background:#fff; padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid #eee;">
+                <b>${c.m}</b> - ${c.p.toLocaleString()} PLN<br>
+                <button class="wa-btn" onclick="startChat('${c.m}', ${c.p})">NEGOCJUJ NA WA</button>
+            </div>
+        `).join('');
+    }
+
+    function startChat(name, price) {
+        openApp('whatsapp');
+        const body = document.getElementById('body-whatsapp');
+        body.innerHTML = `
+            <div class="chat-container">
+                <div class="msg msg-in">Dzień dobry, interesuje mnie ten ${name}. Ile do oddania?</div>
+                <div class="msg msg-out">Za ${name} mogę zejść maksymalnie o 500 zł.</div>
+            </div>
+            <div style="padding:10px; background:#fff;">
+                <button onclick="buyCar('${name}', ${price-500})" style="background:#25D366; color:white; font-weight:bold; border:none;">KUPUJĘ ZA ${(price-500).toLocaleString()} PLN</button>
+            </div>
+        `;
+    }
+
+    function buyCar(name, price) {
+        if(DB.money >= price) {
+            DB.money -= price;
             updateIsland();
-            alert(`SFINALIZOWANO! Kupiono ${currentDeal.carName} za ${currentDeal.currentPrice.toLocaleString()} PLN. Kasa pobrana.`);
+            alert("KUPIONO: " + name + "! Kasa pobrana.");
             closeApp();
-        }
-        
-        chat.innerHTML += `<div style="background:#dcf8c6; padding:10px; border-radius:10px; align-self:flex-start; max-width:80%; font-size:14px;">
-            <b>Sprzedawca:</b> ${reply}
-        </div>`;
-        chat.scrollTop = chat.scrollHeight;
-    }, 800);
-}
-
-// 5. AKTUALIZACJA OTOMOTO (ZMIANA PRZYCISKU NA "NAPISZ")
-function renderOLX() {
-    const cars = [
-        { brand: "Audi A4 B6", price: 12000, loc: "Radom" },
-        { brand: "Passat (Igła)", price: 8900, loc: "Siedlce" },
-        { brand: "BMW E46", price: 19500, loc: "Gdańsk" },
-        { brand: "Mercedes W211", price: 25000, loc: "Warszawa" }
-    ];
-    
-    const body = document.getElementById('body-olx');
-    body.innerHTML = `<h3 style="margin-bottom:10px;">Giełda</h3>` + cars.map(c => `
-        <div class="car-card">
-            <b>${c.brand}</b> - <span style="color:#ff5a10;">${c.price.toLocaleString()} PLN</span>
-            <button class="buy-btn" style="background:#25D366;" onclick="startChat('${c.brand}', ${c.price}, '${c.loc}')">
-                <i class="fa-brands fa-whatsapp"></i> NEGOCJUJ NA WA
-            </button>
-        </div>
-    `).join('');
-}
-
-// Odśwież ikony
-renderIcons();
-    /* ==========================================================================
-   MODUŁ 2.5: SYSTEM NEGOCJACJI WHATSAPP
-   ========================================================================== */
-
-// 1. DANE OSOBOWOŚCI (Wpływają na cenę)
-const VENDORS = [
-    { type: "Służbista", msg: "Witam, cena nie podlega negocjacji. Auto serwisowane.", flex: 0.02 },
-    { type: "Handlarz", msg: "Siemanko! Igła, niemiec płakał jak sprzedawał. Coś tam urwiemy.", flex: 0.12 },
-    { type: "Prywatny", msg: "Dzień dobry, sprzedaję bo mam drugie. Możemy pogadać.", flex: 0.07 }
-];
-
-// 2. NOWE STYLE DLA CZATU
-const waStyle = document.createElement('style');
-waStyle.innerHTML = `
-    #body-whatsapp { background: #e5ddd5; display: flex; flex-direction: column; height: 100%; padding: 0; }
-    .chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-    .msg { max-width: 80%; padding: 10px; border-radius: 10px; font-size: 14px; position: relative; }
-    .msg-in { background: #fff; align-self: flex-start; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-    .msg-out { background: #dcf8c6; align-self: flex-end; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-    .chat-footer { background: #f0f0f0; padding: 10px; display: flex; flex-wrap: wrap; gap: 5px; border-top: 1px solid #ddd; }
-    .wa-option { background: #fff; border: 1px solid #ccc; padding: 8px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; flex-grow: 1; text-align: center; font-weight: 500; }
-`;
-document.head.appendChild(waStyle);
-
-let activeNegotiation = null;
-
-// 3. FUNKCJA STARTUJĄCA CZAT
-function startNegotiation(car) {
-    const vendor = VENDORS[Math.floor(Math.random() * VENDORS.length)];
-    activeNegotiation = {
-        carName: car.m,
-        originalPrice: car.p,
-        currentPrice: car.p,
-        vendor: vendor,
-        steps: 0
-    };
-
-    openApp('whatsapp');
-    const container = document.getElementById('body-whatsapp');
-    container.innerHTML = `
-        <div class="chat-container" id="chat-flow">
-            <div class="msg msg-in"><b>${vendor.type}:</b> ${vendor.msg}</div>
-        </div>
-        <div class="chat-footer" id="chat-options">
-            <div class="wa-option" onclick="sendWaMsg('Ile do oddania ostatecznie?')">Ile do oddania ostatecznie?</div>
-            <div class="wa-option" onclick="sendWaMsg('Biorę w tej cenie!')" style="background:#25D366; color:white; border:none;">Biorę w tej cenie!</div>
-        </div>
-    `;
-}
-
-// 4. LOGIKA WIADOMOŚCI
-function sendWaMsg(txt) {
-    const flow = document.getElementById('chat-flow');
-    flow.innerHTML += `<div class="msg msg-out">${txt}</div>`;
-    
-    // Blokada opcji na czas "pisania"
-    document.getElementById('chat-options').style.opacity = "0.5";
-    document.getElementById('chat-options').style.pointerEvents = "none";
-
-    setTimeout(() => {
-        let reply = "";
-        if (txt.includes('Biorę')) {
-            reply = "Świetnie! Zapraszam po odbiór. Pieniądze zostały pobrane z konta.";
-            finalizeSale();
-        } else {
-            if (activeNegotiation.steps < 1) {
-                const discount = Math.floor(activeNegotiation.originalPrice * (Math.random() * activeNegotiation.vendor.flex));
-                activeNegotiation.currentPrice -= discount;
-                activeNegotiation.steps++;
-                reply = `No niech stracę... za ${activeNegotiation.currentPrice.toLocaleString()} PLN oddam, ale to już koniec rozmowy o cenie.`;
-            } else {
-                reply = "Panie, już opuściłem. Więcej nie urwę, i tak jestem w plecy.";
-            }
-        }
-        
-        flow.innerHTML += `<div class="msg msg-in"><b>${activeNegotiation.vendor.type}:</b> ${reply}</div>`;
-        flow.scrollTop = flow.scrollHeight;
-        document.getElementById('chat-options').style.opacity = "1";
-        document.getElementById('chat-options').style.pointerEvents = "auto";
-    }, 1000);
-}
-
-function finalizeSale() {
-    if (DB.money >= activeNegotiation.currentPrice) {
-        DB.money -= activeNegotiation.currentPrice;
-        updateIsland();
-        // Tutaj w przyszłości dodamy auto do garażu
-        setTimeout(() => { closeApp(); alert(`Kupiono ${activeNegotiation.carName}!`); }, 1500);
-    } else {
-        alert("Niestety, na koncie pusto!");
-        closeApp();
+        } else { alert("Brak kasy!"); }
     }
-}
 
-// 5. NADPISANIE RENDEROWANIA OTOMOTO (Aby używało negocjacji)
-function renderOLX() {
-    const cars = [
-        { m: "Audi A4 B6", p: 12500 },
-        { m: "BMW E46", p: 19800 },
-        { m: "VW Passat B5", p: 7200 },
-        { m: "Toyota Avensis", p: 15400 }
-    ];
-    const b = document.getElementById('body-olx');
-    b.innerHTML = `<h3 style="margin-bottom:10px;">Oferty dnia</h3>` + cars.map(c => `
-        <div class="car-card">
-            <b>${c.m}</b> - <span style="color:#ff5a10">${c.p.toLocaleString()} PLN</span><br>
-            <button class="wa-btn" onclick="startNegotiation({m:'${c.m}', p:${c.p}})">
-                <i class="fa-brands fa-whatsapp"></i> NEGOCJUJ NA WA
-            </button>
-        </div>
-    `).join('');
-}
+    function renderBank() {
+        document.getElementById('body-bank').innerHTML = `<div style="background:red; color:white; padding:25px; border-radius:15px; text-align:center;">
+            <small>Saldo</small><h1>${DB.money.toLocaleString()} PLN</h1></div>`;
+    }
 </script>
-
 </body>
 </html>
