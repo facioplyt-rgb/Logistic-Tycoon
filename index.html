@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Logistic OS 10 - Moduł 3</title>
+    <title>Logistic OS 10 - Architecture V4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --ios-blue: #007aff; --ios-bg: #f2f2f7; --wa-green: #25D366; }
@@ -12,7 +12,7 @@
         
         #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; }
         #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; }
-        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 160px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: 0.3s; }
+        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 160px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: 0.3s; pointer-events: none; }
 
         #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 30px; display: flex; flex-direction: column; justify-content: center; }
         #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 20px; gap: 20px; }
@@ -21,151 +21,127 @@
         .app-icon { width: 60px; height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: white; margin-bottom: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .app-label { color: white; font-size: 11px; text-shadow: 0 1px 2px #000; }
 
-        .win { position: absolute; inset: 0; background: #f2f2f7; z-index: 500; display: none; flex-direction: column; animation: slideUp 0.3s ease; }
+        .win { position: absolute; inset: 0; background: var(--ios-bg); z-index: 500; display: none; flex-direction: column; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .win-header { padding: 45px 20px 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
         .win-body { flex: 1; overflow-y: auto; padding: 15px; }
 
-        /* UI */
         .card { background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
-        .btn-main { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        
-        /* TRANSPORT PROGRESS */
-        .progress-box { width: 100%; height: 8px; background: #ddd; border-radius: 4px; margin-top: 10px; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--ios-blue); width: 0%; transition: width 0.5s; }
+        .btn-ios { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div id="iphone">
     <div id="island" style="display:none;"></div>
-
     <div id="setup-layer">
-        <h2 style="margin-bottom:10px;">Wybierz Bazę</h2>
-        <select id="city-select" style="width:100%; padding:12px; border-radius:10px; margin-bottom:20px;"></select>
-        <button class="btn-main" style="background:var(--ios-blue); color:white;" onclick="startApp()">ROZPOCZNIJ</button>
+        <h2 style="text-align:center; margin-bottom:20px;">Wybierz Bazę</h2>
+        <select id="city-select" style="padding:12px; border-radius:10px; margin-bottom:20px; font-size:16px;"></select>
+        <button onclick="Core.boot()" style="background:var(--ios-blue); color:white; padding:15px; border-radius:12px; border:none; font-weight:bold;">URUCHOM SYSTEM</button>
     </div>
-
-    <div id="screen">
-        <div id="homescreen"></div>
-    </div>
+    <div id="screen"><div id="homescreen"></div></div>
 </div>
 
 <script>
-    // 1. CZYSZCZENIE I MIASTA
-    localStorage.clear();
-    const CITIES = ["Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin", "Bydgoszcz", "Lublin", "Białystok", "Katowice", "Gdynia", "Częstochowa", "Radom", "Toruń", "Sosnowiec", "Rzeszów", "Kielce", "Gliwice", "Olsztyn", "Zabrze", "Bielsko-Biała", "Bytom", "Zielona Góra", "Rybnik", "Ruda Śląska", "Opole", "Tychy", "Gorzów Wlkp.", "Elbląg", "Płock", "Dąbrowa Górnicza", "Wałbrzych", "Włocławek", "Tarnów", "Chorzów", "Koszalin", "Kalisz", "Legnica", "Grudziądz", "Jaworzno", "Słupsk", "Jastrzębie-Zdrój", "Nowy Sącz", "Jelenia Góra", "Siedlce", "Konin", "Piotrków Tryb.", "Inowrocław", "Lubin", "Mysłowice", "Piła", "Ostrowiec Św.", "Ostrów Wlkp.", "Siemianowice Śl.", "Stargard", "Pabianice", "Gniezno", "Suwałki", "Głogów", "Chełm", "Przemyśl", "Zamość", "Tomaszów Maz.", "Stalowa Wola", "Kędzierzyn-Koźle", "Łomża", "Leszno", "Żory", "Bełchatów", "Mielec", "Tarnowskie Góry", "Tczew", "Świdnica", "Piekary Śląskie", "Będzin", "Zgierz", "Biała Podlaska", "Racibórz", "Ełk", "Pruszków", "Świętochłowice", "Ostrołęka", "Legionowo", "Zawiercie", "Tarnobrzeg", "Puławy", "Wodzisław Śl.", "Radomsko", "Skarżysko-Kamienna", "Starachowice", "Krosno", "Kołobrzeg", "Dębica", "Kutno", "Nysa", "Ciechanów", "Otwock", "Sieradz"].sort();
-    
-    let DB = {
+/* ==========================================================================
+   CORE ENGINE: GŁÓWNY SILNIK SYSTEMU
+   ========================================================================== */
+const Core = {
+    DB: {
         money: 50000,
         city: "",
         garage: [],
         transports: [],
-        apps: [
-            { id: 'olx', name: 'Otomoto', icon: 'fa-car', bg: '#ff5a10' },
-            { id: 'whatsapp', name: 'WhatsApp', icon: 'fa-whatsapp', bg: '#25D366' },
-            { id: 'garage', name: 'Garaż', icon: 'fa-warehouse', bg: '#5856d6' },
-            { id: 'map', name: 'Laweta', icon: 'fa-truck-pickup', bg: '#34c759' },
-            { id: 'bank', name: 'mBank', icon: 'fa-building-columns', bg: '#ff0000' }
-        ]
-    };
+        apps: [] // Tu lądują zarejestrowane moduły
+    },
 
-    const sel = document.getElementById('city-select');
-    CITIES.forEach(c => sel.innerHTML += `<option>${c}</option>`);
-
-    function startApp() {
-        DB.city = sel.value;
+    // 1. URUCHOMIENIE
+    boot() {
+        localStorage.clear(); // Zawsze czysto
+        this.DB.city = document.getElementById('city-select').value;
         document.getElementById('setup-layer').style.display = 'none';
         document.getElementById('screen').style.display = 'block';
         document.getElementById('island').style.display = 'flex';
-        updateIsland();
-        renderIcons();
-        createWindows();
-    }
+        
+        this.updateIsland();
+        this.renderPulpit();
+    },
 
-    function updateIsland(msg = "") {
+    // 2. KASA I POWIADOMIENIA
+    updateIsland(msg = "") {
         const isl = document.getElementById('island');
         if(msg) {
             isl.innerHTML = msg;
             isl.style.background = "var(--ios-blue)";
-            setTimeout(() => { updateIsland(); isl.style.background = "#000"; }, 3000);
+            setTimeout(() => { this.updateIsland(); isl.style.background = "#000"; }, 3000);
         } else {
-            isl.innerHTML = `<i class="fa-solid fa-wallet" style="color:var(--wa-green)"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
+            isl.innerHTML = `<i class="fa-solid fa-wallet" style="color:var(--wa-green)"></i> &nbsp; ${this.DB.money.toLocaleString()} PLN`;
         }
-    }
+    },
 
-    function renderIcons() {
-        document.getElementById('homescreen').innerHTML = DB.apps.map(app => `
-            <div class="app-wrapper" onclick="openApp('${app.id}')">
+    // 3. REJESTRACJA NOWEJ APKI (MODUŁU)
+    registerApp(config) {
+        this.DB.apps.push(config);
+        // Tworzymy okno HTML dla apki
+        const w = document.createElement('div');
+        w.id = 'win-' + config.id;
+        w.className = 'win';
+        w.innerHTML = `
+            <div class="win-header">
+                <b>${config.name}</b>
+                <button onclick="Core.closeApp()" style="background:none;border:none;color:var(--ios-blue);font-weight:bold;">Gotowe</button>
+            </div>
+            <div class="win-body" id="body-${config.id}"></div>
+        `;
+        document.getElementById('iphone').appendChild(w);
+    },
+
+    // 4. NAWIGACJA
+    renderPulpit() {
+        document.getElementById('homescreen').innerHTML = this.DB.apps.map(app => `
+            <div class="app-wrapper" onclick="Core.openApp('${app.id}')">
                 <div class="app-icon" style="background:${app.bg}"><i class="fa-solid ${app.icon}"></i></div>
                 <div class="app-label">${app.name}</div>
             </div>
         `).join('');
-    }
+    },
 
-    function createWindows() {
-        DB.apps.forEach(app => {
-            const w = document.createElement('div');
-            w.id = 'win-' + app.id;
-            w.className = 'win';
-            w.innerHTML = `<div class="win-header"><b>${app.name}</b><button onclick="closeApp()" style="background:none;border:none;color:var(--ios-blue);font-weight:bold;">Gotowe</button></div><div class="win-body" id="body-${app.id}"></div>`;
-            document.getElementById('iphone').appendChild(w);
-        });
-    }
-
-    function openApp(id) {
+    openApp(id) {
         document.querySelectorAll('.win').forEach(w => w.style.display = 'none');
         document.getElementById('win-' + id).style.display = 'flex';
-        if(id === 'olx') renderOLX();
-        if(id === 'bank') renderBank();
-        if(id === 'garage') renderGarage();
-        if(id === 'map') renderMap();
-    }
+        const app = this.DB.apps.find(a => a.id === id);
+        if(app && app.render) app.render();
+    },
 
-    function closeApp() { document.querySelectorAll('.win').forEach(w => w.style.display = 'none'); }
+    closeApp() { document.querySelectorAll('.win').forEach(w => w.style.display = 'none'); }
+};
 
-    // --- LOGIKA APLIKACJI ---
-    function renderOLX() {
-        const cars = [{m:"Audi A4", p:12000, l:"Radom"}, {m:"BMW E46", p:18000, l:"Gdynia"}, {m:"Passat B5", p:7000, l:"Siedlce"}];
-        document.getElementById('body-olx').innerHTML = cars.map(c => `<div class="card"><b>${c.m}</b> - ${c.p.toLocaleString()} PLN<br><small>${c.l}</small><button class="btn-main" style="background:var(--wa-green);color:white;" onclick="buyCar('${c.m}', ${c.p}, '${c.l}')">KUP TERAZ</button></div>`).join('');
-    }
+// Generowanie 100 miast
+const CITIES = ["Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin", "Bydgoszcz", "Lublin", "Białystok", "Katowice", "Gdynia", "Częstochowa", "Radom", "Toruń", "Sosnowiec", "Rzeszów", "Kielce", "Gliwice", "Olsztyn", "Zabrze", "Bielsko-Biała", "Bytom", "Zielona Góra", "Rybnik", "Ruda Śląska", "Opole", "Tychy", "Gorzów Wlkp.", "Elbląg", "Płock", "Dąbrowa Górnicza", "Wałbrzych", "Włocławek", "Tarnów", "Chorzów", "Koszalin", "Kalisz", "Legnica", "Grudziądz", "Jaworzno", "Słupsk", "Jastrzębie-Zdrój", "Nowy Sącz", "Jelenia Góra", "Siedlce", "Konin", "Piotrków Tryb.", "Inowrocław", "Lubin", "Mysłowice", "Piła", "Ostrowiec Św.", "Ostrów Wlkp.", "Siemianowice Śl.", "Stargard", "Pabianice", "Gniezno", "Suwałki", "Głogów", "Chełm", "Przemyśl", "Zamość", "Tomaszów Maz.", "Stalowa Wola", "Kędzierzyn-Koźle", "Łomża", "Leszno", "Żory", "Bełchatów", "Mielec", "Tarnowskie Góry", "Tczew", "Świdnica", "Piekary Śląskie", "Będzin", "Zgierz", "Biała Podlaska", "Racibórz", "Ełk", "Pruszków", "Świętochłowice", "Ostrołęka", "Legionowo", "Zawiercie", "Tarnobrzeg", "Puławy", "Wodzisław Śl.", "Radomsko", "Skarżysko-Kamienna", "Starachowice", "Krosno", "Kołobrzeg", "Dębica", "Kutno", "Nysa", "Ciechanów", "Otwock", "Sieradz"].sort();
+CITIES.forEach(c => document.getElementById('city-select').innerHTML += `<option>${c}</option>`);
 
-    function buyCar(name, price, loc) {
-        if(DB.money >= price) {
-            DB.money -= price;
-            updateIsland("MAREK WYJECHAŁ!");
-            DB.transports.push({ name, progress: 0, from: loc });
-            startTransport();
-            closeApp();
-        } else { alert("Brak kasy!"); }
-    }
 
-    function startTransport() {
-        const t = DB.transports[DB.transports.length - 1];
-        const timer = setInterval(() => {
-            t.progress += 10;
-            if(document.getElementById('win-map').style.display === 'flex') renderMap();
-            if(t.progress >= 100) {
-                clearInterval(timer);
-                DB.garage.push(t.name);
-                DB.transports = DB.transports.filter(x => x !== t);
-                updateIsland("AUTO NA PLACU!");
-            }
-        }, 1000);
-    }
+/* ==========================================================================
+   TUTAJ BĘDZIEMY DOPISYWAĆ MODUŁY... (Przed </script>)
+   ========================================================================== */
 
-    function renderMap() {
-        const b = document.getElementById('body-map');
-        b.innerHTML = DB.transports.length ? DB.transports.map(t => `<div class="card"><b>Transport: ${t.name}</b><br><small>Z: ${t.from} -> Twoja Baza</small><div class="progress-box"><div class="progress-bar" style="width:${t.progress}%"></div></div></div>`).join('') : "<p style='text-align:center'>Brak aktywnych lawet.</p>";
+// PRZYKŁAD MODUŁU 1: OTOMOTO
+Core.registerApp({
+    id: 'olx',
+    name: 'Otomoto',
+    icon: 'fa-car',
+    bg: '#ff5a10',
+    render: function() {
+        const cars = [{m:"Audi A4", p:12000}, {m:"BMW E46", p:18000}, {m:"VW Passat", p:7500}];
+        document.getElementById('body-olx').innerHTML = cars.map(c => `
+            <div class="card">
+                <b>${c.m}</b><br> Cena: ${c.p.toLocaleString()} PLN
+                <button class="btn-ios" style="background:var(--wa-green);color:white" onclick="alert('Kupiono!')">KUP TERAZ</button>
+            </div>
+        `).join('');
     }
+});
 
-    function renderGarage() {
-        document.getElementById('body-garage').innerHTML = `<h3>Twój Plac (${DB.garage.length})</h3>` + DB.garage.map(c => `<div class="card">🚗 <b>${c}</b><br><small>Stan: Do przygotowania</small></div>`).join('');
-    }
-
-    function renderBank() {
-        document.getElementById('body-bank').innerHTML = `<div style="background:red;color:white;padding:25px;border-radius:15px;text-align:center;"><small>Saldo</small><h1>${DB.money.toLocaleString()} PLN</h1></div>`;
-    }
 </script>
 </body>
 </html>
