@@ -1199,6 +1199,25 @@ console.warn = function(...args) {
         }
     }, 1000);
 })();
+// WYMUSZENIE POŁĄCZEŃ (Gdybyś zapomniał dopisać w init)
+if (typeof Omni !== 'undefined') {
+    // Automatyczne podpięcie brakujących danych
+    if (!Omni.INTERNAL_STATE && typeof DB !== 'undefined') Omni.INTERNAL_STATE = DB;
+    if (!Omni.StationClass && typeof Station !== 'undefined') Omni.StationClass = Station;
+
+    // Ratunkowy start
+    setTimeout(() => {
+        try {
+            if (document.getElementById('preloader')) {
+                document.getElementById('preloader').remove();
+                Omni.init();
+                console.log("System wymuszony!");
+            }
+        } catch(e) {
+            alert("Błąd startu: " + e.message);
+        }
+    }, 2000);
+}
 
 
 
