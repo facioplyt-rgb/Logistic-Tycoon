@@ -53,7 +53,24 @@
 </div>
 
 <script>
-    // LISTA 100 NAJWIĘKSZYCH MIAST POLSKI (Sortowana alfabetycznie)
+    /* ==========================================================================
+   SANITIZER: USUWANIE STARYCH ŚMIECI
+   ========================================================================== */
+(function() {
+    // 1. Czyścimy pamięć lokalną, żeby stare stany gry nie blokowały nowych modułów
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // 2. Czyścimy konsolę, żeby widzieć tylko błędy z nowego kodu
+    console.clear();
+    console.log("%c LOGISTIC OS: Pamięć wyczyszczona. System gotowy na Moduł 1. ", 
+                "background: #007aff; color: #fff; font-weight: bold; padding: 5px; border-radius: 5px;");
+    
+    // 3. Usuwamy stare okna, jeśli jakimś cudem zostały w DOM (przydatne przy szybkim odświeżaniu)
+    const oldWins = document.querySelectorAll('.win');
+    oldWins.forEach(win => win.remove());
+})();
+    // LISTA 100 NAJWIĘKSZYCH MIAST POLSKI
     const POLISH_CITIES = [
         "Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin", "Bydgoszcz", "Lublin", "Białystok",
         "Katowice", "Gdynia", "Częstochowa", "Radom", "Toruń", "Sosnowiec", "Rzeszów", "Kielce", "Gliwice", "Olsztyn",
