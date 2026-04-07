@@ -10,26 +10,24 @@
         * { box-sizing: border-box; font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
         body { background: #1a1a1a; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
-        /* OBUDOWA */
-        #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; }
+        /* OBUDOWA IPHONE */
+        #iphone { width: 375px; height: 812px; background: #000; border: 12px solid #333; border-radius: 50px; position: relative; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         
-        /* EKRAN POWITALNY */
-        #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        /* EKRAN STARTOWY */
+        #setup-layer { position: absolute; inset: 0; background: #fff; z-index: 2000; padding: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         
-        /* EKRAN GRY */
-        #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; }
+        /* EKRAN GRY (PULPIT) */
+        #screen { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000') center/cover; display: none; position: relative; }
         
-        /* WYSPA I IKONY */
-        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 150px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        #homescreen { display: grid; grid-template-columns: repeat(4, 1fr); padding: 80px 20px; gap: 25px 15px; }
-        
-        .app-wrapper { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-        .app-icon { width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; margin-bottom: 5px; }
-        .app-label { color: white; font-size: 11px; text-shadow: 0 1px 2px #000; }
+        /* DYNAMIC ISLAND */
+        #island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 150px; height: 35px; background: #000; border-radius: 20px; z-index: 1000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
 
-        /* STYLE PRZYCISKÓW */
-        button, select { width: 100%; padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 16px; cursor: pointer; }
-        #start-btn { background: var(--ios-blue); color: white; border: none; font-weight: bold; }
+        /* UI ELEMENTS */
+        h1 { font-size: 28px; margin-bottom: 10px; }
+        p { color: #666; margin-bottom: 20px; font-size: 14px; }
+        select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ccc; background: #f9f9f9; font-size: 16px; margin-bottom: 15px; }
+        #start-btn { width: 100%; padding: 15px; border-radius: 12px; background: var(--ios-blue); color: white; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        #start-btn:active { transform: scale(0.98); opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -38,56 +36,68 @@
     <div id="island" style="display:none;"></div>
 
     <div id="setup-layer">
-        <i class="fa-solid fa-truck-fast" style="font-size: 50px; color: var(--ios-blue); margin-bottom: 15px;"></i>
-        <h1>Logistic OS</h1>
-        <p>Wybierz miasto startowe:</p>
+        <i class="fa-solid fa-map-location-dot" style="font-size: 50px; color: var(--ios-blue); margin-bottom: 15px;"></i>
+        <h1>Witaj w Firmie</h1>
+        <p>Wybierz miasto, w którym otworzysz swój pierwszy plac:</p>
+        
         <select id="city-select">
-            <option>Warszawa</option>
-            <option>Poznań</option>
-            <option>Gdańsk</option>
-        </select>
-        <button id="start-btn" onclick="boot()">START</button>
+            </select>
+        
+        <button id="start-btn" onclick="bootSystem()">ROZPOCZNIJ KARIERĘ</button>
     </div>
 
     <div id="screen">
-        <div id="homescreen"></div>
+        <div id="homescreen">
+            </div>
     </div>
 </div>
 
 <script>
-    // GLOBALNY STAN (Bez zapisu localStorage)
+    // LISTA 100 NAJWIĘKSZYCH MIAST POLSKI (Sortowana alfabetycznie)
+    const POLISH_CITIES = [
+        "Warszawa", "Kraków", "Łódź", "Wrocław", "Poznań", "Gdańsk", "Szczecin", "Bydgoszcz", "Lublin", "Białystok",
+        "Katowice", "Gdynia", "Częstochowa", "Radom", "Toruń", "Sosnowiec", "Rzeszów", "Kielce", "Gliwice", "Olsztyn",
+        "Zabrze", "Bielsko-Biała", "Bytom", "Zielona Góra", "Rybnik", "Ruda Śląska", "Opole", "Tychy", "Gorzów Wlkp.", "Elbląg",
+        "Płock", "Dąbrowa Górnicza", "Wałbrzych", "Włocławek", "Tarnów", "Chorzów", "Koszalin", "Kalisz", "Legnica", "Grudziądz",
+        "Jaworzno", "Słupsk", "Jastrzębie-Zdrój", "Nowy Sącz", "Jelenia Góra", "Siedlce", "Konin", "Piotrków Tryb.", "Inowrocław", "Lubin",
+        "Mysłowice", "Piła", "Ostrowiec Św.", "Ostrów Wlkp.", "Siemianowice Śl.", "Stargard", "Pabianice", "Gniezno", "Suwałki", "Głogów",
+        "Chełm", "Przemyśl", "Zamość", "Tomaszów Maz.", "Stalowa Wola", "Kędzierzyn-Koźle", "Łomża", "Leszno", "Żory", "Bełchatów",
+        "Mielec", "Tarnowskie Góry", "Tczew", "Świdnica", "Piekary Śląskie", "Będzin", "Zgierz", "Biała Podlaska", "Racibórz", "Ełk",
+        "Pruszków", "Świętochłowice", "Ostrołęka", "Legionowo", "Zawiercie", "Legionowo", "Tarnobrzeg", "Puławy", "Wodzisław Śl.", "Radomsko",
+        "Skarżysko-Kamienna", "Starachowice", "Krosno", "Kołobrzeg", "Dębica", "Kutno", "Nysa", "Ciechanów", "Otwock", "Sieradz"
+    ].sort();
+
+    // STAN GRY
     let DB = {
         money: 50000,
         city: "",
-        apps: [] // Na razie pusto, dodamy w Module 1
+        apps: []
     };
 
-    function boot() {
-        DB.city = document.getElementById('city-select').value;
+    // INICJALIZACJA LISTY
+    const select = document.getElementById('city-select');
+    POLISH_CITIES.forEach(city => {
+        let opt = document.createElement('option');
+        opt.value = city;
+        opt.innerHTML = city;
+        select.appendChild(opt);
+    });
+
+    // URUCHOMIENIE
+    function bootSystem() {
+        DB.city = select.value;
+        
+        // Ukryj setup, pokaż grę
         document.getElementById('setup-layer').style.display = 'none';
         document.getElementById('screen').style.display = 'block';
         document.getElementById('island').style.display = 'flex';
+        
         updateIsland();
-        renderIcons();
+        console.log("System odpalony w mieście: " + DB.city);
     }
 
     function updateIsland() {
-        document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
-    }
-
-    function renderIcons() {
-        const hs = document.getElementById('homescreen');
-        hs.innerHTML = DB.apps.map(app => `
-            <div class="app-wrapper" onclick="openApp('${app.id}')">
-                <div class="app-icon" style="background:${app.bg}"><i class="fa-solid ${app.icon}"></i></div>
-                <div class="app-label">${app.name}</div>
-            </div>
-        `).join('');
-    }
-
-    function openApp(id) {
-        console.log("Otwieram:", id);
-        // Logika okien pojawi się w Module 1
+        document.getElementById('island').innerHTML = `<i class="fa-solid fa-wallet" style="color:#34c759"></i> &nbsp; ${DB.money.toLocaleString()} PLN`;
     }
 </script>
 
