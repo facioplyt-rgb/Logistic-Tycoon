@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON TOWER WARS: TACTICS & REBIRTH</title>
+    <title>NEON TOWER WARS: ULTIMATE</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { 
             --p1: #00f3ff; --p1-g: rgba(0, 243, 255, 0.3);
             --p2: #ff003c; --p2-g: rgba(255, 0, 60, 0.3);
-            --p3: #b900ff; --p3-g: rgba(185, 0, 255, 0.3); /* Kolor Rebirth */
+            --p3: #b900ff; --p3-g: rgba(185, 0, 255, 0.3);
             --speed: #ffea00; --fort: #b900ff;
             --bg: #020205; 
         }
@@ -34,11 +34,46 @@
         .skill-btn.disabled { border-color: #555; color: #555; box-shadow: none; pointer-events: none; }
         .skill-icon { font-size: 20px; margin-bottom: 2px; }
         .skill-cd { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0, 243, 255, 0.3); height: 0%; transition: height 0.1s linear; }
-        
-        #msg { position: fixed; bottom: 80px; width: 100%; text-align: center; font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 2px; pointer-events: none; }
+
+        /* MODUŁ PORADNIKA */
+        #guide-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); padding: 20px; }
+        #guide-box { background: #050a15; border: 2px solid var(--p1); padding: 25px; border-radius: 20px; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 30px var(--p1-g); }
+        h2 { color: var(--p1); text-align: center; margin-top: 0; text-shadow: 0 0 10px var(--p1); }
+        .g-sec { margin-bottom: 20px; font-size: 13px; line-height: 1.6; border-bottom: 1px solid rgba(0, 243, 255, 0.1); padding-bottom: 10px; }
+        .g-tit { color: var(--speed); font-weight: bold; margin-bottom: 5px; display: block; }
+        .close-btn { width: 100%; background: var(--p1); border: none; padding: 12px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 8px; margin-top: 10px; }
+        .icon-box { display: inline-block; width: 20px; text-align: center; margin-right: 5px; }
     </style>
 </head>
 <body>
+
+    <div id="guide-overlay">
+        <div id="guide-box">
+            <h2>CENTRALNY PROTOKÓŁ</h2>
+            <div class="g-sec">
+                <span class="g-tit">PODSTAWY OPERACJI</span>
+                Przeciągnij palcem od **Twojej wieży (Błękitnej)** do celu, aby wysłać 50% stacjonujących tam wojsk. Twoim celem jest przejęcie wszystkich wież na mapie.
+            </div>
+            <div class="g-sec">
+                <span class="g-tit">KLASY WIEŻ</span>
+                <span class="icon-box">⚪</span> **NORMALNA:** Standardowa produkcja.<br>
+                <span class="icon-box" style="color:var(--speed)">▲</span> **SPEED:** Produkuje jednostki **2.5x szybciej**, ale ma mniejszy limit wojska.<br>
+                <span class="icon-box" style="color:var(--fort)">■</span> **FORTECA:** Redukuje otrzymywane obrażenia o **50%**. Idealna do obrony frontu.
+            </div>
+            <div class="g-sec">
+                <span class="g-tit">UMIEJĘTNOŚCI (SKILLS)</span>
+                **⚡ OVER:** Przez 5s Twoje wieże produkują jednostki 3x szybciej.<br>
+                **💥 EMP:** Natychmiast niszczy 30% jednostek w wieżach wroga.<br>
+                **🚀 WARP:** Wszystkie Twoje jednostki w drodze zyskują ekstremalną prędkość.
+            </div>
+            <div class="g-sec">
+                <span class="g-tit">SYSTEM REBIRTH</span>
+                Ukończ **10 Sektorów**, aby dokonać Rebirthu. <br>
+                Zyskasz: **+15 wojska startowego**, **+20 pojemności** i **+20% szybkości produkcji** na stałe!
+            </div>
+            <button class="close-btn" onclick="document.getElementById('guide-overlay').style.display='none'">ROZPOCZNIJ BITWĘ</button>
+        </div>
+    </div>
 
     <div id="level-bar-bg"><div id="level-bar"></div></div>
     <canvas id="stage"></canvas>
@@ -60,7 +95,6 @@
         </div>
         
         <div id="banner">SEKTOR 1</div>
-        <div id="msg"></div>
 
         <div class="skills-container">
             <button class="skill-btn" id="btn-s1" onclick="Game.useSkill(1)">
@@ -82,6 +116,7 @@
     </div>
 
 <script>
+// Wszystkie moduły zachowane: Sektory, Klasy wież, Skille, Rebirth
 const Game = (() => {
     const canvas = document.getElementById('stage');
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -131,8 +166,7 @@ const Game = (() => {
         
         get max() { 
             let m = 50 + (State.lvl * 5); 
-            if(this.owner === 1) m += State.rebirth * 20; // BONUS REBIRTH DO MAXYMALNEJ POJEMNOŚCI
-            
+            if(this.owner === 1) m += State.rebirth * 20; 
             if(this.type === 'speed') return Math.floor(m * 0.6); 
             if(this.type === 'fortress') return Math.floor(m * 1.5); 
             return m;
@@ -141,14 +175,11 @@ const Game = (() => {
         update() {
             this.pulse += 0.05;
             let rate = 1000 - Math.min(State.lvl * 20, 800);
-            
             if(this.type === 'speed') rate /= 2.5; 
-            
             if(this.owner === 1) {
-                rate /= (1 + State.rebirth * 0.2); // BONUS REBIRTH DO SZYBKOŚCI PRODUKCJI
+                rate /= (1 + State.rebirth * 0.2);
                 if(Date.now() < State.buffs.overclock) rate /= 3; 
             }
-            
             if (this.owner !== 0 && Date.now() - this.lastProd > rate) {
                 if (this.count < this.max) this.count++;
                 this.lastProd = Date.now();
@@ -158,60 +189,34 @@ const Game = (() => {
         draw() {
             let baseColor = this.owner === 1 ? Theme.p1 : (this.owner === 2 ? Theme.p2 : Theme.neu);
             const s = Math.sin(this.pulse) * 3;
-            
-            if(this.owner === 1 && Date.now() < State.buffs.overclock) {
-                ctx.shadowBlur = 30; ctx.shadowColor = Theme.p1;
-            } else {
-                ctx.shadowBlur = 15; ctx.shadowColor = baseColor;
-            }
-
-            ctx.strokeStyle = baseColor;
-            ctx.lineWidth = 3;
+            if(this.owner === 1 && Date.now() < State.buffs.overclock) { ctx.shadowBlur = 30; ctx.shadowColor = Theme.p1; }
+            else { ctx.shadowBlur = 15; ctx.shadowColor = baseColor; }
+            ctx.strokeStyle = baseColor; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.arc(this.x, this.y, Theme.towerR + s, 0, Math.PI*2); ctx.stroke();
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = 0; ctx.fillStyle = "#050508"; ctx.fill();
             
-            ctx.fillStyle = "#050508"; ctx.fill();
-            
-            ctx.lineWidth = 2;
             if(this.type === 'speed') {
-                ctx.strokeStyle = Theme.speed;
-                ctx.beginPath();
-                ctx.moveTo(this.x, this.y - 15);
-                ctx.lineTo(this.x + 15, this.y + 10);
-                ctx.lineTo(this.x - 15, this.y + 10);
+                ctx.strokeStyle = Theme.speed; ctx.beginPath();
+                ctx.moveTo(this.x, this.y - 15); ctx.lineTo(this.x + 15, this.y + 10); ctx.lineTo(this.x - 15, this.y + 10);
                 ctx.closePath(); ctx.stroke();
             } else if (this.type === 'fortress') {
-                ctx.strokeStyle = Theme.fort;
-                ctx.strokeRect(this.x - 12, this.y - 12, 24, 24);
+                ctx.strokeStyle = Theme.fort; ctx.strokeRect(this.x - 12, this.y - 12, 24, 24);
             }
-
-            ctx.beginPath();
-            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-            ctx.lineWidth = 4;
-            ctx.arc(this.x, this.y, Theme.towerR - 8, 0, Math.PI*2);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.strokeStyle = baseColor;
+            ctx.beginPath(); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 4;
+            ctx.arc(this.x, this.y, Theme.towerR - 8, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.strokeStyle = baseColor;
             const arc = (this.count / this.max) * (Math.PI * 2);
-            ctx.arc(this.x, this.y, Theme.towerR - 8, -Math.PI/2, arc - Math.PI/2);
-            ctx.stroke();
-            
-            ctx.fillStyle = "white";
-            ctx.textAlign = "center";
-            ctx.font = "900 22px Orbitron";
+            ctx.arc(this.x, this.y, Theme.towerR - 8, -Math.PI/2, arc - Math.PI/2); ctx.stroke();
+            ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "900 22px Orbitron";
             ctx.fillText(Math.floor(this.count), this.x, this.y + 8);
         }
     }
 
     class Troop {
         constructor(startX, startY, target, owner, amount) {
-            this.x = startX; this.y = startY;
-            this.target = target;
-            this.owner = owner;
-            this.amount = amount;
-            this.dead = false;
-            this.speed = 4;
+            this.x = startX; this.y = startY; this.target = target;
+            this.owner = owner; this.amount = amount;
+            this.dead = false; this.speed = 4;
         }
         update() {
             const dx = this.target.x - this.x, dy = this.target.y - this.y;
@@ -222,15 +227,11 @@ const Game = (() => {
         impact() {
             const color = this.owner === 1 ? Theme.p1 : Theme.p2;
             for(let i=0; i<10; i++) State.particles.push(new Particle(this.x, this.y, color));
-            
-            if (this.target.owner === this.owner) {
-                this.target.count += this.amount;
-            } else {
+            if (this.target.owner === this.owner) { this.target.count += this.amount; }
+            else {
                 let damage = this.amount;
                 if(this.target.type === 'fortress') damage *= 0.5; 
-
                 this.target.count -= damage;
-                
                 if (this.target.count <= 0) {
                     this.target.owner = this.owner;
                     this.target.count = Math.abs(this.target.count); 
@@ -240,13 +241,9 @@ const Game = (() => {
         }
         draw() {
             const color = this.owner === 1 ? Theme.p1 : Theme.p2;
-            ctx.fillStyle = color;
-            ctx.shadowBlur = 10; ctx.shadowColor = color;
-            
+            ctx.fillStyle = color; ctx.shadowBlur = 10; ctx.shadowColor = color;
             if(this.speed > 5) {
                 ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
-                ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(this.x - (this.target.x-this.x)*0.05, this.y - (this.target.y-this.y)*0.05, 3, 0, Math.PI*2); ctx.fill();
-                ctx.globalAlpha = 1;
             } else {
                 ctx.beginPath(); ctx.arc(this.x, this.y, 6, 0, Math.PI*2); ctx.fill();
             }
@@ -258,43 +255,28 @@ const Game = (() => {
         const b = document.getElementById('banner');
         b.innerText = text;
         const col = colorHex ? colorHex : (isDeath ? Theme.p2 : Theme.p1);
-        b.style.color = col;
-        b.style.borderColor = col;
-        b.style.textShadow = `0 0 20px ${col}`;
-        b.style.opacity = 1;
+        b.style.color = col; b.style.borderColor = col;
+        b.style.textShadow = `0 0 20px ${col}`; b.style.opacity = 1;
         setTimeout(() => b.style.opacity = 0, 2000);
     };
 
     const generate = () => {
         State.towers = []; State.troops = []; State.particles = [];
-        State.mouse.down = false; State.mouse.start = null;
-        
-        const now = Date.now();
-        State.skills[1].last = now - State.skills[1].cd;
-        State.skills[2].last = now - State.skills[2].cd;
-        State.skills[3].last = now - State.skills[3].cd;
-        
         const w = canvas.width, h = canvas.height;
-        
-        // BONUS REBIRTH DO WOJSKA STARTOWEGO
         let pStart = 40 + (State.rebirth * 15); 
         let aiStart = 15 + (State.sector * 3);
         let numNeutral = 4 + Math.floor(State.sector / 2);
         let numAIBases = 1 + Math.floor(State.sector / 4); 
 
         State.towers.push(new Tower(w*0.2, h/2, 1, pStart, 'normal'));
-        
         for(let i = 0; i < numAIBases; i++) {
             let yPos = (numAIBases === 1) ? h/2 : (h*0.2) + (h*0.6 / (numAIBases - 1)) * i;
-            let aiType = Math.random() > 0.7 ? 'speed' : 'normal'; 
-            State.towers.push(new Tower(w*0.8, yPos, 2, aiStart, aiType));
+            State.towers.push(new Tower(w*0.8, yPos, 2, aiStart, Math.random() > 0.7 ? 'speed' : 'normal'));
         }
-        
         const types = ['normal', 'normal', 'normal', 'speed', 'fortress'];
         for(let i=0; i<numNeutral; i++) {
             let maxNeu = 5 + (State.sector * 2);
-            let randType = types[Math.floor(Math.random() * types.length)];
-            State.towers.push(new Tower(w*0.35+Math.random()*w*0.3, h*0.15+Math.random()*h*0.5, 0, Math.floor(1 + Math.random()*maxNeu), randType));
+            State.towers.push(new Tower(w*0.35+Math.random()*w*0.3, h*0.15+Math.random()*h*0.5, 0, Math.floor(1 + Math.random()*maxNeu), types[Math.floor(Math.random() * types.length)]));
         }
         
         for(let n=0; n<50; n++) {
@@ -302,9 +284,8 @@ const Game = (() => {
                 State.towers.forEach(t2 => {
                     if(t1 === t2) return;
                     const d = Math.hypot(t1.x-t2.x, t1.y-t2.y);
-                    const minDist = Theme.towerR * 2.5;
-                    if(d < minDist) {
-                        const force = (minDist - d) * 0.1;
+                    if(d < Theme.towerR * 2.5) {
+                        const force = (Theme.towerR * 2.5 - d) * 0.1;
                         const a = Math.atan2(t2.y-t1.y, t2.x-t1.x);
                         t1.x -= Math.cos(a)*force; t1.y -= Math.sin(a)*force;
                         t2.x += Math.cos(a)*force; t2.y += Math.sin(a)*force;
@@ -314,81 +295,46 @@ const Game = (() => {
                 t1.y = Math.max(Theme.towerR + 60, Math.min(h - Theme.towerR - 120, t1.y));
             });
         }
-
         State.gameState = 'playing';
         showBanner("SEKTOR " + State.sector);
         document.getElementById('v-sector').innerText = State.sector;
-        document.getElementById('msg').innerText = "";
     };
 
     const addXP = (amt) => {
         State.xp += amt;
-        const requiredXP = State.lvl * 150;
-        if(State.xp >= requiredXP) { State.lvl++; State.xp -= requiredXP; }
+        if(State.xp >= State.lvl * 150) { State.lvl++; State.xp = 0; }
         document.getElementById('v-lvl').innerText = "LVL " + State.lvl;
         document.getElementById('level-bar').style.width = (State.xp/(State.lvl*150)*100) + "%";
     };
 
-    const updateUI = () => {
+    const loop = () => {
+        State.frame++;
+        ctx.fillStyle = "#020205"; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        // UI Skilli
         const now = Date.now();
         [1,2,3].forEach(id => {
             const btn = document.getElementById('btn-s'+id);
             const cdBar = document.getElementById('cd-'+id);
             const skill = State.skills[id];
-            
             const timePassed = now - skill.last;
-            if(timePassed < skill.cd) {
-                btn.classList.add('disabled');
-                cdBar.style.height = ((timePassed / skill.cd) * 100) + "%";
-            } else {
-                btn.classList.remove('disabled');
-                cdBar.style.height = "100%";
-            }
+            if(timePassed < skill.cd) { btn.classList.add('disabled'); cdBar.style.height = ((timePassed/skill.cd)*100)+"%"; }
+            else { btn.classList.remove('disabled'); cdBar.style.height = "100%"; }
         });
-    };
-
-    const loop = () => {
-        State.frame++;
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = "#020205"; ctx.fillRect(0,0,canvas.width, canvas.height);
-        
-        updateUI();
 
         if(State.gameState === 'playing') {
-            let aiSpeed = Math.max(50, 150 - (State.sector * 8));
-            if(State.frame % aiSpeed === 0) aiLogic();
-
+            if(State.frame % Math.max(50, 150 - (State.sector * 8)) === 0) aiLogic();
             if(State.mouse.down && State.mouse.start) {
-                ctx.strokeStyle = Theme.p1; 
-                ctx.lineWidth = 3;
-                ctx.setLineDash([10, 10]);
-                ctx.lineDashOffset = -State.frame;
-                ctx.beginPath(); 
-                ctx.moveTo(State.mouse.start.x, State.mouse.start.y);
-                ctx.lineTo(State.mouse.x, State.mouse.y); 
-                ctx.stroke(); 
-                ctx.setLineDash([]);
-                
-                const hovered = State.towers.find(t => Math.hypot(t.x-State.mouse.x, t.y-State.mouse.y) < Theme.towerR * 1.5);
-                if(hovered && hovered !== State.mouse.start) {
-                    ctx.beginPath();
-                    ctx.strokeStyle = "rgba(255,255,255,0.8)";
-                    ctx.lineWidth = 2;
-                    ctx.arc(hovered.x, hovered.y, Theme.towerR + 10, 0, Math.PI*2);
-                    ctx.stroke();
-                }
+                ctx.strokeStyle = Theme.p1; ctx.lineWidth = 3; ctx.setLineDash([10, 10]);
+                ctx.beginPath(); ctx.moveTo(State.mouse.start.x, State.mouse.start.y); ctx.lineTo(State.mouse.x, State.mouse.y); ctx.stroke(); ctx.setLineDash([]);
             }
-
             State.towers.forEach(t => { t.update(); t.draw(); });
             State.troops = State.troops.filter(t => !t.dead);
             State.troops.forEach(t => { t.update(); t.draw(); });
-            
             checkWin();
         }
-
         State.particles = State.particles.filter(p => p.life > 0);
         State.particles.forEach(p => { p.update(); p.draw(); });
-
         requestAnimationFrame(loop);
     };
 
@@ -396,141 +342,67 @@ const Game = (() => {
         const teams = [...new Set(State.towers.filter(t => t.owner !== 0).map(t => t.owner))];
         if(teams.length === 1 && State.frame > 60) {
             State.gameState = 'transition';
-            
             if(teams[0] === 1) { 
-                // Zwycięstwo
                 if(State.sector >= 10) {
-                    // LOGIKA REBIRTH
-                    State.rebirth++;
-                    State.sector = 1;
-                    State.lvl = 1;
-                    State.xp = 0;
-                    
+                    State.rebirth++; State.sector = 1; State.lvl = 1;
                     document.getElementById('box-rebirth').style.display = 'block';
                     document.getElementById('v-rebirth').innerText = State.rebirth;
-                    document.getElementById('v-lvl').innerText = "LVL 1";
-                    document.getElementById('level-bar').style.width = "0%";
-                    
-                    document.getElementById('msg').innerText = "REBIRTH ZDOBYTY! MOC WZRASTA...";
-                    showBanner("REBIRTH " + State.rebirth + "!", false, Theme.p3);
+                    showBanner("REBIRTH!", false, Theme.p3);
                     setTimeout(generate, 2500);
-                } else {
-                    // Zwykłe Przejście
-                    State.sector++; 
-                    setTimeout(generate, 1500);
-                }
-            } else {
-                // Porażka
-                showBanner("PORAŻKA", true);
-                State.sector = 1; State.lvl = 1; State.xp = 0;
-                document.getElementById('v-lvl').innerText = "LVL 1";
-                document.getElementById('level-bar').style.width = "0%";
-                setTimeout(generate, 2500);
-            }
+                } else { State.sector++; setTimeout(generate, 1500); }
+            } else { showBanner("PORAŻKA", true); State.sector = 1; State.lvl = 1; setTimeout(generate, 2500); }
             State.frame = 0;
         }
     };
 
     const aiLogic = () => {
-        const aiTowers = State.towers.filter(t => t.owner === 2);
-        aiTowers.forEach(at => {
-            let attackThreshold = Math.max(10, 25 - State.sector); 
-            if(at.count > attackThreshold) {
-                const target = State.towers.filter(t => t.owner !== 2).sort((a,b) => {
-                    let aVal = a.count * (a.type==='fortress'?2:1);
-                    let bVal = b.count * (b.type==='fortress'?2:1);
-                    return aVal - bVal;
-                })[0];
-
+        State.towers.filter(t => t.owner === 2).forEach(at => {
+            if(at.count > Math.max(10, 25 - State.sector)) {
+                const target = State.towers.filter(t => t.owner !== 2).sort((a,b) => (a.count*(a.type==='fortress'?2:1)) - (b.count*(b.type==='fortress'?2:1)))[0];
                 if(target) {
-                    let aggression = Math.min(0.8, 0.4 + (State.sector * 0.05));
-                    const send = Math.floor(at.count * aggression); 
-                    at.count -= send;
-                    State.troops.push(new Troop(at.x, at.y, target, 2, send));
+                    const send = Math.floor(at.count * Math.min(0.8, 0.4 + (State.sector * 0.05)));
+                    at.count -= send; State.troops.push(new Troop(at.x, at.y, target, 2, send));
                 }
             }
         });
     };
 
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; if(State.towers.length===0) generate(); };
-
-    const getPos = (e) => {
-        if(e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-        return { x: e.clientX, y: e.clientY };
-    };
-
     const handleInput = (e) => {
-        if(e.target.closest('.skills-container')) return;
-        
-        e.preventDefault(); 
-        if(State.gameState !== 'playing') return;
-        
-        const pos = getPos(e);
-        if(e.type === 'mousedown' || e.type === 'touchstart') {
-            const t = State.towers.find(t => Math.hypot(t.x - pos.x, t.y - pos.y) < Theme.towerR * 1.5);
-            if(t && t.owner === 1) { 
-                State.mouse.start = t; State.mouse.down = true; 
-                State.mouse.x = pos.x; State.mouse.y = pos.y; 
-            }
-        } else if(e.type === 'mousemove' || e.type === 'touchmove') {
-            if(State.mouse.down) { State.mouse.x = pos.x; State.mouse.y = pos.y; }
-        } else if(e.type === 'mouseup' || e.type === 'touchend') {
+        if(e.target.closest('.skills-container') || e.target.closest('#guide-box')) return;
+        const pos = e.changedTouches ? {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY} : {x: e.clientX, y: e.clientY};
+        if(e.type==='mousedown' || e.type==='touchstart') {
+            const t = State.towers.find(t => Math.hypot(t.x-pos.x, t.y-pos.y) < Theme.towerR*1.5);
+            if(t && t.owner===1) { State.mouse.start=t; State.mouse.down=true; State.mouse.x=pos.x; State.mouse.y=pos.y; }
+        } else if(e.type==='mousemove' || e.type==='touchmove') {
+            State.mouse.x=pos.x; State.mouse.y=pos.y;
+        } else if(e.type==='mouseup' || e.type==='touchend') {
             if(State.mouse.down && State.mouse.start) {
-                const target = State.towers.find(t => Math.hypot(t.x - pos.x, t.y - pos.y) < Theme.towerR * 1.5);
-                if(target && target !== State.mouse.start) {
+                const target = State.towers.find(t => Math.hypot(t.x-pos.x, t.y-pos.y) < Theme.towerR*1.5);
+                if(target && target!==State.mouse.start) {
                     const send = Math.floor(State.mouse.start.count / 2);
-                    if(send > 0) {
-                        State.mouse.start.count -= send;
-                        State.troops.push(new Troop(State.mouse.start.x, State.mouse.start.y, target, 1, send));
-                    }
+                    if(send > 0) { State.mouse.start.count-=send; State.troops.push(new Troop(State.mouse.start.x, State.mouse.start.y, target, 1, send)); }
                 }
             }
-            State.mouse.down = false; State.mouse.start = null;
+            State.mouse.down=false; State.mouse.start=null;
         }
     };
 
     return {
         start: () => {
-            resize();
-            window.addEventListener('resize', resize);
-            const opts = { passive: false }; 
-            ['mousedown','mousemove','mouseup','touchstart','touchmove','touchend'].forEach(evt => {
-                canvas.addEventListener(evt, handleInput, opts);
-            });
-            requestAnimationFrame(loop);
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+            ['mousedown','mousemove','mouseup','touchstart','touchmove','touchend'].forEach(evt => canvas.addEventListener(evt, handleInput, {passive:false}));
+            generate(); requestAnimationFrame(loop);
         },
         useSkill: (id) => {
-            if(State.gameState !== 'playing') return;
-            const now = Date.now();
-            const skill = State.skills[id];
-            
-            if(now - skill.last >= skill.cd) {
-                skill.last = now; 
-                
-                if(id === 1) {
-                    State.buffs.overclock = now + 5000; 
-                    showBanner("OVERCLOCK AKTYWNY!");
-                } else if (id === 2) {
-                    State.towers.forEach(t => {
-                        if(t.owner === 2) {
-                            const dmg = Math.floor(t.count * 0.3);
-                            t.count -= dmg;
-                            for(let i=0; i<dmg && i<20; i++) State.particles.push(new Particle(t.x, t.y, Theme.p1));
-                        }
-                    });
-                    showBanner("EMP ODPALONE!");
-                } else if (id === 3) {
-                    let buffed = 0;
-                    State.troops.forEach(t => {
-                        if(t.owner === 1) { t.speed = 20; buffed++; }
-                    });
-                    if(buffed > 0) showBanner("PRĘDKOŚĆ WARP!");
-                }
-            }
+            if(State.gameState!=='playing' || Date.now()-State.skills[id].last < State.skills[id].cd) return;
+            State.skills[id].last = Date.now();
+            if(id===1) { State.buffs.overclock = Date.now()+5000; showBanner("OVERCLOCK!"); }
+            else if(id===2) { State.towers.filter(t=>t.owner===2).forEach(t=>t.count-=Math.floor(t.count*0.3)); showBanner("EMP!"); }
+            else if(id===3) { State.troops.filter(t=>t.owner===1).forEach(t=>t.speed=20); showBanner("WARP!"); }
         }
     };
 })();
-
 window.onload = Game.start;
 </script>
 </body>
