@@ -2,1251 +2,536 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Warsaw Transit: OMNI ENGINE</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEON TOWER WARS: TACTICS & REBIRTH</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --n-blue: #00f3ff; --n-pink: #ff00ff; --n-green: #00ff66;
-            --n-yellow: #f3ff00; --n-red: #ff003c; --bg: #050508;
-            --glass: rgba(15, 15, 25, 0.95);
+        :root { 
+            --p1: #00f3ff; --p1-g: rgba(0, 243, 255, 0.3);
+            --p2: #ff003c; --p2-g: rgba(255, 0, 60, 0.3);
+            --p3: #b900ff; --p3-g: rgba(185, 0, 255, 0.3); /* Kolor Rebirth */
+            --speed: #ffea00; --fort: #b900ff;
+            --bg: #020205; 
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; font-family: 'Rajdhani', sans-serif; color: #fff; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Orbitron', sans-serif; color: white; user-select: none; -webkit-user-select: none; }
+        canvas { display: block; touch-action: none; background: var(--bg); outline: none; }
+        
+        #ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
+        .hud-top { padding: 20px 10px; display: flex; justify-content: space-between; gap: 5px; }
+        
+        .stat-box { background: rgba(0,10,20,0.8); border: 1px solid var(--p1); padding: 8px 10px; border-radius: 8px; backdrop-filter: blur(5px); box-shadow: 0 0 10px var(--p1-g); min-width: 60px; text-align: center; flex-grow: 1; margin: 0 2px; }
+        .label { font-size: 8px; color: var(--p1); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .value { font-size: 18px; color: white; font-weight: 900; }
 
-        #stage { position: absolute; inset: 0; z-index: 1; cursor: crosshair; }
+        #level-bar-bg { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.05); z-index: 20; }
+        #level-bar { height: 100%; background: var(--p1); width: 0%; box-shadow: 0 0 10px var(--p1); transition: width 0.3s; }
+        
+        #banner { position: fixed; top: 40%; left: 0; width: 100%; text-align: center; font-size: 40px; font-weight: 900; color: var(--p1); text-shadow: 0 0 20px var(--p1); opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 30; background: rgba(0,0,0,0.5); padding: 20px 0; border-top: 2px solid var(--p1); border-bottom: 2px solid var(--p1); backdrop-filter: blur(5px); }
 
-        /* --- UI OVERLAY --- */
-        #ui-wrapper { position: absolute; inset: 0; z-index: 1000; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 25px; }
-        .top-hud { display: flex; justify-content: space-between; pointer-events: none; }
-        .glass-panel { 
-            background: var(--glass); border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 18px 30px; border-radius: 20px; pointer-events: auto;
-            box-shadow: 0 15px 45px rgba(0,0,0,0.9); backdrop-filter: blur(15px);
-        }
-        .v-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: #667; display: block; margin-bottom: 4px; }
-        .v-num { font-family: 'Orbitron'; font-size: 30px; font-weight: 900; color: var(--n-blue); }
-
-        /* --- MODULAR DOCK --- */
-        .master-dock { 
-            align-self: center; background: var(--glass); padding: 15px; border-radius: 40px; 
-            display: flex; gap: 15px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 -10px 50px rgba(0,0,0,0.8);
-        }
-        .m-btn { 
-            width: 75px; height: 80px; border-radius: 25px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; background: rgba(255,255,255,0.02);
-            border: 2px solid transparent; cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .m-btn.active { border-color: var(--c); background: rgba(255,255,255,0.08); transform: translateY(-12px); box-shadow: 0 15px 30px rgba(0,0,0,0.5), 0 0 20px var(--c); }
-        .m-btn span { font-size: 9px; font-weight: 700; margin-top: 6px; color: #aaa; text-transform: uppercase; }
-        .m-btn .material-symbols-outlined { font-size: 32px; color: var(--c); }
-
-        /* --- NOTIFICATION CENTER --- */
-        #log-flow { position: absolute; left: 25px; top: 140px; width: 300px; pointer-events: none; }
-        .log-entry { 
-            background: rgba(0,0,0,0.75); border-left: 4px solid var(--n-blue); padding: 12px 18px; 
-            margin-bottom: 8px; border-radius: 0 12px 12px 0; font-size: 14px; font-weight: 600;
-            animation: slideIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards; backdrop-filter: blur(5px);
-        }
-        @keyframes slideIn { from { transform: translateX(-110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-        /* LOADING */
-        #preloader { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        .load-bar { width: 200px; height: 2px; background: #111; margin-top: 20px; overflow: hidden; position: relative; }
-        .load-progress { position: absolute; top:0; left:0; height:100%; background: var(--n-blue); width: 0%; transition: 0.5s; }
+        .skills-container { padding: 15px; display: flex; justify-content: center; gap: 15px; pointer-events: auto; }
+        .skill-btn { position: relative; width: 60px; height: 60px; background: rgba(0,20,40,0.9); border: 2px solid var(--p1); border-radius: 12px; color: white; font-family: 'Orbitron'; font-size: 10px; font-weight: 700; cursor: pointer; overflow: hidden; box-shadow: 0 0 10px var(--p1-g); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.2s; outline: none; }
+        .skill-btn:active { transform: scale(0.9); }
+        .skill-btn.disabled { border-color: #555; color: #555; box-shadow: none; pointer-events: none; }
+        .skill-icon { font-size: 20px; margin-bottom: 2px; }
+        .skill-cd { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0, 243, 255, 0.3); height: 0%; transition: height 0.1s linear; }
+        
+        #msg { position: fixed; bottom: 80px; width: 100%; text-align: center; font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 2px; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div id="preloader">
-    <div style="font-family: 'Orbitron'; font-size: 14px; letter-spacing: 8px; color: var(--n-blue);">OMNI_ENGINE_INITIALIZING</div>
-    <div class="load-bar"><div id="load-val" class="load-progress"></div></div>
-    <button id="start-trigger" style="display:none; margin-top: 30px; background: none; border: 1px solid var(--n-blue); color: var(--n-blue); padding: 15px 50px; font-family: 'Orbitron'; cursor: pointer; font-size: 12px;">ACCESS SYSTEM</button>
-</div>
+    <div id="level-bar-bg"><div id="level-bar"></div></div>
+    <canvas id="stage"></canvas>
 
-<div id="ui-wrapper">
-    <div class="top-hud">
-        <div class="glass-panel">
-            <span class="v-lbl">Neural Network Load</span>
-            <div id="v-stress" class="v-num">0%</div>
+    <div id="ui">
+        <div class="hud-top">
+            <div class="stat-box">
+                <div class="label">DOWÓDCA</div>
+                <div id="v-lvl" class="value">LVL 1</div>
+            </div>
+            <div class="stat-box" id="box-rebirth" style="display: none; border-color: var(--p3); box-shadow: 0 0 10px var(--p3-g);">
+                <div class="label" style="color: var(--p3);">REBIRTH</div>
+                <div id="v-rebirth" class="value">0</div>
+            </div>
+            <div class="stat-box" style="border-color: var(--p2); box-shadow: 0 0 10px var(--p2-g);">
+                <div class="label">SEKTOR</div>
+                <div id="v-sector" class="value">1</div>
+            </div>
         </div>
-        <div class="glass-panel" style="border-color: var(--n-yellow);">
-            <span class="v-lbl">Global Credits</span>
-            <div id="v-budget" class="v-num" style="color:var(--n-yellow)">5,000</div>
+        
+        <div id="banner">SEKTOR 1</div>
+        <div id="msg"></div>
+
+        <div class="skills-container">
+            <button class="skill-btn" id="btn-s1" onclick="Game.useSkill(1)">
+                <div class="skill-cd" id="cd-1"></div>
+                <div class="skill-icon">⚡</div>
+                <div>OVER</div>
+            </button>
+            <button class="skill-btn" id="btn-s2" onclick="Game.useSkill(2)">
+                <div class="skill-cd" id="cd-2"></div>
+                <div class="skill-icon">💥</div>
+                <div>EMP</div>
+            </button>
+            <button class="skill-btn" id="btn-s3" onclick="Game.useSkill(3)">
+                <div class="skill-cd" id="cd-3"></div>
+                <div class="skill-icon">🚀</div>
+                <div>WARP</div>
+            </button>
         </div>
     </div>
-    
-    <div id="log-flow"></div>
-    
-    <div class="master-dock">
-        <div class="m-btn active" data-t="line" data-c="#00f3ff" style="--c:var(--n-blue)">
-            <span class="material-symbols-outlined">polyline</span><span>L1</span>
-        </div>
-        <div class="m-btn" data-t="line" data-c="#ff00ff" style="--c:var(--n-pink)">
-            <span class="material-symbols-outlined">polyline</span><span>L2</span>
-        </div>
-        <div class="m-btn" data-t="unit" style="--c:#fff">
-            <span class="material-symbols-outlined">local_shipping</span><span>Deploy</span>
-        </div>
-        <div class="m-btn" data-t="up" style="--c:var(--n-green)">
-            <span class="material-symbols-outlined">vibration</span><span>Evolve</span>
-        </div>
-    </div>
-</div>
-
-<canvas id="stage"></canvas>
 
 <script>
-/**
- * MODULE 11: MOBILE_STABILIZER & ALERT_DEBUGGER
- * Wklej na samym początku script!
- */
-window.onerror = function(msg, url, line) {
-    alert("BŁĄD SYSTEMU: " + msg + "\nLinia: " + line);
-    return false;
-};
-
-// Failsafe dla braku pamięci na telefonie
-const MEMORY_SHIELD = {
-    check: () => {
-        if (window.performance && window.performance.memory) {
-            if (window.performance.memory.usedJSHeapSize > 100 * 1048576) {
-                console.warn("High Memory Usage!");
-            }
-        }
-    }
-};
-
-/**
- * WARSAW OMNI ENGINE v1.0
- * ---------------------------------------------------------
- * ARCHITEKTURA MODULARNA: Wklejaj kolejne moduły w oznaczone miejsca.
- */
-
-const Omni = (() => {
-    // --- MODULE: CORE STATE ---
-    const DB = {
-        budget: 5000,
-        stress: 0,
-        mode: 'line',
-        activeColor: '#00f3ff',
-        camera: { x: window.innerWidth/2, y: window.innerHeight/2, zoom: 0.6, tz: 0.6, lerp: 0.12 },
-        stations: [],
-        lines: {},
-        particles: [],
-        lastFrame: 0,
-        width: window.innerWidth,
-        height: window.innerHeight
-    };
-
-    const CONFIG = {
-        STATIONS: [
-            { id: 0, n: "CENTRUM", x: 0, y: 0, cap: 500 },
-            { id: 1, n: "POLITECHNIKA", x: 0, y: 600, cap: 400 },
-            { id: 2, n: "DW. ZACHODNI", x: -1100, y: 200, cap: 600 },
-            { id: 3, n: "WOLA", x: -900, y: -800, cap: 450 },
-            { id: 4, n: "MOKOTÓW", x: 500, y: 1300, cap: 400 },
-            { id: 5, n: "PRAGA", x: 1300, y: 100, cap: 550 },
-            { id: 6, n: "BEMOWO", x: -1800, y: -400, cap: 350 },
-            { id: 7, n: "WILANÓW", x: 900, y: 2200, cap: 400 },
-            { id: 8, n: "STADION", x: 1100, y: -600, cap: 500 }
-        ]
-    };
-
-    // --- MODULE: ENTITY CLASSES ---
-    class Station {
-        constructor(d) {
-            this.id = d.id; this.name = d.n; this.x = d.x; this.y = d.y;
-            this.pass = 0; this.cap = d.cap; this.lv = 1; this.p = 0;
-        }
-        update(dt) {
-            this.pass = Math.min(this.cap, this.pass + (0.00005 * dt * this.lv)); 
-            this.p += 0.05;
-        }
-        draw(ctx, zoom) {
-            // Culling: Nie rysuj jeśli poza ekranem (z marginesem 200px)
-            const sx = this.x * zoom + DB.camera.x;
-            const sy = this.y * zoom + DB.camera.y;
-            if (sx < -200 || sx > DB.width + 200 || sy < -200 || sy > DB.height + 200) return;
-
-            const stress = this.pass / this.cap;
-            const pulse = Math.sin(this.p) * 10;
-            
-            ctx.save();
-            ctx.shadowBlur = 20 + pulse;
-            ctx.shadowColor = stress > 0.8 ? '#ff003c' : '#00f3ff';
-            
-            // Core
-            ctx.fillStyle = stress > 0.8 ? '#ff003c' : '#00f3ff';
-            ctx.beginPath(); ctx.arc(this.x, this.y, 45, 0, Math.PI*2); ctx.fill();
-            
-            // Ring
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 6;
-            ctx.beginPath(); ctx.arc(this.x, this.y, 55, 0, Math.PI*2); ctx.stroke();
-            ctx.restore();
-
-            // Label Logic (Znikające napisy przy zoomie < 0.3)
-            if (zoom > 0.25) {
-                const alpha = Math.min(1, (zoom - 0.25) * 5);
-                ctx.globalAlpha = alpha;
-                const fs = Math.max(14, 32 / zoom);
-                ctx.font = `900 ${fs}px Orbitron`;
-                ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
-                ctx.fillText(this.name, this.x, this.y - 100);
-                
-                ctx.font = `700 ${fs*0.8}px Rajdhani`;
-                ctx.fillStyle = stress > 0.8 ? '#ff003c' : '#00ff66';
-                ctx.fillText(`${Math.floor(this.pass)} / ${this.cap}`, this.x, this.y + 120);
-                ctx.globalAlpha = 1;
-            }
-        }
-    }
-
-    // --- MIEJSCE NA MODUŁ: TRANSPORT_VEHICLES ---
-    class Vehicle {
-        constructor(line) {
-            this.line = line; this.prog = 0; this.leg = 0; this.dir = 1;
-            this.load = 0; this.cap = 200; this.speed = 0.0004;
-        }
-        update(dt) {
-            if (this.line.nodes.length < 2) return;
-            this.prog += this.speed * dt;
-            if (this.prog >= 1) {
-                this.prog = 0; this.leg += this.dir;
-                const node = this.line.nodes[this.leg];
-                if (this.load > 0) { DB.budget += this.load * 45; this.load = 0; }
-                const take = Math.min(Math.floor(node.pass), this.cap);
-                this.load = take; node.pass -= take;
-                if (this.leg >= this.line.nodes.length-1 || this.leg <= 0) this.dir *= -1;
-            }
-        }
-        const rawDt = now - DB.lastFrame;
-DB.lastFrame = now;
-
-// Przepuszczamy czas przez moduł Chronos
-const dt = ChronosModule.update(rawDt);
-
-if (dt === 0) { 
-    // Jeśli pauza, nadal renderujemy, by móc przesuwać kamerę, ale nie update'ujemy logiki
-    this.renderFrame(0); 
-} else {
-    this.renderFrame(dt);
-}
-
-
-    // --- MIEJSCE NA MODUŁ: PARTICLE_SYSTEM ---
+const Game = (() => {
+    const canvas = document.getElementById('stage');
+    const ctx = canvas.getContext('2d', { alpha: false });
     
-    // --- MODULE: RENDER ENGINE ---
-    const Renderer = {
-        init() {
-            this.canvas = document.getElementById('stage');
-            this.ctx = this.canvas.getContext('2d');
-            this.resize();
-            window.addEventListener('resize', () => this.resize());
-        },
-        resize() {
-            DB.width = this.canvas.width = window.innerWidth;
-            DB.height = this.canvas.height = window.innerHeight;
-        },
-        draw(now) {
-            const dt = now - DB.lastFrame;
-            DB.lastFrame = now;
-            const ctx = this.ctx;
+    const Theme = { p1: '#00f3ff', p2: '#ff003c', p3: '#b900ff', neu: '#555', speed: '#ffea00', fort: '#b900ff', towerR: 40 };
 
-            // Camera Smoothing
-            DB.camera.zoom += (DB.camera.tz - DB.camera.zoom) * DB.camera.lerp;
-            
-            ctx.setTransform(1,0,0,1,0,0);
-            ctx.fillStyle = '#050508'; ctx.fillRect(0,0,DB.width, DB.height);
-
-            ctx.translate(DB.camera.x, DB.camera.y);
-            ctx.scale(DB.camera.zoom, DB.camera.zoom);
-
-            // Grid
-            ctx.strokeStyle = 'rgba(0, 243, 255, 0.04)'; ctx.lineWidth = 2;
-            const step = 500;
-            for(let i=-5000; i<=5000; i+=step) {
-                ctx.beginPath(); ctx.moveTo(i, -5000); ctx.lineTo(i, 5000); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(-5000, i); ctx.lineTo(5000, i); ctx.stroke();
-            }
-
-            // Lines
-            Object.values(DB.lines).forEach(l => {
-                if (l.nodes.length < 2) return;
-                ctx.strokeStyle = l.color; ctx.lineWidth = 25; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-                ctx.shadowBlur = 10; ctx.shadowColor = l.color;
-                ctx.beginPath(); l.nodes.forEach((n,i) => i===0?ctx.moveTo(n.x, n.y):ctx.lineTo(n.x, n.y));
-                ctx.stroke(); ctx.shadowBlur = 0;
-                l.units.forEach(u => { u.update(dt); u.draw(ctx); });
-            });
-
-            // Stations
-            let stressSum = 0;
-            DB.stations.forEach(s => { s.update(dt); s.draw(ctx, DB.camera.zoom); stressSum += s.pass/s.cap; });
-
-            // HUD
-            document.getElementById('v-budget').innerText = Math.floor(DB.budget).toLocaleString();
-            document.getElementById('v-stress').innerText = Math.max(0, Math.floor((stressSum/DB.stations.length)*100)) + "%";
-
-            requestAnimationFrame((t) => this.draw(t));
-        }
-    };
-
-    // --- MIEJSCE NA MODUŁ: INPUT_HANDLING ---
-    const Inputs = {
-        setup() {
-            let isD = false, lx, ly;
-            window.addEventListener('pointerdown', e => { isD = true; lx = e.clientX; ly = e.clientY; });
-            window.addEventListener('pointermove', e => {
-                if(isD) {
-                    DB.camera.x += (e.clientX - lx); DB.camera.y += (e.clientY - ly);
-                    lx = e.clientX; ly = e.clientY;
-                }
-            });
-            window.addEventListener('pointerup', e => {
-                if(isD && Math.hypot(e.clientX-lx, e.clientY-ly) < 5) this.click(e.clientX, e.clientY);
-                isD = false;
-            });
-            window.addEventListener('wheel', e => {
-                const f = e.deltaY > 0 ? 0.85 : 1.15;
-                DB.camera.tz = Math.min(Math.max(DB.camera.tz * f, 0.05), 4);
-            }, {passive:false});
-
-            document.querySelectorAll('.m-btn').forEach(b => {
-                b.onclick = () => {
-                    document.querySelectorAll('.m-btn').forEach(x => x.classList.remove('active'));
-                    b.classList.add('active'); DB.mode = b.dataset.t;
-                    if(b.dataset.c) DB.activeColor = b.dataset.c;
-                };
-            });
-        },
-        click(sx, sy) {
-            const wx = (sx - DB.camera.x) / DB.camera.zoom;
-            const wy = (sy - DB.camera.y) / DB.camera.zoom;
-            const hit = DB.stations.find(s => Math.hypot(s.x-wx, s.y-wy) < 70/DB.camera.zoom);
-
-            if(DB.mode === 'line' && hit) {
-                const l = DB.lines[DB.activeColor];
-                if(l.nodes[l.nodes.length-1] !== hit && DB.budget >= 1000) {
-                    DB.budget -= 1000; l.nodes.push(hit);
-                    Omni.log("Connected to " + hit.name);
-                }
-            } else if(DB.mode === 'unit') {
-                const l = DB.lines[DB.activeColor];
-                if(l.nodes.length >= 2 && DB.budget >= 3000) {
-                    DB.budget -= 3000; l.units.push(new Vehicle(l));
-                    Omni.log("Deployed Unit on " + l.color);
-                }
-            }
-        }
-    };
-
-    return {
-        init() {
-            Renderer.init();
-            Inputs.setup();
-            DB.stations = CONFIG.STATIONS.map(s => new Station(s));
-            ['#00f3ff', '#ff00ff', '#00ff66', '#f3ff00'].forEach(c => DB.lines[c] = { nodes: [], units: [], color: c });
-            
-            // Preloader logic
-            let p = 0;
-            const iv = setInterval(() => {
-                p += 10; document.getElementById('load-val').style.width = p + '%';
-                if(p>=100) { 
-                    clearInterval(iv); 
-                    document.getElementById('start-trigger').style.display = 'block';
-                }
-            }, 100);
-
-            document.getElementById('start-trigger').onclick = () => {
-                document.getElementById('preloader').remove();
-                requestAnimationFrame((t) => Renderer.draw(t));
-            };
-        },
-        log(m) {
-            const f = document.getElementById('log-flow');
-            const e = document.createElement('div'); e.className = 'log-entry'; e.innerText = `> ${m}`;
-            f.prepend(e); setTimeout(() => e.remove(), 4000);
-        }
-    };
-})();
-
-Omni.init();
-
-// TU BĘDZIEMY WKLEJAĆ KOLEJNE MODUŁY PRZED ZAMKNIĘCIEM TAGU SCRIPT
-/**
- * MODULE 1: DYNAMIC_WEATHER_SYSTEM
- * Zarządza atmosferą, cyklem dobowym i opadami.
- */
-const WeatherModule = ((EngineState) => {
-    const W_STATE = {
-        time: 0, // 0-2400 (cykl dobowy)
-        isRaining: false,
-        rainDrops: [],
-        ambientAlpha: 0,
-        lastWeatherChange: 0
-    };
-
-    class Drop {
-        constructor() { this.reset(); }
-        reset() {
-            this.x = Math.random() * window.innerWidth;
-            this.y = -20;
-            this.l = Math.random() * 15 + 10;
-            this.v = Math.random() * 10 + 15;
-        }
-        update() {
-            this.y += this.v;
-            if (this.y > window.innerHeight) this.reset();
-        }
-    }
-
-    // Inicjalizacja kropel deszczu
-    for(let i=0; i<150; i++) W_STATE.rainDrops.push(new Drop());
-
-    const process = (ctx, dt) => {
-        W_STATE.time = (W_STATE.time + dt * 0.05) % 2400;
-        
-        // Obliczanie jasności świata (Noc: 1800-0600, Dzień: 0600-1800)
-        if (W_STATE.time > 1800 || W_STATE.time < 600) {
-            W_STATE.ambientAlpha = Math.min(0.5, W_STATE.ambientAlpha + 0.001);
-        } else {
-            W_STATE.ambientAlpha = Math.max(0, W_STATE.ambientAlpha - 0.001);
-        }
-
-        // Losowanie deszczu co 30 sekund gry
-        if (Date.now() - W_STATE.lastWeatherChange > 30000) {
-            W_STATE.isRaining = Math.random() > 0.7;
-            W_STATE.lastWeatherChange = Date.now();
-            if(W_STATE.isRaining) Omni.log("STORM ALERT: Units slowed by 20%");
-        }
-
-        // RENDEROWANIE EFEKTÓW (UI Layer Context - rysujemy na całym ekranie)
-        ctx.save();
-        ctx.setTransform(1,0,0,1,0,0); // Reset kamery dla filtra pogodowego
-
-        // 1. Filtr Nocny
-        if (W_STATE.ambientAlpha > 0) {
-            ctx.fillStyle = `rgba(0, 5, 20, ${W_STATE.ambientAlpha})`;
-            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-        }
-
-        // 2. Deszcz
-        if (W_STATE.isRaining) {
-            ctx.strokeStyle = 'rgba(174, 194, 224, 0.4)';
-            ctx.lineWidth = 1;
-            W_STATE.rainDrops.forEach(d => {
-                d.update();
-                ctx.beginPath();
-                ctx.moveTo(d.x, d.y);
-                ctx.lineTo(d.x - 2, d.y + d.l);
-                ctx.stroke();
-            });
-            // Wpływ na fizykę silnika (globalne spowolnienie)
-            EngineState.stations.forEach(s => s.pass += 0.00001 * dt); 
-        }
-        ctx.restore();
-    };
-
-    return { process, state: W_STATE };
-})(Omni ? Omni.INTERNAL_STATE : {}); 
-
-// AKTUALIZACJA GŁÓWNEJ PĘTLI RENDERUJĄCEJ
-// Musisz teraz wewnątrz funkcji Renderer.draw() dodać wywołanie:
-// WeatherModule.process(ctx, dt);
-/**
- * MODULE 2: ADVANCED_ECONOMY_AI
- * System finansowy, podatki i koszty operacyjne.
- */
-const EconomyModule = ((EngineState) => {
-    const E_STATE = {
-        baseTicketPrice: 4.40,
-        dailyTaxRate: 0.05,
-        lastTaxCollection: 0,
-        stats: {
-            totalEarned: 5000,
-            totalSpent: 0,
-            passengersServed: 0
-        }
-    };
-
-    const calculateFinances = (dt) => {
-        if (!EngineState.stations) return;
-
-        // 1. KOSZTY UTRZYMANIA (Maintenance)
-        // Każda stacja kosztuje 0.5 kredytu / sekunda
-        // Każda jednostka kosztuje 2.0 kredyty / sekunda
-        const stationCost = EngineState.stations.length * 0.5 * (dt / 1000);
-        let vehicleCount = 0;
-        Object.values(EngineState.lines).forEach(l => vehicleCount += l.units.length);
-        const vehicleCost = vehicleCount * 2.0 * (dt / 1000);
-
-        const totalOperationalCost = stationCost + vehicleCost;
-        EngineState.budget -= totalOperationalCost;
-        E_STATE.stats.totalSpent += totalOperationalCost;
-
-        // 2. DYNAMICZNY PRZYCHÓD Z BILETÓW
-        // Modyfikujemy bazowy przychód w klasie Vehicle (to dzieje się w głównej pętli, 
-        // ale tutaj wyliczamy mnożnik dla całego systemu)
-        const networkStress = parseFloat(document.getElementById('v-stress').innerText) / 100;
-        E_STATE.currentTicketMultiplier = 1 + (networkStress * 0.5); // Drożej gdy tłoczno
-
-        // 3. SYSTEM PODATKOWY (Co cykl dobowy z WeatherModule)
-        if (typeof WeatherModule !== "undefined") {
-            const currentTime = WeatherModule.state.time;
-            // Pobierz podatek o północy (time ok. 0)
-            if (currentTime < 10 && Date.now() - E_STATE.lastTaxCollection > 60000) {
-                const tax = EngineState.budget * E_STATE.dailyTaxRate;
-                if (tax > 0) {
-                    EngineState.budget -= tax;
-                    Omni.log(`TAX COLLECTED: -${Math.floor(tax)} credits (5% City Tax)`);
-                    E_STATE.lastTaxCollection = Date.now();
-                }
-            }
-        }
-
-        // 4. BANKRUCTWO
-        if (EngineState.budget < 0) {
-            EngineState.budget = 0;
-            Omni.log("CRITICAL: BUDGET EXHAUSTED! Lines suspended.");
-            // Tutaj można dodać logikę zatrzymania pojazdów
-        }
-    };
-
-    // Funkcja pomocnicza do formatowania waluty
-    const formatCurrency = (val) => {
-        return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(val).replace('zł', 'CR');
-    };
-
-    return { 
-        update: calculateFinances, 
-        state: E_STATE,
-        format: formatCurrency 
-    };
-})(Omni ? Omni.INTERNAL_STATE : {});
-
-// AKTUALIZACJA GŁÓWNEJ PĘTLI RENDERUJĄCEJ:
-// W Renderer.draw() dodaj:
-// EconomyModule.update(dt);
-/**
- * MODULE 3: PASSENGER_TRANSFER_LOGIC (AI & PATHFINDING)
- * System przesiadek i inteligentnych celów podróży.
- */
-const TransferModule = ((EngineState) => {
-    const T_STATE = {
-        transferEfficiency: 0.85, // Ile % ludzi decyduje się na przesiadkę zamiast rezygnacji
-        patienceTimer: 120000,    // 2 minuty czekania na przesiadkę, potem "Neural Stress" rośnie
-    };
-
-    // System generowania potrzeb przewozowych
-    const generateDemand = (dt) => {
-        if (EngineState.stations.length < 2) return;
-
-        EngineState.stations.forEach(origin => {
-            // Szansa na pojawienie się pasażera z konkretnym celem
-            if (Math.random() < 0.05) {
-                const destination = EngineState.stations[Math.floor(Math.random() * EngineState.stations.length)];
-                if (origin.id !== destination.id) {
-                    // Dodajemy pasażera do struktury "waiting" na stacji
-                    if (!origin.queue) origin.queue = [];
-                    origin.queue.push({
-                        targetId: destination.id,
-                        entryTime: Date.now(),
-                        status: 'waiting' // waiting, transit, transferring
-                    });
-                    origin.pass = origin.queue.length;
-                }
-            }
-        });
-    };
-
-    // Logika przesiadek dla jednostki transportowej
-    const handleExchange = (vehicle, station) => {
-        // 1. WYSIADANIE
-        // Pasażerowie wysiadają, jeśli: 
-        // a) To ich cel podróży 
-        // b) Stacja jest węzłem, a ich cel jest dostępny z innej linii tutaj przebiegającej
-        if (!vehicle.manifest) vehicle.manifest = [];
-        
-        const arrivingAtTarget = vehicle.manifest.filter(p => p.targetId === station.id);
-        const transferring = vehicle.manifest.filter(p => {
-            if (p.targetId === station.id) return false;
-            // Sprawdź czy inne linie na tej stacji prowadzą do celu p.targetId
-            return isStationNodeForTarget(station, p.targetId, vehicle.line.color);
-        });
-
-        // Usuń pasażerów z pojazdu
-        vehicle.manifest = vehicle.manifest.filter(p => p.targetId !== station.id && !transferring.includes(p));
-        
-        // Rozlicz przychód za dowiezionych do celu
-        if (arrivingAtTarget.length > 0) {
-            const income = arrivingAtTarget.length * EconomyModule.state.baseTicketPrice;
-            EngineState.budget += income;
-            Omni.log(`COMPLETED: ${arrivingAtTarget.length} pax reached destination.`);
-        }
-
-        // Dodaj przesiadkowiczów do kolejki stacji
-        transferring.forEach(p => {
-            p.status = 'transferring';
-            if (!station.queue) station.queue = [];
-            station.queue.push(p);
-        });
-
-        // 2. WSIADANIE
-        // Pasażerowie wsiadają tylko, jeśli linia pojazdu przybliża ich do celu
-        if (station.queue) {
-            const space = vehicle.cap - vehicle.manifest.length;
-            const validBoarders = station.queue.filter(p => canLineReachTarget(vehicle.line, p.targetId)).slice(0, space);
-            
-            validBoarders.forEach(p => {
-                p.status = 'transit';
-                vehicle.manifest.push(p);
-                // Usuń ze stacji
-                const idx = station.queue.indexOf(p);
-                station.queue.splice(idx, 1);
-            });
-        }
-
-        vehicle.load = vehicle.manifest.length;
-        station.pass = station.queue ? station.queue.length : 0;
-    };
-
-    // Helper: Czy stacja jest węzłem przesiadkowym dla celu?
-    const isStationNodeForTarget = (station, targetId, currentLineColor) => {
-        let foundAlternative = false;
-        Object.keys(EngineState.lines).forEach(color => {
-            if (color === currentLineColor) return;
-            const line = EngineState.lines[color];
-            if (line.nodes.includes(station) && line.nodes.some(n => n.id === targetId)) {
-                foundAlternative = true;
-            }
-        });
-        return foundAlternative;
-    };
-
-    // Helper: Czy ta linia w ogóle ma tę stację docelową?
-    const canLineReachTarget = (line, targetId) => {
-        return line.nodes.some(n => n.id === targetId);
-    };
-
-    return {
-        update: generateDemand,
-        exchange: handleExchange,
-        state: T_STATE
-    };
-})(Omni ? Omni.INTERNAL_STATE : {});
-/**
- * MODULE 4: CHRONOS_TIME_CONTROL
- * Zarządzanie upływem czasu i synchronizacja międzymodułowa.
- */
-const ChronosModule = ((EngineState) => {
-    const C_STATE = {
-        multiplier: 1.0,
-        isPaused: false,
-        gameTime: 0, // Wewnętrzny licznik milisekund
-        modes: [
-            { label: 'PAUSE', val: 0, icon: 'pause' },
-            { label: '1x', val: 1, icon: 'play_arrow' },
-            { label: '2x', val: 2, icon: 'fast_forward' },
-            { label: '4x', val: 4, icon: 'bolt' }
-        ]
-    };
-
-    // Tworzenie UI dla czasu (dynamiczne wstrzykiwanie do DOM)
-    const initUI = () => {
-        const dock = document.querySelector('.master-dock');
-        const timeControl = document.createElement('div');
-        timeControl.id = 'chronos-ui';
-        timeControl.style = 'display:flex; gap:5px; margin-left:15px; padding-left:15px; border-left:1px solid #333;';
-        
-        C_STATE.modes.forEach(m => {
-            const btn = document.createElement('div');
-            btn.className = 'm-btn chronos-btn';
-            btn.style = 'width:45px; height:45px; border-radius:12px; --c: #fff';
-            btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:20px">${m.icon}</span>`;
-            btn.onclick = () => setSpeed(m.val, btn);
-            if(m.val === 1) btn.classList.add('active');
-            timeControl.appendChild(btn);
-        });
-        dock.appendChild(timeControl);
-
-        // Dodanie zegara do HUD
-        const hud = document.querySelector('.top-hud');
-        const clock = document.createElement('div');
-        clock.className = 'glass-panel';
-        clock.innerHTML = `<span class="v-lbl">System Time</span><div id="v-clock" class="v-num">08:00</div>`;
-        hud.insertBefore(clock, hud.firstChild);
-    };
-
-    const setSpeed = (val, btn) => {
-        C_STATE.multiplier = val;
-        C_STATE.isPaused = (val === 0);
-        document.querySelectorAll('.chronos-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        Omni.log(`TIME_DILATION: ${val}x`);
-    };
-
-    const update = (dt) => {
-        // Obliczamy zmodyfikowany Delta Time (dt)
-        const scaledDt = dt * C_STATE.multiplier;
-        
-        if (!C_STATE.isPaused) {
-            C_STATE.gameTime += scaledDt;
-            updateClock();
-        }
-
-        return scaledDt;
-    };
-
-    const updateClock = () => {
-        // Synchronizacja z WeatherModule (0-2400)
-        if (typeof WeatherModule !== "undefined") {
-            const t = WeatherModule.state.time;
-            const hours = Math.floor(t / 100).toString().padStart(2, '0');
-            const minutes = Math.floor((t % 100) * 0.6).toString().padStart(2, '0');
-            document.getElementById('v-clock').innerText = `${hours}:${minutes}`;
-        }
-    };
-
-    return { init: initUI, update, state: C_STATE };
-})(Omni ? Omni.INTERNAL_STATE : {});
-
-// INICJALIZACJA:
-// Wywołaj ChronosModule.init() wewnątrz Omni.init() po Renderer.init()
-/**
- * MODULE 5: PARTICLE_FX_PRO
- * Zaawansowany system cząsteczek i efektów post-procesowych.
- */
-const FXModule = ((EngineState) => {
-    const P_STATE = {
-        pool: [],
-        maxParticles: 2000,
-        emitters: [],
-        layers: {
-            background: [],
-            foreground: []
+    let State = {
+        towers: [], troops: [], particles: [],
+        mouse: { x: 0, y: 0, down: false, start: null },
+        lvl: 1, xp: 0, sector: 1, rebirth: 0, frame: 0,
+        gameState: 'playing',
+        buffs: { overclock: 0 },
+        skills: {
+            1: { cd: 20000, last: 0 },
+            2: { cd: 30000, last: 0 },
+            3: { cd: 15000, last: 0 }
         }
     };
 
     class Particle {
-        constructor(x, y, config) {
-            this.reset(x, y, config);
-        }
-        reset(x, y, c) {
+        constructor(x, y, color) {
             this.x = x; this.y = y;
-            this.vx = c.vx || (Math.random() - 0.5) * 5;
-            this.vy = c.vy || (Math.random() - 0.5) * 5;
+            const a = Math.random() * Math.PI * 2;
+            const v = 1 + Math.random() * 5;
+            this.vx = Math.cos(a) * v;
+            this.vy = Math.sin(a) * v;
             this.life = 1.0;
-            this.decay = c.decay || 0.02;
-            this.color = c.color || '#fff';
-            this.size = c.size || 3;
-            this.grav = c.grav || 0;
-            this.glow = c.glow || false;
+            this.color = color;
         }
-        update(dt) {
-            this.x += this.vx * (dt / 16);
-            this.y += this.vy * (dt / 16);
-            this.vy += this.grav;
-            this.life -= this.decay * (dt / 16);
-        }
-        draw(ctx) {
+        update() { this.x += this.vx; this.y += this.vy; this.life -= 0.03; }
+        draw() {
             ctx.globalAlpha = this.life;
-            if (this.glow) {
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = this.color;
-            }
             ctx.fillStyle = this.color;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.globalAlpha = 1.0;
+            ctx.fillRect(this.x, this.y, 4, 4);
         }
     }
 
-    const emitBurst = (x, y, color, count = 20) => {
-        for (let i = 0; i < count; i++) {
-            if (P_STATE.pool.length < P_STATE.maxParticles) {
-                P_STATE.pool.push(new Particle(x, y, {
-                    color: color,
-                    decay: 0.01 + Math.random() * 0.02,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10,
-                    glow: true
-                }));
+    class Tower {
+        constructor(x, y, owner, count, type = 'normal') {
+            this.x = x; this.y = y;
+            this.owner = owner;
+            this.count = count;
+            this.type = type; 
+            this.lastProd = Date.now();
+            this.pulse = Math.random() * 10;
+        }
+        
+        get max() { 
+            let m = 50 + (State.lvl * 5); 
+            if(this.owner === 1) m += State.rebirth * 20; // BONUS REBIRTH DO MAXYMALNEJ POJEMNOŚCI
+            
+            if(this.type === 'speed') return Math.floor(m * 0.6); 
+            if(this.type === 'fortress') return Math.floor(m * 1.5); 
+            return m;
+        }
+
+        update() {
+            this.pulse += 0.05;
+            let rate = 1000 - Math.min(State.lvl * 20, 800);
+            
+            if(this.type === 'speed') rate /= 2.5; 
+            
+            if(this.owner === 1) {
+                rate /= (1 + State.rebirth * 0.2); // BONUS REBIRTH DO SZYBKOŚCI PRODUKCJI
+                if(Date.now() < State.buffs.overclock) rate /= 3; 
+            }
+            
+            if (this.owner !== 0 && Date.now() - this.lastProd > rate) {
+                if (this.count < this.max) this.count++;
+                this.lastProd = Date.now();
             }
         }
-    };
 
-    const emitTrail = (x, y, color) => {
-        if (Math.random() > 0.4) return;
-        P_STATE.pool.push(new Particle(x, y, {
-            color: color,
-            decay: 0.05,
-            vx: 0, vy: 0,
-            size: 8,
-            glow: true
-        }));
-    };
-
-    const update = (ctx, dt) => {
-        for (let i = P_STATE.pool.length - 1; i >= 0; i--) {
-            const p = P_STATE.pool[i];
-            p.update(dt);
-            if (p.life <= 0) {
-                P_STATE.pool.splice(i, 1);
+        draw() {
+            let baseColor = this.owner === 1 ? Theme.p1 : (this.owner === 2 ? Theme.p2 : Theme.neu);
+            const s = Math.sin(this.pulse) * 3;
+            
+            if(this.owner === 1 && Date.now() < State.buffs.overclock) {
+                ctx.shadowBlur = 30; ctx.shadowColor = Theme.p1;
             } else {
-                p.draw(ctx);
+                ctx.shadowBlur = 15; ctx.shadowColor = baseColor;
             }
-        }
-        
-        // Ambient Dust Effect (Digital Grid)
-        if (Math.random() > 0.9) {
-            const rx = (Math.random() * 4000) - 2000;
-            const ry = (Math.random() * 4000) - 2000;
-            emitBurst(rx, ry, 'rgba(0, 243, 255, 0.1)', 1);
-        }
-    };
 
-    return { update, emitBurst, emitTrail, state: P_STATE };
-})(Omni ? Omni.INTERNAL_STATE : {});
-
-// INTEGRACJA:
-// 1. W Renderer.draw() (lub renderFrame) wywołaj:
-//    FXModule.update(ctx, dt);
-// 2. W klasie Vehicle.draw() dodaj:
-//    FXModule.emitTrail(x, y, this.line.color);
-// 3. W Omni.click() przy sukcesie budowania dodaj:
-//    FXModule.emitBurst(hit.x, hit.y, DB.activeColor, 50);
-/**
- * MODULE 6: ACHIEVEMENT_&_UPGRADE_TREE
- * System stałej progresji, drzewko technologii i bonusy pasywne.
- */
-const UpgradeModule = ((EngineState) => {
-    const U_STATE = {
-        devPoints: 0,
-        totalXP: 0,
-        level: 1,
-        upgrades: {
-            "BIO_FUEL": { l: 0, max: 5, cost: 500, name: "Biopaliwo", desc: "Prędkość jednostek +10%", type: 'speed' },
-            "NANO_STRUCTURE": { l: 0, max: 10, cost: 800, name: "Nanostruktura", desc: "Pojemność stacji +20%", type: 'cap' },
-            "MAGNETIC_RAILS": { l: 0, max: 3, cost: 2500, name: "Szyny Magnetyczne", desc: "Koszty utrzymania -15%", type: 'maint' },
-            "NEURAL_TICKET": { l: 0, max: 5, cost: 1200, name: "Bilet Neuronowy", desc: "Przychód z pasażera +25%", type: 'money' }
-        },
-        achievements: [
-            { id: 'first_line', name: 'Początek Pętli', goal: 1, current: 0, done: false, reward: 200 },
-            { id: 'pax_1000', name: 'Tysięcznik', goal: 1000, current: 0, done: false, reward: 1000 },
-            { id: 'rich_bastard', name: 'Rekin Biznesu', goal: 50000, current: 0, done: false, reward: 5000 }
-        ]
-    };
-
-    const initUI = () => {
-        const wrapper = document.createElement('div');
-        wrapper.id = 'upgrade-menu';
-        wrapper.style = `
-            position:fixed; right:-400px; top:0; bottom:0; width:380px; 
-            background:var(--glass); border-left:2px solid var(--n-blue);
-            transition:0.5s cubic-bezier(0.19, 1, 0.22, 1); z-index:2000;
-            padding:30px; backdrop-filter:blur(20px); overflow-y:auto;
-        `;
-        
-        let html = `<h2 style="font-family:Orbitron; color:var(--n-blue)">TECH_TREE</h2>`;
-        html += `<div id="dp-display" style="font-size:18px; margin-bottom:20px">Points: 0 DP</div>`;
-        
-        for (let key in U_STATE.upgrades) {
-            const up = U_STATE.upgrades[key];
-            html += `
-                <div class="up-card" onclick="UpgradeModule.buy('${key}')" style="
-                    background:rgba(255,255,255,0.05); padding:15px; margin-bottom:10px;
-                    border-radius:10px; cursor:pointer; border:1px solid #333;
-                ">
-                    <div style="font-weight:700">${up.name} [Lv ${up.l}/${up.max}]</div>
-                    <div style="font-size:12px; color:#aaa">${up.desc}</div>
-                    <div style="font-size:13px; color:var(--n-yellow); margin-top:5px">Cost: ${up.cost} DP</div>
-                </div>
-            `;
-        }
-        
-        wrapper.innerHTML = html;
-        document.body.appendChild(wrapper);
-
-        // Toggle button
-        const btn = document.querySelector('[data-t="up"]');
-        btn.onclick = () => {
-            const menu = document.getElementById('upgrade-menu');
-            menu.style.right = menu.style.right === '0px' ? '-400px' : '0px';
-        };
-    };
-
-    const checkAchievements = () => {
-        U_STATE.achievements.forEach(a => {
-            if (a.done) return;
+            ctx.strokeStyle = baseColor;
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(this.x, this.y, Theme.towerR + s, 0, Math.PI*2); ctx.stroke();
+            ctx.shadowBlur = 0;
             
-            // Logika sprawdzania
-            if (a.id === 'first_line') {
-                let linesCount = 0;
-                Object.values(EngineState.lines).forEach(l => { if(l.nodes.length > 0) linesCount++; });
-                a.current = linesCount;
+            ctx.fillStyle = "#050508"; ctx.fill();
+            
+            ctx.lineWidth = 2;
+            if(this.type === 'speed') {
+                ctx.strokeStyle = Theme.speed;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - 15);
+                ctx.lineTo(this.x + 15, this.y + 10);
+                ctx.lineTo(this.x - 15, this.y + 10);
+                ctx.closePath(); ctx.stroke();
+            } else if (this.type === 'fortress') {
+                ctx.strokeStyle = Theme.fort;
+                ctx.strokeRect(this.x - 12, this.y - 12, 24, 24);
             }
-            if (a.id === 'pax_1000') a.current = EconomyModule.state.stats.passengersServed;
-            if (a.id === 'rich_bastard') a.current = EngineState.budget;
 
-            if (a.current >= a.goal) {
-                a.done = true;
-                U_STATE.devPoints += a.reward;
-                Omni.log(`ACHIEVEMENT UNLOCKED: ${a.name} (+${a.reward} DP)`);
-                FXModule.emitBurst(window.innerWidth/2, window.innerHeight/2, '#f3ff00', 100);
-            }
-        });
-        document.getElementById('dp-display').innerText = `Points: ${Math.floor(U_STATE.devPoints)} DP`;
-    };
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 4;
+            ctx.arc(this.x, this.y, Theme.towerR - 8, 0, Math.PI*2);
+            ctx.stroke();
 
-    const buy = (key) => {
-        const up = U_STATE.upgrades[key];
-        if (U_STATE.devPoints >= up.cost && up.l < up.max) {
-            U_STATE.devPoints -= up.cost;
-            up.l++;
-            up.cost = Math.floor(up.cost * 1.6);
-            applyUpgrade(up);
-            Omni.log(`UPGRADED: ${up.name} to level ${up.l}`);
-            initUI(); // Re-render menu
-        } else {
-            Omni.log("NOT ENOUGH DP OR MAX LEVEL");
-        }
-    };
-
-    const applyUpgrade = (up) => {
-        if (up.type === 'speed') {
-            Object.values(EngineState.lines).forEach(l => {
-                l.units.forEach(u => u.speed *= 1.1);
-            });
-        }
-        if (up.type === 'cap') {
-            EngineState.stations.forEach(s => s.cap = Math.floor(s.cap * 1.2));
-        }
-    };
-
-    return { init: initUI, update: checkAchievements, buy, state: U_STATE };
-})(Omni ? Omni.INTERNAL_STATE : {});
-
-// INTEGRACJA:
-// 1. W Omni.init() dodaj: UpgradeModule.init();
-// 2. W Renderer.draw() dodaj: UpgradeModule.update();
-/**
- * MODULE 7: MAP_EXPANSION_PROCEDURAL
- * System dynamicznego rozszerzania miasta i generowania dzielnic.
- */
-const MapModule = ((EngineState) => {
-    const M_STATE = {
-        districts: ["URSYNÓW", "BIAŁOŁĘKA", "TARCHOMIN", "WAWER", "OCHOTA", "GROCHÓW", "GOCŁAW", "ANIN"],
-        nextExpansionCost: 10000,
-        expansionCount: 0,
-        minDist: 800,
-        maxDist: 1500
-    };
-
-    const checkExpansion = () => {
-        // Warunek: Masz 10,000 kredytów i wszystkie obecne stacje mają min. 2 poziom ulepszenia
-        const canExpand = EngineState.budget >= M_STATE.nextExpansionCost && 
-                          EngineState.stations.length < 25; // Limit techniczny
-
-        if (canExpand && Math.random() < 0.005) { // Mała szansa co klatkę, by nie spamować
-            spawnNewDistrict();
-        }
-    };
-
-    const spawnNewDistrict = () => {
-        if (M_STATE.districts.length === 0) return;
-
-        const name = M_STATE.districts.shift();
-        const angle = Math.random() * Math.PI * 2;
-        const dist = M_STATE.minDist + Math.random() * (M_STATE.maxDist - M_STATE.minDist);
-        
-        const newX = Math.cos(angle) * dist;
-        const newY = Math.sin(angle) * dist;
-
-        const newStation = new Omni.StationClass({
-            id: EngineState.stations.length,
-            n: name,
-            x: newX,
-            y: newY,
-            cap: 600 + (M_STATE.expansionCount * 100)
-        });
-
-        EngineState.stations.push(newStation);
-        EngineState.budget -= M_STATE.nextExpansionCost;
-        M_STATE.nextExpansionCost *= 1.5;
-        M_STATE.expansionCount++;
-
-        Omni.log(`URBAN EXPANSION: ${name} is now available for transit!`);
-        
-        // Efekt wizualny na nowej stacji
-        if (typeof FXModule !== "undefined") {
-            FXModule.emitBurst(newX, newY, '#00ff66', 150);
-        }
-    };
-
-    return { update: checkExpansion, state: M_STATE };
-})(Omni ? Omni.INTERNAL_STATE : {});
-
-// FINALNA INTEGRACJA W OMNI:
-// 1. Wewnątrz obiektu Omni, udostępnij klasę Station, by MapModule mógł jej używać:
-//    StationClass: Station,
-// 2. W Renderer.draw() dodaj: 
-//    MapModule.update();
-/**
- * MODULE 8: SYSTEM_INTEGRITY_SHIELD (HOTFIX & AUTO-BOOT)
- * Moduł naprawczy: Rozwiązuje problemy z kolejnością ładowania i wymusza start.
- */
-const IntegrityShield = ((OmniInstance) => {
-    const SHIELD_STATE = {
-        checksPassed: false,
-        requiredModules: ['WeatherModule', 'EconomyModule', 'TransferModule', 'ChronosModule', 'FXModule', 'UpgradeModule', 'MapModule'],
-        missing: []
-    };
-
-    const performDiagnostics = () => {
-        console.log("🛡️ INTEGRITY_SHIELD: Starting diagnostics...");
-        
-        // 1. Sprawdzanie obecności modułów
-        SHIELD_STATE.missing = SHIELD_STATE.requiredModules.filter(mod => typeof window[mod] === 'undefined');
-        
-        if (SHIELD_STATE.missing.length > 0) {
-            console.warn("⚠️ Missing modules:", SHIELD_STATE.missing);
-            // Tworzymy atrapy (mocks), żeby silnik nie wywalił błędu przy próbie wywołania
-            SHIELD_STATE.missing.forEach(mod => {
-                window[mod] = { update: () => {}, process: () => {}, state: {}, init: () => {} };
-                console.log(`🔧 Patching: ${mod} mocked.`);
-            });
-        }
-
-        // 2. Naprawa brakujących referencji w Omni
-        if (typeof Omni !== 'undefined') {
-            if (!Omni.INTERNAL_STATE && typeof DB !== 'undefined') Omni.INTERNAL_STATE = DB;
-            // Wstrzyknięcie brakującej klasy Station do Omni, jeśli MapModule jej potrzebuje
-            if (!Omni.StationClass && typeof Station !== 'undefined') {
-                Omni.StationClass = Station;
-                console.log("🔧 Patching: StationClass linked to Omni.");
-            }
-        }
-
-        // 3. Wymuszenie zakończenia preloadera (Failsafe)
-        setTimeout(() => {
-            const startBtn = document.getElementById('start-trigger');
-            const loadVal = document.getElementById('load-val');
-            const bootText = document.querySelector('#preloader div');
-
-            if (startBtn && startBtn.style.display === 'none') {
-                console.log("🚀 Failsafe: Forcing boot sequence...");
-                if(loadVal) loadVal.style.width = '100%';
-                if(bootText) bootText.innerText = 'INTEGRITY_FIX_APPLIED';
-                startBtn.style.display = 'block';
-            }
-        }, 1500); // Jeśli po 1.5s nic się nie dzieje, wymuś start
-
-        SHIELD_STATE.checksPassed = true;
-    };
-
-    // Automatyczne odpalenie diagnostyki przy wczytaniu modułu
-    performDiagnostics();
-
-    return { state: SHIELD_STATE };
-})(typeof Omni !== 'undefined' ? Omni : null);
-
-/**
- * FINAL OVERRIDE - To upewnia się, że nawet jeśli zapomniałeś 
- * dopisać wywołań w Omni.init(), silnik i tak spróbuje ruszyć.
- */
-window.onload = () => {
-    if (typeof Omni !== 'undefined' && document.getElementById('preloader')) {
-        console.log("🏁 Window loaded. Checking engine status...");
-        // Jeśli przycisk startu nie działa, przypisujemy mu funkcję ratunkową
-        const btn = document.getElementById('start-trigger');
-        if (btn && !btn.onclick) {
-            btn.onclick = () => {
-                document.getElementById('preloader').remove();
-                Omni.init(); // Próba normalnego startu
-            };
+            ctx.beginPath();
+            ctx.strokeStyle = baseColor;
+            const arc = (this.count / this.max) * (Math.PI * 2);
+            ctx.arc(this.x, this.y, Theme.towerR - 8, -Math.PI/2, arc - Math.PI/2);
+            ctx.stroke();
+            
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.font = "900 22px Orbitron";
+            ctx.fillText(Math.floor(this.count), this.x, this.y + 8);
         }
     }
-};
-/**
- * MODULE 9: OMNI_DEBUG_CONSOLE
- * Terminal diagnostyczny wyświetlający błędy bezpośrednio na ekranie.
- */
-const DebugConsole = (() => {
-    const D_STATE = {
-        logs: [],
-        maxLogs: 5
+
+    class Troop {
+        constructor(startX, startY, target, owner, amount) {
+            this.x = startX; this.y = startY;
+            this.target = target;
+            this.owner = owner;
+            this.amount = amount;
+            this.dead = false;
+            this.speed = 4;
+        }
+        update() {
+            const dx = this.target.x - this.x, dy = this.target.y - this.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 25) { this.impact(); this.dead = true; }
+            else { this.x += (dx/dist)*this.speed; this.y += (dy/dist)*this.speed; }
+        }
+        impact() {
+            const color = this.owner === 1 ? Theme.p1 : Theme.p2;
+            for(let i=0; i<10; i++) State.particles.push(new Particle(this.x, this.y, color));
+            
+            if (this.target.owner === this.owner) {
+                this.target.count += this.amount;
+            } else {
+                let damage = this.amount;
+                if(this.target.type === 'fortress') damage *= 0.5; 
+
+                this.target.count -= damage;
+                
+                if (this.target.count <= 0) {
+                    this.target.owner = this.owner;
+                    this.target.count = Math.abs(this.target.count); 
+                    if(this.owner === 1) addXP(30);
+                }
+            }
+        }
+        draw() {
+            const color = this.owner === 1 ? Theme.p1 : Theme.p2;
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 10; ctx.shadowColor = color;
+            
+            if(this.speed > 5) {
+                ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(this.x - (this.target.x-this.x)*0.05, this.y - (this.target.y-this.y)*0.05, 3, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1;
+            } else {
+                ctx.beginPath(); ctx.arc(this.x, this.y, 6, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    const showBanner = (text, isDeath = false, colorHex = null) => {
+        const b = document.getElementById('banner');
+        b.innerText = text;
+        const col = colorHex ? colorHex : (isDeath ? Theme.p2 : Theme.p1);
+        b.style.color = col;
+        b.style.borderColor = col;
+        b.style.textShadow = `0 0 20px ${col}`;
+        b.style.opacity = 1;
+        setTimeout(() => b.style.opacity = 0, 2000);
     };
 
-    // Tworzenie elementu DOM dla konsoli
-    const initUI = () => {
-        const terminal = document.createElement('div');
-        terminal.id = 'omni-terminal';
-        terminal.style = `
-            position: fixed; bottom: 0; left: 0; right: 0; height: 120px;
-            background: rgba(0, 0, 0, 0.85); border-top: 1px solid var(--n-red);
-            z-index: 9999; font-family: 'monospace'; font-size: 11px;
-            padding: 10px; overflow-y: hidden; pointer-events: none;
-            display: flex; flex-direction: column-reverse; gap: 4px;
-            box-shadow: 0 -10px 30px rgba(255, 0, 60, 0.15);
-        `;
-        document.body.appendChild(terminal);
+    const generate = () => {
+        State.towers = []; State.troops = []; State.particles = [];
+        State.mouse.down = false; State.mouse.start = null;
         
-        // Dodaj etykietę statusu
-        const badge = document.createElement('div');
-        badge.style = "position:absolute; top:-20px; left:20px; background:var(--n-red); color:#000; padding:2px 10px; font-weight:bold; font-size:10px;";
-        badge.innerText = "SYSTEM_DIAGNOSTICS_ACTIVE";
-        terminal.appendChild(badge);
-    };
-
-    const logToScreen = (msg, type = 'info') => {
-        const term = document.getElementById('omni-terminal');
-        if (!term) return;
-
-        const entry = document.createElement('div');
-        const color = type === 'error' ? '#ff003c' : (type === 'warn' ? '#f3ff00' : '#00f3ff');
-        const timestamp = new Date().toLocaleTimeString();
+        const now = Date.now();
+        State.skills[1].last = now - State.skills[1].cd;
+        State.skills[2].last = now - State.skills[2].cd;
+        State.skills[3].last = now - State.skills[3].cd;
         
-        entry.innerHTML = `<span style="color:#666">[${timestamp}]</span> <span style="color:${color}">${msg}</span>`;
-        term.prepend(entry);
+        const w = canvas.width, h = canvas.height;
+        
+        // BONUS REBIRTH DO WOJSKA STARTOWEGO
+        let pStart = 40 + (State.rebirth * 15); 
+        let aiStart = 15 + (State.sector * 3);
+        let numNeutral = 4 + Math.floor(State.sector / 2);
+        let numAIBases = 1 + Math.floor(State.sector / 4); 
 
-        // Usuwanie starych logów
-        if (term.childNodes.length > 10) term.removeChild(term.lastChild);
-    };
-
-    // PRZECHWYTYWANIE BŁĘDÓW GLOBALNYCH
-    window.onerror = (msg, url, line, col, error) => {
-        const simpleName = url ? url.split('/').pop() : 'script';
-        logToScreen(`CRITICAL_ERROR: ${msg} (at ${simpleName}:${line})`, 'error');
-        return false; 
-    };
-
-    // Monitorowanie brakujących modułów z IntegrityShield
-    const monitorIntegrity = () => {
-        if (typeof IntegrityShield !== 'undefined' && IntegrityShield.state.missing.length > 0) {
-            IntegrityShield.state.missing.forEach(m => {
-                logToScreen(`MODULE_MISSING: Cannot find ${m}. Applied Mock Patch.`, 'warn');
+        State.towers.push(new Tower(w*0.2, h/2, 1, pStart, 'normal'));
+        
+        for(let i = 0; i < numAIBases; i++) {
+            let yPos = (numAIBases === 1) ? h/2 : (h*0.2) + (h*0.6 / (numAIBases - 1)) * i;
+            let aiType = Math.random() > 0.7 ? 'speed' : 'normal'; 
+            State.towers.push(new Tower(w*0.8, yPos, 2, aiStart, aiType));
+        }
+        
+        const types = ['normal', 'normal', 'normal', 'speed', 'fortress'];
+        for(let i=0; i<numNeutral; i++) {
+            let maxNeu = 5 + (State.sector * 2);
+            let randType = types[Math.floor(Math.random() * types.length)];
+            State.towers.push(new Tower(w*0.35+Math.random()*w*0.3, h*0.15+Math.random()*h*0.5, 0, Math.floor(1 + Math.random()*maxNeu), randType));
+        }
+        
+        for(let n=0; n<50; n++) {
+            State.towers.forEach(t1 => {
+                State.towers.forEach(t2 => {
+                    if(t1 === t2) return;
+                    const d = Math.hypot(t1.x-t2.x, t1.y-t2.y);
+                    const minDist = Theme.towerR * 2.5;
+                    if(d < minDist) {
+                        const force = (minDist - d) * 0.1;
+                        const a = Math.atan2(t2.y-t1.y, t2.x-t1.x);
+                        t1.x -= Math.cos(a)*force; t1.y -= Math.sin(a)*force;
+                        t2.x += Math.cos(a)*force; t2.y += Math.sin(a)*force;
+                    }
+                });
+                t1.x = Math.max(Theme.towerR + 10, Math.min(w - Theme.towerR - 10, t1.x));
+                t1.y = Math.max(Theme.towerR + 60, Math.min(h - Theme.towerR - 120, t1.y));
             });
         }
+
+        State.gameState = 'playing';
+        showBanner("SEKTOR " + State.sector);
+        document.getElementById('v-sector').innerText = State.sector;
+        document.getElementById('msg').innerText = "";
     };
 
-    // Start UI
-    initUI();
-    setTimeout(monitorIntegrity, 2000);
+    const addXP = (amt) => {
+        State.xp += amt;
+        const requiredXP = State.lvl * 150;
+        if(State.xp >= requiredXP) { State.lvl++; State.xp -= requiredXP; }
+        document.getElementById('v-lvl').innerText = "LVL " + State.lvl;
+        document.getElementById('level-bar').style.width = (State.xp/(State.lvl*150)*100) + "%";
+    };
 
-    return { log: logToScreen };
-})();
-
-// Nadpisujemy standardowy console.warn, żeby też pisał na ekranie
-const _originalWarn = console.warn;
-console.warn = function(...args) {
-    DebugConsole.log("WARN: " + args.join(' '), 'warn');
-    _originalWarn.apply(console, args);
-};
-/**
- * MODULE 10: EMERGENCY_FORCE_KICKSTART
- * Jeśli po 3 sekundach nic się nie dzieje, ten moduł "kopie" silnik do startu.
- */
-(() => {
-    console.log("⚡ FORCE_KICKSTART: Monitoring engine heartbeat...");
-
-    const forceStart = () => {
-        const preloader = document.getElementById('preloader');
-        const startBtn = document.getElementById('start-trigger');
-        
-        if (preloader) {
-            DebugConsole.log("⚡ KICKSTART: Engine stuck. Forcing manual override...", "warn");
+    const updateUI = () => {
+        const now = Date.now();
+        [1,2,3].forEach(id => {
+            const btn = document.getElementById('btn-s'+id);
+            const cdBar = document.getElementById('cd-'+id);
+            const skill = State.skills[id];
             
-            // 1. Czyścimy preloader siłowo
-            preloader.style.display = 'none';
-            preloader.remove();
+            const timePassed = now - skill.last;
+            if(timePassed < skill.cd) {
+                btn.classList.add('disabled');
+                cdBar.style.height = ((timePassed / skill.cd) * 100) + "%";
+            } else {
+                btn.classList.remove('disabled');
+                cdBar.style.height = "100%";
+            }
+        });
+    };
 
-            // 2. Szukamy obiektu Omni i próbujemy go odpalić
-            if (typeof Omni !== 'undefined') {
-                try {
-                    Omni.init();
-                    DebugConsole.log("🚀 KICKSTART: Omni.init() executed successfully.", "info");
-                } catch (e) {
-                    DebugConsole.log("❌ KICKSTART_FAILED: " + e.message, "error");
-                    console.error(e);
+    const loop = () => {
+        State.frame++;
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#020205"; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        updateUI();
+
+        if(State.gameState === 'playing') {
+            let aiSpeed = Math.max(50, 150 - (State.sector * 8));
+            if(State.frame % aiSpeed === 0) aiLogic();
+
+            if(State.mouse.down && State.mouse.start) {
+                ctx.strokeStyle = Theme.p1; 
+                ctx.lineWidth = 3;
+                ctx.setLineDash([10, 10]);
+                ctx.lineDashOffset = -State.frame;
+                ctx.beginPath(); 
+                ctx.moveTo(State.mouse.start.x, State.mouse.start.y);
+                ctx.lineTo(State.mouse.x, State.mouse.y); 
+                ctx.stroke(); 
+                ctx.setLineDash([]);
+                
+                const hovered = State.towers.find(t => Math.hypot(t.x-State.mouse.x, t.y-State.mouse.y) < Theme.towerR * 1.5);
+                if(hovered && hovered !== State.mouse.start) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+                    ctx.lineWidth = 2;
+                    ctx.arc(hovered.x, hovered.y, Theme.towerR + 10, 0, Math.PI*2);
+                    ctx.stroke();
+                }
+            }
+
+            State.towers.forEach(t => { t.update(); t.draw(); });
+            State.troops = State.troops.filter(t => !t.dead);
+            State.troops.forEach(t => { t.update(); t.draw(); });
+            
+            checkWin();
+        }
+
+        State.particles = State.particles.filter(p => p.life > 0);
+        State.particles.forEach(p => { p.update(); p.draw(); });
+
+        requestAnimationFrame(loop);
+    };
+
+    const checkWin = () => {
+        const teams = [...new Set(State.towers.filter(t => t.owner !== 0).map(t => t.owner))];
+        if(teams.length === 1 && State.frame > 60) {
+            State.gameState = 'transition';
+            
+            if(teams[0] === 1) { 
+                // Zwycięstwo
+                if(State.sector >= 10) {
+                    // LOGIKA REBIRTH
+                    State.rebirth++;
+                    State.sector = 1;
+                    State.lvl = 1;
+                    State.xp = 0;
+                    
+                    document.getElementById('box-rebirth').style.display = 'block';
+                    document.getElementById('v-rebirth').innerText = State.rebirth;
+                    document.getElementById('v-lvl').innerText = "LVL 1";
+                    document.getElementById('level-bar').style.width = "0%";
+                    
+                    document.getElementById('msg').innerText = "REBIRTH ZDOBYTY! MOC WZRASTA...";
+                    showBanner("REBIRTH " + State.rebirth + "!", false, Theme.p3);
+                    setTimeout(generate, 2500);
+                } else {
+                    // Zwykłe Przejście
+                    State.sector++; 
+                    setTimeout(generate, 1500);
                 }
             } else {
-                DebugConsole.log("💀 FATAL: Object 'Omni' not found in global scope!", "error");
+                // Porażka
+                showBanner("PORAŻKA", true);
+                State.sector = 1; State.lvl = 1; State.xp = 0;
+                document.getElementById('v-lvl').innerText = "LVL 1";
+                document.getElementById('level-bar').style.width = "0%";
+                setTimeout(generate, 2500);
             }
+            State.frame = 0;
         }
     };
 
-    // Czekamy 3 sekundy. Jeśli preloader nadal tam jest - uderzamy.
-    setTimeout(() => {
-        if (document.getElementById('preloader')) {
-            forceStart();
-        } else {
-            console.log("✅ Engine started normally. Kickstart standing by.");
-        }
-    }, 3000);
+    const aiLogic = () => {
+        const aiTowers = State.towers.filter(t => t.owner === 2);
+        aiTowers.forEach(at => {
+            let attackThreshold = Math.max(10, 25 - State.sector); 
+            if(at.count > attackThreshold) {
+                const target = State.towers.filter(t => t.owner !== 2).sort((a,b) => {
+                    let aVal = a.count * (a.type==='fortress'?2:1);
+                    let bVal = b.count * (b.type==='fortress'?2:1);
+                    return aVal - bVal;
+                })[0];
 
-    // DODATKOWO: Sprawdźmy czy Canvas w ogóle żyje
-    setTimeout(() => {
-        const canvas = document.getElementById('stage');
-        if (canvas && canvas.width === 0) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            DebugConsole.log("🔧 FIXED: Canvas dimensions were zero.", "warn");
-        }
-    }, 1000);
-})();
-// WYMUSZENIE POŁĄCZEŃ (Gdybyś zapomniał dopisać w init)
-if (typeof Omni !== 'undefined') {
-    // Automatyczne podpięcie brakujących danych
-    if (!Omni.INTERNAL_STATE && typeof DB !== 'undefined') Omni.INTERNAL_STATE = DB;
-    if (!Omni.StationClass && typeof Station !== 'undefined') Omni.StationClass = Station;
-
-    // Ratunkowy start
-    setTimeout(() => {
-        try {
-            if (document.getElementById('preloader')) {
-                document.getElementById('preloader').remove();
-                Omni.init();
-                console.log("System wymuszony!");
+                if(target) {
+                    let aggression = Math.min(0.8, 0.4 + (State.sector * 0.05));
+                    const send = Math.floor(at.count * aggression); 
+                    at.count -= send;
+                    State.troops.push(new Troop(at.x, at.y, target, 2, send));
+                }
             }
-        } catch(e) {
-            alert("Błąd startu: " + e.message);
+        });
+    };
+
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; if(State.towers.length===0) generate(); };
+
+    const getPos = (e) => {
+        if(e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+    };
+
+    const handleInput = (e) => {
+        if(e.target.closest('.skills-container')) return;
+        
+        e.preventDefault(); 
+        if(State.gameState !== 'playing') return;
+        
+        const pos = getPos(e);
+        if(e.type === 'mousedown' || e.type === 'touchstart') {
+            const t = State.towers.find(t => Math.hypot(t.x - pos.x, t.y - pos.y) < Theme.towerR * 1.5);
+            if(t && t.owner === 1) { 
+                State.mouse.start = t; State.mouse.down = true; 
+                State.mouse.x = pos.x; State.mouse.y = pos.y; 
+            }
+        } else if(e.type === 'mousemove' || e.type === 'touchmove') {
+            if(State.mouse.down) { State.mouse.x = pos.x; State.mouse.y = pos.y; }
+        } else if(e.type === 'mouseup' || e.type === 'touchend') {
+            if(State.mouse.down && State.mouse.start) {
+                const target = State.towers.find(t => Math.hypot(t.x - pos.x, t.y - pos.y) < Theme.towerR * 1.5);
+                if(target && target !== State.mouse.start) {
+                    const send = Math.floor(State.mouse.start.count / 2);
+                    if(send > 0) {
+                        State.mouse.start.count -= send;
+                        State.troops.push(new Troop(State.mouse.start.x, State.mouse.start.y, target, 1, send));
+                    }
+                }
+            }
+            State.mouse.down = false; State.mouse.start = null;
         }
-    }, 2000);
-}
+    };
 
-// CAŁKOWITE POMINIĘCIE ŁADOWANIA - BEZPOŚREDNI START
-window.addEventListener('load', () => {
-    console.log("🛠️ System: Próba wymuszenia startu bez ładowania...");
-    
-    // Upewniamy się, że obiekt Omni istnieje
-    if (typeof Omni !== 'undefined') {
-        try {
-            // Ręczne podpięcie brakujących klas (ubezpieczenie)
-            if (!Omni.INTERNAL_STATE && typeof DB !== 'undefined') Omni.INTERNAL_STATE = DB;
-            if (!Omni.StationClass && typeof Station !== 'undefined') Omni.StationClass = Station;
-
-            // Odpalenie silnika
-            Omni.init(); 
+    return {
+        start: () => {
+            resize();
+            window.addEventListener('resize', resize);
+            const opts = { passive: false }; 
+            ['mousedown','mousemove','mouseup','touchstart','touchmove','touchend'].forEach(evt => {
+                canvas.addEventListener(evt, handleInput, opts);
+            });
+            requestAnimationFrame(loop);
+        },
+        useSkill: (id) => {
+            if(State.gameState !== 'playing') return;
+            const now = Date.now();
+            const skill = State.skills[id];
             
-            // Jeśli init() nie ma w sobie startu renderera, dodajemy go tutaj:
-            // requestAnimationFrame((t) => Omni.Renderer.draw(t));
-            
-            console.log("✅ Silnik odpalony!");
-        } catch (e) {
-            // Na telefonie to wyskoczy jako okienko - powie nam co jest źle
-            alert("Błąd krytyczny przy starcie: " + e.message + "\nLinia: " + e.lineNumber);
+            if(now - skill.last >= skill.cd) {
+                skill.last = now; 
+                
+                if(id === 1) {
+                    State.buffs.overclock = now + 5000; 
+                    showBanner("OVERCLOCK AKTYWNY!");
+                } else if (id === 2) {
+                    State.towers.forEach(t => {
+                        if(t.owner === 2) {
+                            const dmg = Math.floor(t.count * 0.3);
+                            t.count -= dmg;
+                            for(let i=0; i<dmg && i<20; i++) State.particles.push(new Particle(t.x, t.y, Theme.p1));
+                        }
+                    });
+                    showBanner("EMP ODPALONE!");
+                } else if (id === 3) {
+                    let buffed = 0;
+                    State.troops.forEach(t => {
+                        if(t.owner === 1) { t.speed = 20; buffed++; }
+                    });
+                    if(buffed > 0) showBanner("PRĘDKOŚĆ WARP!");
+                }
+            }
         }
-    } else {
-        alert("Błąd: Nie znaleziono obiektu Omni! Sprawdź czy nie usunąłeś go przy wklejaniu.");
-    }
-});
+    };
+})();
 
-
+window.onload = Game.start;
 </script>
 </body>
 </html>
