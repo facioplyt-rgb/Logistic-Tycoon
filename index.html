@@ -65,14 +65,13 @@
 
 <nav id="tabs">
     <button class="tab-btn active" onclick="App.UI.tab('market')">Giełda</button>
-    <button class="tab-btn" onclick="App.UI.tab('garage')">Garaż</button>
-    <button class="tab-btn" onclick="App.UI.tab('fleet')">Zlecenia</button>
+    <button class="tab-btn" onclick="App.UI.tab('company')">Firma</button>
+    <button class="tab-btn" onclick="App.UI.tab('fleet')">Trasy</button>
 </nav>
 
 <div id="view">
     <div id="sc-market" class="screen active"></div>
-    <div id="sc-garage" class="screen"></div>
-    <div id="sc-fleet" class="screen"></div>
+    <div id="sc-company" class="screen"></div> <div id="sc-fleet" class="screen"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1149,7 +1148,123 @@ App.Engine.finish = function(idx) {
 
 // Inicjalizacja bazy
 setTimeout(() => App.Tracking.init(), 1000);
+/* --- MODUŁ 10: COMPANY MANAGEMENT HUB --- */
+App.Company = {
+    render() {
+        const container = document.getElementById('sc-company');
+        container.innerHTML = `
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px;">
+                <button class="btn btn-main" style="width:auto; white-space:nowrap; padding: 5px 15px;" onclick="App.Company.subTab('stats')">Statystyki</button>
+                <button class="btn btn-main" style="width:auto; white-space:nowrap; padding: 5px 15px;" onclick="App.Company.subTab('assets')">Tabor i Kadry</button>
+                <button class="btn btn-main" style="width:auto; white-space:nowrap; padding: 5px 15px;" onclick="App.Company.subTab('market')">Salon/Biuro</button>
+                <button class="btn btn-main" style="width:auto; white-space:nowrap; padding: 5px 15px;" onclick="App.Company.subTab('bank')">Bank</button>
+            </div>
+            <div id="company-content"></div>
+        `;
+        this.subTab('stats'); // Domyślnie pokaż statystyki
+    },
 
+    subTab(view) {
+        const content = document.getElementById('company-content');
+        content.innerHTML = "";
+
+        switch(view) {
+            case 'stats':
+                const totalCondition = App.state.trucks.reduce((a, b) => a + b.condition, 0) / (App.state.trucks.length || 1);
+                content.innerHTML = `
+                    <div class="card" style="border-top: 4px solid var(--neon)">
+                        <h4 style="margin:0 0 10px 0; color:var(--neon)">RAPORT OPERACYJNY</h4>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
+                            <div>Liczba aut: <b>${App.state.trucks.length}</b></div>
+                            <div>Kierowcy: <b>${App.state.drivers.length}</b></div>
+                            <div>Naczepy: <b>${App.Trailers.owned.length}</b></div>
+                            <div>Śr. stan floty: <b style="color:${totalCondition < 50 ? 'var(--danger)' : 'var(--safe)'}">${totalCondition.toFixed(1)}%</b></div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'assets':
+                let assetsHtml = `<h4 style="color:var(--safe)">POSIADANE POJAZDY</h4>`;
+                App.state.trucks.forEach(t => {
+                    const repairCost = Math.floor((100 - t.condition) * 250);
+                    assetsHtml += `
+                        <div class="card" style="font-size:11px;">
+                            <b>${t.model}</b> <small>[${t.id}]</small><br>
+                            Status: <span style="color:${t.busy ? 'var(--warn)' : 'var(--safe)'}">${t.busy ? 'W TRASIE' : 'W BAZIE ('+ (t.currentCity || 'Warszawa') +')'}</span><br>
+                            Stan: ${t.condition.toFixed(1)}% 
+                            <button class="btn" style="width:auto; float:right; padding:2px 8px; margin:0;" 
+                                onclick="App.Service.repairTruck('${t.id}', ${repairCost})" ${t.busy || t.condition === 100 ? 'disabled' : ''}>NAPRAW</button>
+                            <div style="clear:both"></div>
+                        </div>`;
+                });
+                
+                assetsHtml += `<h4 style="color:var(--neon); margin-top:20px;">KADRA KIEROWCÓW</h4>`;
+                App.state.drivers.forEach(d => {
+                    assetsHtml += `
+                        <div class="card" style="font-size:11px;">
+                            <b>${d.name}</b> <small>[${d.id}]</small><br>
+                            Status: <span style="color:${d.busy ? 'var(--warn)' : 'var(--safe)'}">${d.busy ? 'W TRASIE' : 'W BAZIE'}</span>
+                        </div>`;
+                });
+                content.innerHTML = assetsHtml;
+                break;
+
+            case 'market':
+                // Przenosimy tu logikę kupowania z starego garażu
+                content.innerHTML = `<div id="truck-market-sub"></div><div id="driver-market-sub"></div>`;
+                App.Garage.renderMarketOnly(); // Musimy zmodyfikować starą funkcję
+                break;
+
+            case 'bank':
+                if(App.Bank) App.Bank.renderTo(content);
+                break;
+        }
+    }
+};
+
+// DOPASOWANIE STARYCH FUNKCJI DO NOWEJ ZAKŁADKI
+App.UI.tab = function(id) {
+    document.querySelectorAll('.screen, .tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('sc-' + id).classList.add('active');
+    event.target.classList.add('active');
+    
+    if(id === 'company') App.Company.render();
+    if(id === 'market') App.Market.render();
+};
+
+App.Garage.renderMarketOnly = function() {
+    const truckCont = document.getElementById('truck-market-sub');
+    const driverCont = document.getElementById('driver-market-sub');
+    
+    if(!this.truckOffers) App.Generators.refreshMarkets();
+
+    truckCont.innerHTML = `<h4>SALON POJAZDÓW</h4><div id="tm-list" style="display:flex; gap:10px; overflow-x:auto;"></div>`;
+    this.truckOffers.forEach(t => {
+        document.getElementById('tm-list').innerHTML += `
+            <div class="card" style="min-width:140px;">
+                <b>${t.model}</b><br><small>${t.price.toLocaleString()} PLN</small><br>
+                <button class="btn btn-main" onclick="App.Garage.buyGeneratedTruck('${t.id}')">KUP</button>
+            </div>`;
+    });
+
+    driverCont.innerHTML = `<h4 style="margin-top:20px;">BIURO REKRUTACJI</h4>`;
+    this.candidates.forEach(c => {
+        driverCont.innerHTML += `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div><b>${c.name}</b><br><small>Efektywność: ${Math.floor(c.skill*100)}%</small></div>
+                <button class="btn btn-main" style="width:auto;" onclick="App.Garage.hireGeneratedDriver('${c.id}')">ZATRUDNIJ</button>
+            </div>`;
+    });
+};
+
+// Poprawka dla Banku
+App.Bank.renderTo = function(container) {
+    const div = document.createElement('div');
+    this.render(); // używamy starej logiki ale przechwytujemy HTML
+    const bankHtml = document.querySelector('#sc-company .card'); // szukamy co wyrenderował stary system
+    container.appendChild(bankHtml);
+};
 </script>
 </body>
 </html>
