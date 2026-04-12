@@ -2537,6 +2537,78 @@ document.head.appendChild(styleFix);
 
 // Odśwież widok na starcie
 App.UI.tab('market');
+/* --- MODUŁ 25: KRYTYCZNY FIX WIDOCZNOŚCI --- */
+
+App.UI.safeTab = function(id) {
+    // 1. Definiujemy wszystkie możliwe ID ekranów
+    const screens = ['sc-market', 'sc-company', 'sc-fleet', 'sc-map'];
+    
+    screens.forEach(sId => {
+        const el = document.getElementById(sId);
+        if (el) {
+            // Wymuszamy ukrycie wszystkiego z najwyższym priorytetem
+            el.style.setProperty('display', 'none', 'important');
+            el.classList.remove('active');
+        }
+    });
+
+    // 2. Pokazujemy tylko ten jeden wybrany
+    const target = document.getElementById('sc-' + id);
+    if (target) {
+        target.style.setProperty('display', 'block', 'important');
+        target.classList.add('active');
+        
+        // Wywołujemy renderowanie zawartości
+        if (id === 'market') App.Market.render();
+        if (id === 'company') App.Company.init();
+        if (id === 'fleet') App.UI.renderFleet();
+        
+        // Naprawa przewijania
+        target.style.height = "calc(100vh - 140px)";
+        target.style.overflowY = "auto";
+        target.style.paddingBottom = "180px"; // Jeszcze większy margines dla pewności
+    }
+
+    // 3. Naprawa przycisków w dolnym menu
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.style.borderBottom = "none";
+        if (btn.getAttribute('onclick')?.includes(`'${id}'`)) {
+            btn.style.borderBottom = "3px solid var(--neon)";
+        }
+    });
+};
+
+// NADPISUJEMY systemowy przełącznik, żeby korzystał z nowej, bezpiecznej funkcji
+App.UI.tab = function(id) {
+    App.UI.safeTab(id);
+};
+
+// Dodajemy CSS, który zablokuje nakładanie się elementów "pomiędzy"
+const forceStyle = document.createElement('style');
+forceStyle.innerHTML = `
+    .screen {
+        position: fixed !important; /* Blokuje "płynięcie" ekranów jeden pod drugim */
+        top: 70px !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: calc(100vh - 140px) !important;
+        background: black !important;
+        z-index: 1 !important;
+        overflow-y: auto !important;
+    }
+    .screen.active {
+        z-index: 999 !important;
+        display: block !important;
+    }
+    /* Naprawa mapy, żeby nie zasłaniała wszystkiego */
+    #map {
+        z-index: 0 !important;
+    }
+`;
+document.head.appendChild(forceStyle);
+
+// Wymuszone odświeżenie na Giełdzie
+App.UI.safeTab('market');
 
 </script>
 </body>
