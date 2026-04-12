@@ -780,6 +780,128 @@ App.Garage.render = function() {
     finalGarageWithBank.apply(App.Garage);
     App.Bank.render();
 };
+/* --- MODUŁ 7: VARIETY & UNIQUE GENERATORS --- */
+App.Generators = {
+    // 1. GENERATOR KIEROWCÓW (Tysiące kombinacji)
+    generateDriver() {
+        const firstNames = ["Andrzej", "Mariusz", "Dariusz", "Sławomir", "Piotr", "Paweł", "Krzysztof", "Janusz", "Robert", "Zbigniew", "Jacek", "Marek", "Bogdan", "Jarosław", "Tomasz"];
+        const lastNames = ["Nowak", "Kowalski", "Wiśniewski", "Wójcik", "Kowalczyk", "Kamiński", "Lewandowski", "Zieliński", "Szymański", "Woźniak", "Kozłowski", "Jankowski", "Mazur"];
+        
+        const name = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + 
+                     lastNames[Math.floor(Math.random() * lastNames.length)];
+        
+        return {
+            id: 'DRV-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+            name: name,
+            wage: 2000 + Math.floor(Math.random() * 3000),
+            skill: (0.7 + Math.random() * 0.8).toFixed(2),
+            busy: false,
+            photo: Math.floor(Math.random() * 5) // Symulacja ID awatara
+        };
+    },
+
+    // 2. GENERATOR UŻYWANYCH CIĘŻARÓWEK (Różne stany i ceny)
+    generateTruckOffer() {
+        const brands = ["Scania", "Volvo", "MAN", "DAF", "Mercedes", "Iveco", "Renault"];
+        const models = ["R450", "FH16", "TGX", "XF", "Actros", "Stralis", "Magnum"];
+        const brandIdx = Math.floor(Math.random() * brands.length);
+        
+        const condition = 40 + Math.floor(Math.random() * 60);
+        const priceBase = 40000 + (condition * 800);
+
+        return {
+            id: 'TRK-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+            model: brands[brandIdx] + " " + models[brandIdx],
+            price: Math.floor(priceBase),
+            tank: 600 + Math.floor(Math.random() * 800),
+            condition: condition,
+            busy: false
+        };
+    },
+
+    // 3. ODŚWIEŻANIE RYNKU (Nadpisanie starego systemu)
+    refreshMarkets() {
+        // Nowi kandydaci co jakiś czas
+        App.Garage.candidates = [];
+        for(let i=0; i<4; i++) App.Garage.candidates.push(this.generateDriver());
+        
+        // Nowe oferty aut
+        App.Garage.truckOffers = [];
+        for(let i=0; i<3; i++) App.Garage.truckOffers.push(this.generateTruckOffer());
+    }
+};
+
+// NADPISANIE RENDEROWANIA GARAŻU DLA WIĘKSZEJ RÓŻNORODNOŚCI
+App.Garage.render = function() {
+    if(!App.Garage.truckOffers) App.Generators.refreshMarkets();
+    
+    const container = document.getElementById('sc-garage');
+    container.innerHTML = `<h3 style="color:var(--neon)">SALON I KOMIS</h3>
+                           <div id="truck-market" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;"></div>
+                           <h3 style="color:var(--neon); margin-top:20px;">REKRUTACJA (LOSOWI KANDYDACI)</h3>
+                           <div id="driver-market"></div>
+                           <h3 style="color:var(--safe); margin-top:20px;">TWOJE ZASOBY</h3>
+                           <div id="owned-assets"></div>`;
+
+    // Renderowanie ofert aut
+    const tMkt = document.getElementById('truck-market');
+    App.Garage.truckOffers.forEach(t => {
+        tMkt.innerHTML += `
+            <div class="card" style="min-width:140px; border-bottom: 2px solid ${t.condition > 70 ? 'var(--safe)' : 'var(--warn)'}">
+                <small>${t.id}</small><br>
+                <b>${t.model}</b><br>
+                <small>Stan: ${t.condition}%</small><br>
+                <b>${t.price.toLocaleString()} PLN</b>
+                <button class="btn btn-main" style="font-size:10px; padding:4px;" 
+                    onclick="App.Garage.buyGeneratedTruck('${t.id}')">KUP</button>
+            </div>`;
+    });
+
+    // Renderowanie kandydatów
+    const dMkt = document.getElementById('driver-market');
+    App.Garage.candidates.forEach(c => {
+        dMkt.innerHTML += `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <b style="color:var(--neon)">${c.name}</b> <small>[ID: ${c.id}]</small><br>
+                    <small>Efektywność: ${Math.floor(c.skill * 100)}% | Pozew: ${c.wage} PLN</small>
+                </div>
+                <button class="btn btn-main" style="width:auto; padding:5px 12px;" 
+                    onclick="App.Garage.hireGeneratedDriver('${c.id}')">ZATRUDNIJ</button>
+            </div>`;
+    });
+
+    // Wywołanie pozostałych elementów (naczepy, serwis, bank)
+    if(App.Service) App.Service.renderMaintenance();
+    if(App.Trailers) App.Trailers.render();
+    if(App.Bank) App.Bank.render();
+};
+
+// NOWE FUNKCJE ZAKUPU
+App.Garage.buyGeneratedTruck = function(id) {
+    const offer = this.truckOffers.find(t => t.id === id);
+    if(App.state.cash >= offer.price) {
+        App.state.cash -= offer.price;
+        App.state.trucks.push({...offer});
+        this.truckOffers = this.truckOffers.filter(t => t.id !== id);
+        App.UI.updateHUD();
+        this.render();
+    }
+};
+
+App.Garage.hireGeneratedDriver = function(id) {
+    const cand = this.candidates.find(c => c.id === id);
+    if(App.state.cash >= cand.wage) {
+        App.state.cash -= cand.wage;
+        App.state.drivers.push({...cand});
+        this.candidates = this.candidates.filter(c => c.id !== id);
+        App.UI.updateHUD();
+        this.render();
+    }
+};
+
+// Dodajemy przycisk odświeżania rynku w HUD lub Garażu
+setInterval(() => App.Generators.refreshMarkets(), 300000); // Autoodświeżanie co 5 minut
 
 </script>
 </body>
