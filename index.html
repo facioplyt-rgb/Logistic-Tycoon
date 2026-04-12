@@ -2362,6 +2362,52 @@ setInterval(() => {
         App.UI.renderFleet();
     }
 }, 500);
+/* --- MODUŁ 22: FIX PRZEWIJANIA I WIDOCZNOŚCI --- */
+
+App.UI.fixMarketLayout = function() {
+    const marketScreen = document.getElementById('sc-market');
+    if (!marketScreen) return;
+
+    // Stylizacja kontenera, aby był przewijalny i nie uciekał pod menu
+    marketScreen.style.height = "calc(100vh - 120px)"; // Odliczamy miejsce na HUD i Menu
+    marketScreen.style.overflowY = "auto";
+    marketScreen.style.paddingBottom = "100px"; // Duży margines na dole, by ostatnia oferta "odbiła" od krawędzi
+    marketScreen.style.paddingLeft = "10px";
+    marketScreen.style.paddingRight = "10px";
+    marketScreen.style.webkitOverflowScrolling = "touch"; // Płynne przewijanie na telefonach
+};
+
+// Wywołujemy poprawkę przy każdym renderowaniu giełdy
+const originalMarketRender = App.Market.render;
+App.Market.render = function() {
+    originalMarketRender.apply(this);
+    App.UI.fixMarketLayout();
+};
+
+// Dodajemy też globalny styl CSS, aby karty miały lepszy odstęp
+const style = document.createElement('style');
+style.innerHTML = `
+    #sc-market {
+        display: block !important;
+    }
+    .card:last-child {
+        margin-bottom: 80px !important; /* Extra odstęp dla ostatniej karty */
+    }
+    #sc-market h2 {
+        position: sticky;
+        top: 0;
+        background: rgba(0,0,0,0.9);
+        padding: 10px 0;
+        z-index: 10;
+        margin-top: 0;
+    }
+`;
+document.head.appendChild(style);
+
+// Odśwież widok, jeśli jesteśmy na giełdzie
+if(document.getElementById('sc-market').classList.contains('active')) {
+    App.Market.render();
+}
 
 </script>
 </body>
