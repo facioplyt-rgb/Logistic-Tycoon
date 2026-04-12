@@ -2408,6 +2408,74 @@ document.head.appendChild(style);
 if(document.getElementById('sc-market').classList.contains('active')) {
     App.Market.render();
 }
+/* --- MODUŁ 23: GLOBALNY FIX PRZEWIJANIA (FIRMA + GIEŁDA + TRASY) --- */
+
+App.UI.fixAllLayouts = function() {
+    // Lista wszystkich ekranów do naprawy
+    const screens = ['sc-market', 'sc-company', 'sc-fleet'];
+    
+    screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            // Ustawiamy wysokość tak, by kończyła się przed dolnym menu
+            el.style.height = "calc(100vh - 140px)"; 
+            el.style.overflowY = "auto";
+            el.style.overflowX = "hidden";
+            
+            // Dodajemy bardzo duży odstęp na dole (150px), 
+            // żeby ostatni przycisk/karta wjechały wysoko nad menu
+            el.style.paddingBottom = "150px"; 
+            
+            // Płynne przewijanie dla telefonów
+            el.style.webkitOverflowScrolling = "touch";
+            
+            // Debug: upewnienie się, że display jest poprawny
+            if(el.classList.contains('active')) {
+                el.style.display = "block";
+            }
+        }
+    });
+};
+
+// Podpinamy pod główny system przełączania zakładek
+const finalGlobalTabFix = App.UI.tab;
+App.UI.tab = function(id) {
+    finalGlobalTabFix.apply(this, [id]);
+    
+    // Po każdej zmianie zakładki wymuszamy naprawę układu
+    setTimeout(() => {
+        App.UI.fixAllLayouts();
+    }, 50);
+};
+
+// Dodatkowy CSS dla "pustej przestrzeni" na końcu każdego kontenera
+const globalScrollStyle = document.createElement('style');
+globalScrollStyle.innerHTML = `
+    .screen {
+        scrollbar-width: thin;
+        scrollbar-color: var(--neon) #111;
+    }
+    /* Tworzymy niewidzialny element na końcu każdej sekcji, by wymusić scroll */
+    .screen::after {
+        content: "";
+        display: block;
+        height: 150px; 
+        width: 100%;
+        pointer-events: none;
+    }
+    /* Naprawa kart w firmie, by nie uciekały */
+    #co-content, #company-content {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+`;
+document.head.appendChild(globalScrollStyle);
+
+// Wywołaj naprawę od razu po wklejeniu kodu
+App.UI.fixAllLayouts();
+
+console.log("System przewijania naprawiony: Firma i Giełda mają teraz dodatkowe 150px miejsca na dole.");
 
 </script>
 </body>
