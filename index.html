@@ -2034,6 +2034,124 @@ setTimeout(() => {
 
 // Pierwsze wywołanie
 App.Market.reanimate();
+/* --- MODUŁ 19: REAL LOGISTICS & PROGRESS FIX --- */
+
+// 1. ROZSZERZONA LISTA MIAST (Większa różnorodność)
+App.state.cities = {
+    "Warszawa": [52.23, 21.01], "Gdańsk": [54.35, 18.64], "Kraków": [50.06, 19.94],
+    "Wrocław": [51.10, 17.03], "Poznań": [52.40, 16.92], "Szczecin": [53.42, 14.55],
+    "Lublin": [51.24, 22.56], "Białystok": [53.13, 23.16], "Łódź": [51.75, 19.45],
+    "Rzeszów": [50.04, 21.99], "Bydgoszcz": [53.12, 18.00], "Katowice": [50.26, 19.02]
+};
+
+// 2. NOWA LOGIKA STARTU MISJI (Z DOJAZDEM)
+App.Market.startMission = async function(jobId) {
+    const job = this.jobs.find(j => j.id === jobId);
+    const truckId = document.getElementById(`sel-truck-${jobId}`).value;
+    const driverId = document.getElementById(`sel-driver-${jobId}`).value;
+
+    const truck = App.state.trucks.find(t => t.id === truckId);
+    const driver = App.state.drivers.find(d => d.id === driverId);
+
+    if (!truck || !driver) {
+        App.Notifications.show("Wybierz zasoby!", "error");
+        return;
+    }
+
+    const currentLoc = truck.currentCity || "Warszawa";
+    const startLoc = job.from;
+    const endLoc = job.to;
+
+    try {
+        // A. POBIERANIE TRASY DOJAZDU (z obecnej lokalizacji do załadunku)
+        const resToStart = await fetch(`https://router.project-osrm.org/route/v1/driving/${App.state.cities[currentLoc][1]},${App.state.cities[currentLoc][0]};${App.state.cities[startLoc][1]},${App.state.cities[startLoc][0]}?overview=full&geometries=geojson`);
+        const dataToStart = await resToStart.json();
+        
+        // B. POBIERANIE TRASY WŁAŚCIWEJ (z załadunku do rozładunku)
+        const resJob = await fetch(`https://router.project-osrm.org/route/v1/driving/${App.state.cities[startLoc][1]},${App.state.cities[startLoc][0]};${App.state.cities[endLoc][1]},${App.state.cities[endLoc][0]}?overview=full&geometries=geojson`);
+        const dataJob = await resJob.json();
+
+        const pathEmpty = dataToStart.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        const pathFull = dataJob.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        
+        // Łączymy obie trasy w jedną wielką misję
+        const totalPath = [...pathEmpty, ...pathFull];
+
+        truck.busy = true;
+        driver.busy = true;
+
+        const mission = {
+            id: Date.now(),
+            truck, driver, job,
+            path: totalPath,
+            emptyPathLimit: pathEmpty.length, // Granica, kiedy kończy się dojazd "na pusto"
+            progress: 0,
+            line: L.polyline(totalPath, { color: '#555', weight: 3, dashArray: '5, 10' }).addTo(App.UI.map),
+            marker: L.marker(totalPath[0], {
+                icon: L.divIcon({
+                    className: 'truck-m',
+                    html: `<div id="m-icon-${truck.id}" style="background:#888; width:14px; height:14px; border:2px solid white; border-radius:3px;"></div>`
+                })
+            }).addTo(App.UI.map)
+        };
+
+        App.state.missions.push(mission);
+        this.jobs = this.jobs.filter(j => j.id !== jobId);
+        App.Notifications.show(`Dojazd do: ${job.from}`, "info");
+        App.UI.tab('fleet');
+
+    } catch (e) {
+        App.Notifications.show("Błąd nawigacji!", "error");
+    }
+};
+
+// 3. FIX SILNIKA - OBSŁUGA DOJAZDU I KONIEC NA 100%
+App.Engine.tick = function() {
+    App.state.missions.forEach((m, idx) => {
+        // Każdy tick to jeden krok na trasie
+        m.progress++;
+
+        // Zmiana koloru ikony i linii po dojechaniu na załadunek
+        if (m.progress === m.emptyPathLimit) {
+            App.Notifications.show(`Załadowano: ${m.job.cargo}`, "success");
+            m.line.setStyle({ color: m.job.color, weight: 5, dashArray: null });
+            const icon = document.getElementById(`m-icon-${m.truck.id}`);
+            if(icon) icon.style.background = m.job.color;
+        }
+
+        // TWARDY FIX NA 100% (Sprawdzamy czy zrobiliśmy wszystkie kroki z tablicy path)
+        if (m.progress >= m.path.length - 1) {
+            this.finish(idx);
+        } else {
+            const nextCoord = m.path[m.progress];
+            m.marker.setLatLng(nextCoord);
+        }
+    });
+};
+
+// 4. GENERATOR ZBLIŻENIOWY (Szuka miast w promieniu)
+App.Market.generateJobs = function() {
+    this.jobs = [];
+    const allCities = Object.keys(App.state.cities);
+    
+    // Pobierz lokalizacje Twoich wolnych aut
+    const truckLocs = App.state.trucks.filter(t => !t.busy).map(t => t.currentCity || "Warszawa");
+    if(truckLocs.length === 0) truckLocs.push("Warszawa");
+
+    for (let i = 0; i < 6; i++) {
+        const from = truckLocs[Math.floor(Math.random() * truckLocs.length)];
+        const to = allCities[Math.floor(Math.random() * allCities.length)];
+        if (from === to) continue;
+
+        const type = { n: "Towar Mieszany", p: 1.5, c: "#00f2ff" };
+        this.jobs.push({
+            id: 'J' + Math.floor(Math.random()*9999),
+            from, to, cargo: type.n, color: type.c,
+            reward: 10000 + Math.floor(Math.random() * 20000)
+        });
+    }
+};
+
 </script>
 </body>
 </html>
