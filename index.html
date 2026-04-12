@@ -1864,6 +1864,106 @@ App.Market.startMission = async function(jobId) {
         btn.innerText = "WYŚLIJ TRANSPORT";
     }
 };
+    /* --- MODUŁ 17: MARKET VIEW RECONSTRUCTION --- */
+
+// 1. CAŁKOWICIE NOWY RENDERER GIEŁDY
+App.Market.render = function() {
+    const container = document.getElementById('sc-market');
+    if (!container) return;
+
+    // Jeśli nie ma zleceń, wygeneruj nowe
+    if (!this.jobs || this.jobs.length === 0) {
+        this.generateJobs();
+    }
+
+    let html = `<h2 style="color:var(--neon); margin-bottom:15px;">DOSTĘPNE ŁADUNKI</h2>`;
+    
+    if (this.jobs.length === 0) {
+        html += `<div class="card">Brak zleceń w Twojej okolicy. Poczekaj na odświeżenie...</div>`;
+    }
+
+    this.jobs.forEach(j => {
+        // Sprawdzamy czy wymagana naczepa
+        const reqTrailer = App.Trailers.types.find(t => t.target === j.cargo);
+        const hasTrailer = reqTrailer ? App.Trailers.owned.some(o => o.typeId === reqTrailer.id && !o.busy) : true;
+        
+        // Filtrowanie wolnych aut i kierowców
+        const freeTrucks = App.state.trucks.filter(t => !t.busy);
+        const freeDrivers = App.state.drivers.filter(d => !d.busy);
+
+        html += `
+            <div class="card" style="border-left: 5px solid ${j.color}; margin-bottom:15px; position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <b style="font-size:16px; color:${j.color}">${j.cargo}</b><br>
+                        <span style="font-size:13px;">${j.from} ➔ ${j.to}</span>
+                    </div>
+                    <b style="font-size:16px; color:var(--safe)">${j.reward.toLocaleString()} PLN</b>
+                </div>
+                
+                <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <select id="sel-truck-${j.id}" class="btn" style="background:#222; font-size:11px; text-align:left;">
+                        <option value="">-- WYBIERZ AUTO --</option>
+                        ${freeTrucks.map(t => `<option value="${t.id}">${t.model} (${t.currentCity || 'Baza'})</option>`).join('')}
+                    </select>
+                    
+                    <select id="sel-driver-${j.id}" class="btn" style="background:#222; font-size:11px; text-align:left;">
+                        <option value="">-- KIEROWCA --</option>
+                        ${freeDrivers.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+                    </select>
+                </div>
+
+                ${reqTrailer ? `<div style="font-size:10px; color:var(--warn); margin-top:5px;">⚠️ WYMAGA: ${reqTrailer.n}</div>` : ''}
+
+                <button class="btn btn-main" 
+                    style="margin-top:10px; background:${hasTrailer ? j.color : '#444'}; color:${hasTrailer ? '#000' : '#888'}" 
+                    onclick="App.Market.startMission('${j.id}')"
+                    ${!hasTrailer || freeTrucks.length === 0 || freeDrivers.length === 0 ? 'disabled' : ''}>
+                    ${!hasTrailer ? 'BRAK NACZEPY' : 'WYŚLIJ TRANSPORT'}
+                </button>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+};
+
+// 2. WYMUSZENIE ODŚWIEŻANIA PRZY PRZEŁĄCZANIU ZAKŁADEK
+const oldTabForMarket = App.UI.tab;
+App.UI.tab = function(id) {
+    oldTabForMarket.apply(this, [id]);
+    if (id === 'market') {
+        App.Market.render();
+    }
+};
+
+// 3. GENERATOR ZLECEŃ - POPRAWKA (aby zawsze coś było)
+App.Market.generateJobs = function() {
+    this.jobs = [];
+    const cities = Object.keys(App.state.cities);
+    const cargoTypes = [
+        { n: "Materiały budowlane", p: 1.2, c: "#39ff14" },
+        { n: "Elektronika", p: 2.5, c: "#00f2ff" },
+        { n: "Żywność (Chłodnia)", p: 1.8, c: "#ffcc00" },
+        { n: "Paliwo ADR", p: 3.2, c: "#ff0055" }
+    ];
+
+    for (let i = 0; i < 6; i++) {
+        const from = cities[Math.floor(Math.random() * cities.length)];
+        const to = cities.filter(c => c !== from)[Math.floor(Math.random() * (cities.length - 1))];
+        const type = cargoTypes[Math.floor(Math.random() * cargoTypes.length)];
+        const dist = 300 + Math.floor(Math.random() * 600);
+        
+        this.jobs.push({
+            id: 'J' + Math.floor(Math.random()*10000),
+            from, to, cargo: type.n, color: type.c,
+            reward: Math.floor(dist * type.p * 10)
+        });
+    }
+};
+
+// Start giełdy
+App.Market.render();
 </script>
 </body>
 </html>
