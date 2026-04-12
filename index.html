@@ -2246,6 +2246,122 @@ App.Engine.finish = function(idx) {
     App.Notifications.show("Zlecenie ukończone!", "success");
     App.UI.updateHUD();
 };
+/* --- MODUŁ 21: PRZYSPIESZENIE I SZCZEGÓŁY TRASY --- */
+
+// 1. ZWIĘKSZENIE PRĘDKOŚCI (Skaczemy o więcej punktów na tick)
+App.Engine.speedFactor = 3; // 1 = normalnie, 3 = 3x szybciej
+
+App.Engine.tick = function() {
+    App.state.missions.forEach((m, idx) => {
+        // Przesuwamy o speedFactor kroków, by jechało szybciej
+        m.progress += this.speedFactor;
+
+        // Sprawdzenie załadunku (dojazd na pusto)
+        if (m.progress >= m.emptyPathLimit && !m.isLoaded) {
+            m.isLoaded = true;
+            App.Notifications.show(`Załadowano: ${m.job.cargo}`, "success");
+            m.line.setStyle({ color: m.job.color, weight: 6, dashArray: null });
+        }
+
+        // Twardy fix na koniec trasy (nie przekraczamy długości path)
+        if (m.progress >= m.path.length - 1) {
+            m.progress = m.path.length - 1; 
+            const finalCoord = m.path[m.progress];
+            m.marker.setLatLng(finalCoord);
+            this.finish(idx);
+        } else {
+            const nextCoord = m.path[m.progress];
+            m.marker.setLatLng(nextCoord);
+        }
+    });
+};
+
+// 2. SZCZEGÓŁOWY PANEL W ZAKŁADCE "TRASY"
+App.UI.renderFleet = function() {
+    const container = document.getElementById('sc-fleet');
+    if (!container) return;
+
+    let html = `<h2 style="color:var(--neon); margin-bottom:15px;">MONITORING FLOTY</h2>`;
+
+    if (App.state.missions.length === 0) {
+        html += `<div class="card" style="text-align:center; padding:40px; color:#555;">
+                    <i style="font-size:30px;">🚚</i><br>Wszystkie jednostki w bazie.
+                 </div>`;
+    }
+
+    App.state.missions.forEach((m) => {
+        const totalSteps = m.path.length;
+        const currentStep = m.progress;
+        const pct = Math.min(100, Math.floor((currentStep / totalSteps) * 100));
+        
+        // Obliczanie szacowanego czasu (uproszczone)
+        const stepsLeft = totalSteps - currentStep;
+        const secondsLeft = Math.ceil(stepsLeft / (App.Engine.speedFactor * 2)); 
+
+        html += `
+            <div class="card" style="border-left: 6px solid ${m.isLoaded ? m.job.color : '#555'}; margin-bottom:15px; background: linear-gradient(90deg, #1a1a1a 0%, #111 100%);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <b style="font-size:14px; color:white;">${m.truck.model} <span style="color:#666;">|</span> ${m.driver.name}</b><br>
+                        <small style="color:var(--neon);">${m.job.from} ➔ ${m.job.to}</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <b style="color:var(--safe); font-size:18px;">${pct}%</b><br>
+                        <small style="font-size:9px; color:#888;">ETA: ${secondsLeft}s</small>
+                    </div>
+                </div>
+
+                <div style="margin-top:12px; padding:8px; background:rgba(0,0,0,0.3); border-radius:4px; font-size:11px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="color:#aaa;">Ładunek:</span>
+                        <b style="color:${m.job.color}">${m.isLoaded ? m.job.cargo : 'JAZDA PO TOWAR'}</b>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="color:#aaa;">Wynagrodzenie:</span>
+                        <b style="color:var(--safe)">${m.job.reward.toLocaleString()} PLN</b>
+                    </div>
+                </div>
+
+                <div style="width:100%; background:#000; height:6px; margin-top:10px; border-radius:3px; overflow:hidden; border:1px solid #333;">
+                    <div style="width:${pct}%; background:${m.isLoaded ? m.job.color : '#555'}; height:100%; transition: width 0.3s ease-out; box-shadow: 0 0 10px ${m.isLoaded ? m.job.color : '#000'};"></div>
+                </div>
+            </div>`;
+    });
+
+    container.innerHTML = html;
+};
+
+// 3. FIX: NATYCHMIASTOWE WYŁĄCZENIE KIEROWCY Z LISTY
+const originalStart = App.Market.startMission;
+App.Market.startMission = async function(jobId) {
+    const truckId = document.getElementById(`sel-truck-${jobId}`).value;
+    const driverId = document.getElementById(`sel-driver-${jobId}`).value;
+
+    if (!truckId || !driverId) {
+        App.Notifications.show("Uzupełnij dane transportu!", "error");
+        return;
+    }
+
+    // Twardy lock: oznaczamy jako busy ZANIM zaczniemy fetchować trasę
+    const tObj = App.state.trucks.find(t => t.id === truckId);
+    const dObj = App.state.drivers.find(d => d.id === driverId);
+    
+    if(tObj) tObj.busy = true;
+    if(dObj) dObj.busy = true;
+
+    // Odświeżamy giełdę natychmiast, żeby nikt inny nie kliknął tego samego kierowcy
+    App.Market.render(); 
+
+    // Wywołujemy właściwą logikę
+    await originalStart.apply(this, [jobId]);
+};
+
+// Automatyczne odświeżanie panelu "Trasy" co 500ms dla płynności
+setInterval(() => {
+    if(document.getElementById('sc-fleet').classList.contains('active')) {
+        App.UI.renderFleet();
+    }
+}, 500);
 
 </script>
 </body>
