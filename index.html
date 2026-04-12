@@ -2678,6 +2678,84 @@ App.UI.tab = function(id) {
     originalTabWithNav.apply(this, [id]);
     App.UI.fixNavigation();
 };
+/* --- MODUŁ 27: MAP & LAYOUT RECONSTRUCTION --- */
+
+App.UI.rebuildLayout = function() {
+    // 1. Stylizacja Mapy - musi być w górnej części i zawsze widoczna
+    const mapEl = document.getElementById('map');
+    if (mapEl) {
+        mapEl.style.setProperty('position', 'fixed', 'important');
+        mapEl.style.setProperty('top', '50px', 'important'); // Poniżej HUDa
+        mapEl.style.setProperty('left', '0', 'important');
+        mapEl.style.setProperty('width', '100%', 'important');
+        mapEl.style.setProperty('height', '40vh', 'important'); // Zajmuje 40% wysokości ekranu
+        mapEl.style.setProperty('z-index', '10', 'important');
+    }
+
+    // 2. Stylizacja ekranów (Giełda, Firma, Trasy) - zaczynają się pod mapą
+    const screens = ['sc-market', 'sc-company', 'sc-fleet'];
+    screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.style.setProperty('position', 'fixed', 'important');
+            el.style.setProperty('top', 'calc(40vh + 50px)', 'important'); // Start pod mapą
+            el.style.setProperty('left', '0', 'important');
+            el.style.setProperty('width', '100%', 'important');
+            el.style.setProperty('height', 'calc(60vh - 110px)', 'important'); // Reszta ekranu minus menu
+            el.style.setProperty('background', '#000', 'important');
+            el.style.setProperty('overflow-y', 'auto', 'important');
+            el.style.setProperty('padding-bottom', '100px', 'important');
+            
+            // Tylko aktywny ekran ma wysoki z-index, ale mniejszy niż Menu
+            if (el.classList.contains('active')) {
+                el.style.setProperty('display', 'block', 'important');
+                el.style.setProperty('z-index', '20', 'important');
+            } else {
+                el.style.setProperty('display', 'none', 'important');
+                el.style.setProperty('z-index', '1', 'important');
+            }
+        }
+    });
+
+    // 3. Wymuszenie odświeżenia rozmiaru mapy Leaflet
+    if (App.UI.map) {
+        App.UI.map.invalidateSize();
+    }
+};
+
+// Nadpisujemy funkcję przełączania, aby zawsze przebudowywała układ
+App.UI.tab = function(id) {
+    console.log("Przełączanie: " + id);
+    
+    // Usuń active ze wszystkich
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    
+    // Dodaj active do wybranego
+    const target = document.getElementById('sc-' + id);
+    if (target) target.classList.add('active');
+
+    // Specyficzne ładowanie treści
+    if (id === 'market') App.Market.render();
+    if (id === 'company') App.Company.init();
+    if (id === 'fleet') App.UI.renderFleet();
+
+    // Kluczowa naprawa widoku
+    App.UI.rebuildLayout();
+    App.UI.fixNavigation(); // Z Modułu 26
+};
+
+// Wywołaj naprawę od razu
+setTimeout(() => {
+    App.UI.rebuildLayout();
+}, 500);
+
+// Dodatkowy CSS dla czystości
+const layoutStyle = document.createElement('style');
+layoutStyle.innerHTML = `
+    body { background: black; overflow: hidden; }
+    #sc-map { display: block !important; } /* Kontener mapy zawsze aktywny */
+`;
+document.head.appendChild(layoutStyle);
 
 </script>
 </body>
