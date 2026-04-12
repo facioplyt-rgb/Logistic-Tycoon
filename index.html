@@ -2151,6 +2151,101 @@ App.Market.generateJobs = function() {
         });
     }
 };
+/* --- MODUŁ 20: RESOURCE LOCK & FLEET VIEW REPAIR --- */
+
+// 1. TWARDA BLOKADA DUPLIKOWANIA (Strażnik wysyłki)
+const originalStartMission = App.Market.startMission;
+App.Market.startMission = async function(jobId) {
+    const truckSelect = document.getElementById(`sel-truck-${jobId}`);
+    const driverSelect = document.getElementById(`sel-driver-${jobId}`);
+    
+    if (!truckSelect || !driverSelect) return;
+
+    const truck = App.state.trucks.find(t => t.id === truckSelect.value);
+    const driver = App.state.drivers.find(d => d.id === driverSelect.value);
+
+    // SPRAWDZENIE CZY NIE SĄ ZAJĘCI (Zanim w ogóle zapytamy GPS)
+    if (!truck || truck.busy || !driver || driver.busy) {
+        App.Notifications.show("Ten kierowca lub auto jest już w trasie!", "error");
+        App.Market.render(); // Odśwież giełdę, by usunąć ich z listy
+        return;
+    }
+
+    // Jeśli wolni, wywołujemy oryginalną logikę wysyłki
+    await originalStartMission.apply(this, [jobId]);
+    
+    // Po wysłaniu twardo odświeżamy widoki
+    App.UI.updateHUD();
+    App.Market.render(); 
+};
+
+// 2. NAPRAWA WIDOKU "TRASY" (Zakładka Fleet)
+App.UI.renderFleet = function() {
+    const container = document.getElementById('sc-fleet');
+    if (!container) return;
+
+    let html = `<h2 style="color:var(--neon)">AKTYWNE TRANSPORTY (${App.state.missions.length})</h2>`;
+    
+    if (App.state.missions.length === 0) {
+        html += `<div class="card" style="color:#666;">Obecnie żadna ciężarówka nie jest w trasie.</div>`;
+    }
+
+    App.state.missions.forEach((m, idx) => {
+        // Obliczanie realnego procentu postępu do wyświetlenia
+        const progressPercent = Math.floor((m.progress / m.path.length) * 100);
+        const isEmpty = m.progress < (m.emptyPathLimit || 0);
+
+        html += `
+            <div class="card" style="border-left: 4px solid ${isEmpty ? '#555' : m.job.color}; margin-bottom: 10px;">
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${m.truck.model} - ${m.driver.name}</b>
+                    <b style="color:var(--neon)">${progressPercent}%</b>
+                </div>
+                <div style="font-size:11px; color:#aaa;">
+                    ${isEmpty ? ` <span style="color:var(--warn)">[DOJAZD]</span> pusto do: ${m.job.from}` : `Załadunek: ${m.job.cargo} ➔ ${m.job.to}`}
+                </div>
+                <div style="width:100%; background:#222; height:4px; margin-top:8px; border-radius:2px;">
+                    <div style="width:${progressPercent}%; background:${isEmpty ? '#555' : m.job.color}; height:100%; transition: width 0.5s;"></div>
+                </div>
+            </div>`;
+    });
+
+    container.innerHTML = html;
+};
+
+// 3. INTEGRACJA Z PRZEŁĄCZNIKIEM ZAKŁADEK
+const oldTabSwitchForFleet = App.UI.tab;
+App.UI.tab = function(id) {
+    oldTabSwitchForFleet.apply(this, [id]);
+    if (id === 'fleet') {
+        App.UI.renderFleet();
+    }
+};
+
+// 4. AUTOMATYCZNE ODŚWIEŻANIE WIDOKU TRAS
+// Jeśli jesteśmy w zakładce fleet, odświeżaj listę co sekundę, by widzieć postęp
+setInterval(() => {
+    const fleetScreen = document.getElementById('sc-fleet');
+    if (fleetScreen && fleetScreen.classList.contains('active')) {
+        App.UI.renderFleet();
+    }
+}, 1000);
+
+// 5. FIX DLA KOŃCZENIA MISJI (Zwalnianie zasobów)
+const oldFinish = App.Engine.finish;
+App.Engine.finish = function(idx) {
+    const m = App.state.missions[idx];
+    if (m) {
+        m.truck.busy = false;
+        m.driver.busy = false;
+        m.truck.currentCity = m.job.to; // Ustawienie nowej lokalizacji auta
+        if (m.line) m.line.remove();
+        if (m.marker) m.marker.remove();
+    }
+    oldFinish.apply(this, [idx]);
+    App.Notifications.show("Zlecenie ukończone!", "success");
+    App.UI.updateHUD();
+};
 
 </script>
 </body>
