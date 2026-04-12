@@ -2476,6 +2476,67 @@ document.head.appendChild(globalScrollStyle);
 App.UI.fixAllLayouts();
 
 console.log("System przewijania naprawiony: Firma i Giełda mają teraz dodatkowe 150px miejsca na dole.");
+/* --- MODUŁ 24: FIX NAKŁADANIA SIĘ ZAKŁADEK --- */
+
+App.UI.tab = function(id) {
+    console.log("Przełączanie na zakładkę:", id);
+
+    // 1. Ukryj absolutnie wszystkie ekrany
+    const allScreens = document.querySelectorAll('.screen');
+    allScreens.forEach(screen => {
+        screen.style.display = 'none'; // Całkowite ukrycie
+        screen.classList.remove('active');
+    });
+
+    // 2. Pokaż tylko ten wybrany
+    const target = document.getElementById('sc-' + id);
+    if (target) {
+        target.style.display = 'block'; // Wymuszenie wyświetlenia
+        target.classList.add('active');
+        
+        // 3. Uruchom dedykowany render dla danej zakładki
+        if (id === 'market') App.Market.render();
+        if (id === 'company') App.Company.init();
+        if (id === 'fleet') App.UI.renderFleet();
+        
+        // 4. Zastosuj poprawkę przewijania (z poprzedniego modułu)
+        setTimeout(() => {
+            target.style.height = "calc(100vh - 140px)";
+            target.style.overflowY = "auto";
+            target.style.paddingBottom = "150px";
+        }, 10);
+    }
+
+    // 5. Wizualna aktualizacja przycisków w menu
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        // Jeśli przycisk ma w onclick id naszej zakładki, dodaj mu klasę active
+        if (btn.getAttribute('onclick')?.includes(`'${id}'`)) {
+            btn.classList.add('active');
+        }
+    });
+};
+
+// Dodatkowy CSS naprawczy, by wymusić separację
+const styleFix = document.createElement('style');
+styleFix.innerHTML = `
+    .screen { 
+        position: absolute; 
+        top: 60px; /* Poniżej HUDa */
+        left: 0; 
+        width: 100%; 
+        background: #000; 
+        z-index: 1;
+    }
+    .screen.active { 
+        z-index: 10; 
+        display: block !important;
+    }
+`;
+document.head.appendChild(styleFix);
+
+// Odśwież widok na starcie
+App.UI.tab('market');
 
 </script>
 </body>
