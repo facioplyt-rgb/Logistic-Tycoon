@@ -3,98 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TRUCK EMPIRE V11: MAP OVERLORD</title>
+    <title>TRUCK EMPIRE V12: COMMANDER</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --gold: #f1c40f; --dark: #000000; --card: #0d0d0d; --green: #2ecc71; --blue: #00d2ff; --red: #ff2e2e; --purple: #9b59b6; --neon: #39ff14; }
-        body { font-family: 'Consolas', monospace; background: var(--dark); color: white; margin: 0; overflow: hidden; }
+        :root { 
+            --gold: #f1c40f; --dark: #020205; --card: rgba(20, 20, 25, 0.95); 
+            --green: #00ff88; --blue: #00d2ff; --red: #ff3333; --purple: #bc13fe; --neon: #39ff14; 
+        }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--dark); color: white; margin: 0; overflow: hidden; }
 
-        /* HEADER HUD */
-        #header { background: #000; padding: 12px; display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 3px solid var(--blue); text-align: center; box-shadow: 0 4px 15px rgba(0,210,255,0.3); }
-        .stat-val { font-size: 16px; font-weight: bold; color: var(--gold); display: block; }
+        /* NOWOCZESNE MENU - GLASSMORPHISM */
+        #header { 
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); padding: 15px; 
+            display: grid; grid-template-columns: repeat(4, 1fr); 
+            border-bottom: 2px solid var(--blue); text-align: center; 
+            box-shadow: 0 0 20px rgba(0,210,255,0.4); z-index: 1000; position: relative;
+        }
+        .stat-label { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-val { font-size: 18px; font-weight: 800; color: #fff; display: block; text-shadow: 0 0 10px var(--blue); }
 
-        /* CB RADIO TERMINAL */
-        #cb-system { background: #050505; border-bottom: 1px solid var(--neon); height: 35px; overflow: hidden; position: relative; display: flex; align-items: center; }
-        .cb-msg { color: var(--neon); font-size: 14px; position: absolute; white-space: nowrap; animation: scroll 20s linear infinite; text-transform: uppercase; }
-        @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-300%); } }
+        #cb-system { background: #000; border-bottom: 1px solid var(--neon); height: 35px; overflow: hidden; display: flex; align-items: center; box-shadow: inset 0 0 10px var(--neon); }
+        .cb-msg { color: var(--neon); font-family: 'Consolas', monospace; font-size: 14px; position: absolute; white-space: nowrap; animation: scroll 22s linear infinite; }
+        @keyframes scroll { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        /* MAPA - FULL REPAIR */
-        #map { height: 350px; width: 100%; border-bottom: 3px solid #222; z-index: 1; }
-        .leaflet-container { background: #000 !important; }
+        /* MAPA STYLISTYKA COMMAND CENTER */
+        #map { height: 380px; width: 100%; border-bottom: 2px solid #333; z-index: 1; filter: contrast(1.1) brightness(0.9); }
+        
+        nav { display: flex; background: #0a0a0c; border-bottom: 1px solid #222; }
+        .nav-tab { 
+            flex: 1; padding: 18px; border: none; background: none; color: #555; 
+            font-weight: bold; cursor: pointer; transition: 0.4s; text-transform: uppercase; font-size: 12px;
+        }
+        .nav-tab.active { color: var(--blue); border-bottom: 4px solid var(--blue); background: rgba(0,210,255,0.05); }
 
-        nav { display: flex; background: #111; z-index: 10; position: relative; }
-        .nav-tab { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .nav-tab.active { color: #fff; border-bottom: 4px solid var(--blue); background: #1a1a1a; }
-
-        .screen { display: none; height: calc(100vh - 300px); overflow-y: scroll; padding: 15px; box-sizing: border-box; }
+        .screen { display: none; height: calc(100vh - 330px); overflow-y: scroll; padding: 20px; box-sizing: border-box; background: linear-gradient(180deg, #050508 0%, #000 100%); }
         .screen.active { display: block; }
 
-        /* CARDS */
-        .card { background: var(--card); border: 2px solid #1a1a1a; padding: 15px; margin-bottom: 15px; border-radius: 8px; position: relative; transition: 0.3s; }
-        .card:hover { border-color: var(--blue); }
-        .status-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        /* DESIGN KART */
+        .card { 
+            background: var(--card); border-left: 5px solid var(--blue); padding: 20px; 
+            margin-bottom: 20px; border-radius: 4px 12px 12px 4px; position: relative; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-top: 1px solid #333; border-right: 1px solid #333;
+        }
+        .status-badge { position: absolute; top: 15px; right: 15px; padding: 5px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
 
-        /* TRUCK MARKERS */
-        .truck-icon-wrap { text-align: center; width: 140px; }
-        .truck-img { width: 85px; filter: drop-shadow(0 0 8px var(--blue)); }
-        .name-label { background: rgba(0,0,0,0.9); color: var(--neon); font-size: 11px; padding: 3px 6px; border: 1px solid var(--neon); border-radius: 3px; font-weight: bold; display: inline-block; margin-top: -5px; }
+        /* TRUCK ICONS - CUSTOM SVG */
+        .truck-icon-wrap { text-align: center; width: 150px; transform: translateY(-20px); }
+        .name-label { 
+            background: rgba(0, 210, 255, 0.9); color: #000; font-size: 12px; 
+            padding: 2px 8px; border-radius: 4px; font-weight: 900; display: inline-block; 
+            box-shadow: 0 0 15px var(--blue);
+        }
 
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; margin-top: 10px; }
-        .btn-blue { background: var(--blue); box-shadow: 0 0 10px var(--blue); }
-        .btn-green { background: var(--green); }
-        .btn-purple { background: var(--purple); }
+        .btn { 
+            width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: 800; 
+            cursor: pointer; color: white; text-transform: uppercase; margin-top: 12px; 
+            transition: 0.3s; letter-spacing: 1px;
+        }
+        .btn-blue { background: linear-gradient(45deg, #00d2ff, #3a7bd5); box-shadow: 0 4px 15px rgba(0,210,255,0.4); }
+        .btn-green { background: linear-gradient(45deg, #00ff88, #00a152); }
+        .btn-purple { background: linear-gradient(45deg, #bc13fe, #7a0bc0); }
+        .btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
 
-        .prog-container { background: #000; height: 20px; border-radius: 10px; margin: 12px 0; border: 1px solid #333; overflow: hidden; position: relative; }
-        .prog-bar { height: 100%; background: linear-gradient(90deg, #00d2ff, #9b59b6); transition: width 0.2s; }
-        .prog-text { position: absolute; inset: 0; text-align: center; line-height: 20px; font-size: 11px; font-weight: bold; }
+        .prog-container { background: #111; height: 24px; border-radius: 12px; margin: 15px 0; border: 1px solid #444; overflow: hidden; position: relative; }
+        .prog-bar { height: 100%; background: linear-gradient(90deg, var(--blue), var(--purple)); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .prog-text { position: absolute; inset: 0; text-align: center; line-height: 24px; font-size: 11px; font-weight: bold; color: #fff; }
 
-        #event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100000; display: none; align-items: center; justify-content: center; }
-        .event-box { border: 5px solid var(--red); padding: 40px; text-align: center; max-width: 500px; background: #000; }
+        #event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .event-box { border: 2px solid var(--red); padding: 40px; text-align: center; max-width: 500px; background: #050505; border-radius: 20px; box-shadow: 0 0 50px rgba(255,0,0,0.3); }
 
-        #log-panel { position: fixed; bottom: 0; width: 100%; height: 45px; background: #000; font-size: 11px; padding: 5px; color: #555; border-top: 2px solid #222; z-index: 99; overflow: hidden; }
+        #log-panel { position: fixed; bottom: 0; width: 100%; height: 50px; background: rgba(0,0,0,0.9); font-size: 11px; padding: 8px; color: #777; border-top: 1px solid #333; z-index: 999; }
     </style>
 </head>
 <body>
 
-<div id="cb-system"><div id="cb-active-msg" class="cb-msg">>>> MONITOROWANIE GPS AKTYWNE. WSZYSTKIE JEDNOSTKI W TRASIE. <<<</div></div>
+<div id="cb-system"><div id="cb-active-msg" class="cb-msg">SYSTEM V12 READY. CONNECTING TO SATELLITE...</div></div>
 
 <div id="header">
-    <div>KAPITAŁ<br><span id="val-cash" class="stat-val">0</span></div>
-    <div>BAZA ON<br><span id="val-fuel" class="stat-val">0</span></div>
-    <div>PRESTIŻ<br><span id="val-rep" class="stat-val">0</span></div>
-    <div>RYNEK ON<br><span id="val-fuel-price" class="stat-val" style="color:var(--green)">0.00</span></div>
+    <div><span class="stat-label">Budget</span><span id="val-cash" class="stat-val">0</span></div>
+    <div><span class="stat-label">Fuel Stock</span><span id="val-fuel" class="stat-val">0</span></div>
+    <div><span class="stat-label">Level XP</span><span id="val-rep" class="stat-val">0</span></div>
+    <div><span class="stat-label">ON Price</span><span id="val-fuel-price" class="stat-val" style="color:var(--green)">0.00</span></div>
 </div>
 
 <div id="event-overlay">
     <div class="event-box">
-        <h1 id="event-title" style="color:var(--red)">UWAGA!</h1>
-        <p id="event-desc" style="font-size: 18px;"></p>
-        <p id="event-driver" style="color:var(--gold); font-weight: bold;"></p>
-        <button class="btn btn-blue" onclick="Game.Events.close()">PRZYJMIJ DO WIADOMOŚCI</button>
+        <h1 id="event-title" style="color:var(--red)">CRITICAL EVENT</h1>
+        <p id="event-desc" style="font-size: 20px; color: #ccc;"></p>
+        <p id="event-driver" style="color:var(--gold); font-weight: bold; font-size: 22px;"></p>
+        <button class="btn btn-blue" onclick="Game.Events.close()">RESOLVE ISSUE</button>
     </div>
 </div>
 
-<div id="start-screen" style="position:fixed; inset:0; background:#000; z-index:200000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-    <h1 style="color:var(--blue); font-size: 50px; text-shadow: 0 0 20px var(--blue);">TRUCK EMPIRE V11</h1>
-    <p style="color:var(--neon); letter-spacing: 10px;">MAP OVERLORD EDITION</p>
-    <div id="load-box" style="display:none; margin-top:30px;"><button class="btn btn-green" style="width:300px; font-size: 20px;" onclick="Game.Persistence.load()">WCZYTAJ IMPERIUM</button></div>
-    <div id="new-game-box" style="margin-top:30px; text-align:center;">
-        <p>WYBIERZ MIASTO STARTOWE:</p>
-        <div id="city-selection" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px;"></div>
+<div id="start-screen" style="position:fixed; inset:0; background:#000; z-index:200000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+    <h1 style="color:var(--blue); font-size: 60px; font-weight: 900; margin:0; text-shadow: 0 0 30px var(--blue);">TRUCK EMPIRE</h1>
+    <p style="color:var(--purple); letter-spacing: 15px; font-size: 20px; margin-bottom: 40px;">COMMANDER V12</p>
+    <div id="load-box" style="display:none;"><button class="btn btn-green" style="width:320px; font-size: 22px;" onclick="Game.Persistence.load()">RESTORE CORPORATION</button></div>
+    <div id="new-game-box">
+        <p style="color:#666;">SELECT HEADQUARTERS LOCATION:</p>
+        <div id="city-selection" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 15px;"></div>
     </div>
 </div>
 
 <nav>
-    <button class="nav-tab active" onclick="Game.UI.switchTab('fleet')">SALON & PALIWO</button>
-    <button class="nav-tab" onclick="Game.UI.switchTab('map')">CENTRUM OPERACYJNE</button>
-    <button class="nav-tab" onclick="Game.UI.switchTab('hr')">ZARZĄDZANIE KADRAMI</button>
+    <button class="nav-tab active" onclick="Game.UI.switchTab('fleet')">Market & Garage</button>
+    <button class="nav-tab" onclick="Game.UI.switchTab('map')">Map & Ops</button>
+    <button class="nav-tab" onclick="Game.UI.switchTab('hr')">Personnel</button>
 </nav>
 
 <div id="screen-fleet" class="screen active">
-    <div class="card" style="border: 2px solid var(--blue)">
-        <h3>⛽ ZARZĄDZANIE PALIWEM (HURT)</h3>
-        <p>Zbiorniki: <span id="fuel-txt">0</span> / 200,000 L</p>
-        <button class="btn btn-blue" onclick="Game.Mechanic.refuel()">KUP PALIWO DO PEŁNA</button>
+    <div class="card" style="border-left-color: var(--green); background: rgba(0,255,136,0.05);">
+        <h2 style="margin-top:0;">FUEL LOGISTICS</h2>
+        <p>Main Depot: <span id="fuel-txt" style="color:var(--green); font-weight:bold;">0</span> / 250,000 L</p>
+        <button class="btn btn-green" onclick="Game.Mechanic.refuel()">REFILL DEPOT (BULK BUY)</button>
     </div>
     <div id="market-container"></div>
 </div>
@@ -102,67 +123,66 @@
 <div id="screen-map" class="screen">
     <div id="map"></div>
     <div id="active-missions-container"></div>
-    <div class="card">
-        <h2 style="color:var(--gold)">💰 GIEŁDA TRANSPORTOWA (LIVE)</h2>
-        <div id="freight-container"></div>
-    </div>
+    <div class="card"><h2 style="color:var(--blue); margin-top:0;">FREIGHT EXCHANGE</h2><div id="freight-container"></div></div>
 </div>
 
-<div id="screen-hr" class="screen">
-    <div id="driver-container"></div>
-</div>
+<div id="screen-hr" class="screen"><div id="driver-container"></div></div>
 
 <div id="log-panel"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+// Ikonki SVG w Base64 - Działają zawsze
+const ICONS = {
+    truck: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjMDBkMmZmIiBkPSJNOTYgMTI4aDI4OHYxOTJIODBWMjI0bDE2LTk2ek00MTYgMjI0djk2aC0zMnYtOTZoMzJ6bTQ4IDMydjY0aC0zMnYtNjRoMzJ6TTQ4IDM1Mmg0MTZ2NjRINjh2LTY0ek0xNjAgNDAwaDMyVjMxMmgzMnY4OGgzMlYyODhoLTk2djExMnoiLz48L3N2Zz4=`
+};
+
 const Game = {
     isPaused: false,
-    fuelPrice: 5.40,
+    fuelPrice: 5.60,
     tScale: 1.0,
-    fNames: ["Jan", "Piotr", "Marek", "Andrzej", "Mariusz", "Robert", "Dariusz", "Sławek", "Krzysiek", "Zbyszek"],
-    lNames: ["Nowak", "Kowalski", "Wójcik", "Mazur", "Lewandowski", "Zieliński", "Szymański", "Woźniak", "Kozłowski", "Jankowski"],
+    fNames: ["Andrzej", "Mariusz", "Dariusz", "Sławomir", "Piotr", "Janusz", "Zbigniew", "Robert", "Krzysztof", "Marek"],
+    lNames: ["Nowak", "Kowalski", "Wiśniewski", "Wójcik", "Mazur", "Lewandowski", "Zieliński", "Szymański", "Woźniak", "Dąbrowski"],
     data: {
-        cash: 50000, fuel: 25000, maxFuel: 200000, reputation: 0, homeCity: null, trucksOwned: [1, 0, 0],
-        drivers: [{ id: 0, name: "Szef (Operator)", currentCity: null, busyUntil: 0, xp: 0, damage: 0 }],
+        cash: 60000, fuel: 30000, maxFuel: 250000, reputation: 0, homeCity: null, trucksOwned: [1, 0, 0],
+        drivers: [{ id: 0, name: "CEO (You)", currentCity: null, busyUntil: 0, xp: 0, damage: 0, fatigue: 0 }],
         missions: [],
         cities: {
-            "Warszawa": [52.2297, 21.0122], "Kraków": [50.0647, 19.9450], "Gdańsk": [54.3520, 18.6466], 
-            "Wrocław": [51.1079, 17.0385], "Poznań": [52.4064, 16.9252], "Szczecin": [53.4289, 14.5530],
-            "Lublin": [51.2465, 22.5666], "Katowice": [50.2649, 19.0238], "Białystok": [53.1325, 23.1688]
+            "Warszawa": [52.23, 21.01], "Kraków": [50.06, 19.94], "Gdańsk": [54.35, 18.65], "Wrocław": [51.11, 17.04],
+            "Poznań": [52.41, 16.92], "Szczecin": [53.43, 14.55], "Lublin": [51.25, 22.57], "Białystok": [53.13, 23.17], "Katowice": [50.26, 19.03]
         },
         models: [
-            { name: "RENAULT MASTER (BUS)", price: 15000, img: "https://images.dealer.com/ddc/vehicles/2023/Renault/Master/Commercial%20Chassis/Perspective/White.png", tier: 0 },
-            { name: "MAN TGM (SOLO)", price: 75000, img: "https://www.scania.com/content/dam/scanianoe/market/master/products/trucks/p-series/scania-p-series-truck.png", tier: 1 },
-            { name: "SCANIA R730 (ZESTAW)", price: 250000, img: "https://www.volvotrucks.pl/content/dam/volvo-trucks/markets/poland/trucks/volvo-fh16/volvo-fh16-white.png", tier: 2 }
+            { name: "RENAULT MASTER BUS", price: 20000, img: ICONS.truck, tier: 0 },
+            { name: "MAN TGX SOLO", price: 85000, img: ICONS.truck, tier: 1 },
+            { name: "SCANIA S730 V8", price: 320000, img: ICONS.truck, tier: 2 }
         ]
     },
 
     init() {
-        if(localStorage.getItem('truckEmpireV11')) document.getElementById('load-box').style.display = 'block';
+        if(localStorage.getItem('truckEmpireV12')) document.getElementById('load-box').style.display = 'block';
         const grid = document.getElementById('city-selection');
         Object.keys(this.data.cities).forEach(c => {
             const b = document.createElement('button'); b.className = 'btn btn-purple'; b.innerText = c;
             b.onclick = () => this.startGame(c); grid.appendChild(b);
         });
-        setInterval(() => this.tick(), 6000);
+        setInterval(() => this.tick(), 5000);
     },
 
     tick() {
         if(this.isPaused) return;
-        this.fuelPrice = (4.50 + Math.random() * 3.5).toFixed(2);
+        this.fuelPrice = (4.80 + Math.random() * 3.2).toFixed(2);
         document.getElementById('val-fuel-price').innerText = this.fuelPrice;
         
-        const msgs = [
-            {t: "Wypadek na A1! Wszystkie zestawy stoją!", s: 0.1},
-            {t: "ITD kontroluje wagę w Katowicach!", s: 0.6},
-            {t: "Nocna jazda bez utrudnień. Gaz do dechy!", s: 1.4},
-            {t: "Ulewa na Mazurach. Zachowaj ostrożność!", s: 0.7},
-            {t: "Czysto u mobilków, szerokości!", s: 1.0}
+        const cb = [
+            {t: "TRAFFIC JAM ON A4 - SPEED REDUCED", s: 0.3},
+            {t: "POLICE RADAR AHEAD! SLOW DOWN!", s: 0.5},
+            {t: "CLEAR ROADS, FULL THROTTLE!", s: 1.6},
+            {t: "HEAVY RAIN IN POMERANIA - CAUTION!", s: 0.7},
+            {t: "FUEL STRIKE! PRICES VOLATILE!", s: 1.0}
         ];
         if(Math.random() > 0.6) {
-            const m = msgs[Math.floor(Math.random()*msgs.length)];
-            document.getElementById('cb-active-msg').innerText = ">>> CB-RADIO: " + m.t + " <<<";
+            const m = cb[Math.floor(Math.random()*cb.length)];
+            document.getElementById('cb-active-msg').innerText = ">>> CB: " + m.t + " <<<";
             this.tScale = m.s;
         }
     },
@@ -178,9 +198,9 @@ const Game = {
     },
 
     Persistence: {
-        save() { localStorage.setItem('truckEmpireV11', JSON.stringify(Game.data)); },
+        save() { localStorage.setItem('truckEmpireV12', JSON.stringify(Game.data)); },
         load() {
-            Game.data = JSON.parse(localStorage.getItem('truckEmpireV11'));
+            Game.data = JSON.parse(localStorage.getItem('truckEmpireV12'));
             Game.data.drivers.forEach(d => d.busyUntil = 0);
             document.getElementById('start-screen').style.display = 'none';
             Game.UI.initMap();
@@ -193,29 +213,29 @@ const Game = {
     UI: {
         map: null, markers: {}, lines: {},
         initMap() {
-            this.map = L.map('map', { zoomControl: false }).setView([52.1, 19.2], 6);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; CartoDB',
-                maxZoom: 18
-            }).addTo(this.map);
-            L.control.zoom({ position: 'topright' }).addTo(this.map);
+            this.map = L.map('map', {zoomControl: false}).setView([52.1, 19.2], 6);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.map);
         },
         switchTab(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.getElementById('screen-'+id).classList.add('active');
-            if(id === 'map' && this.map) setTimeout(() => this.map.invalidateSize(), 200);
+            if(id === 'map' && this.map) setTimeout(() => this.map.invalidateSize(), 300);
         },
         render() {
             document.getElementById('val-cash').innerText = Math.floor(Game.data.cash) + " PLN";
             document.getElementById('val-fuel').innerText = Math.floor(Game.data.fuel) + " L";
-            document.getElementById('val-rep').innerText = Game.data.reputation + " XP";
+            document.getElementById('val-rep').innerText = Game.data.reputation;
             document.getElementById('fuel-txt').innerText = Math.floor(Game.data.fuel);
             
             let mH = '';
             Game.data.models.forEach((m, i) => {
-                const cost = Math.floor(m.price * Math.pow(1.7, Game.data.trucksOwned[i]));
-                mH += `<div class="card"><img src="${m.img}" style="width:110px;"><br><b>${m.name}</b><br>Posiadasz: ${Game.data.trucksOwned[i]}<br><button class="btn btn-green" onclick="Game.Mechanic.buy(${i},${cost})">ZAKUP: ${cost} PLN</button></div>`;
+                const cost = Math.floor(m.price * Math.pow(1.8, Game.data.trucksOwned[i]));
+                mH += `<div class="card" style="border-left-color: var(--blue)">
+                    <img src="${m.img}" style="width:60px; filter:invert(1);">
+                    <b>${m.name}</b><br>Fleet: ${Game.data.trucksOwned[i]}<br>
+                    <button class="btn btn-blue" onclick="Game.Mechanic.buy(${i},${cost})">PURCHASE: ${cost} PLN</button>
+                </div>`;
             });
             document.getElementById('market-container').innerHTML = mH;
 
@@ -223,18 +243,19 @@ const Game = {
             const best = Game.data.trucksOwned.reduce((m, q, i) => q > 0 ? i : m, 0);
             Game.Logistics.jobs.forEach(j => {
                 const can = best >= j.tier;
-                fH += `<div class="card" style="border-right: 6px solid ${can?'var(--green)':'var(--red)'}">
-                    <b style="color:var(--gold); font-size: 18px;">${j.reward} PLN</b><br>${j.item} (${j.start} ⮕ ${j.dest})<br>
-                    <button class="btn ${can?'btn-blue':'btn-dark'}" onclick="Game.Logistics.accept('${j.id}')" ${can?'':'disabled'}>${can?'AKCEPTUJ ZLECENIE':'BRAK ODPOWIEDNIEGO TIRA'}</button>
+                fH += `<div class="card" style="border-left-color: ${can?'var(--green)':'var(--red)'}">
+                    <span class="status-badge" style="background:${can?'var(--green)':'var(--red)'}; color:#000">${can?'Available':'Req. Tier '+(j.tier+1)}</span>
+                    <b style="font-size:20px; color:var(--gold)">${j.reward} PLN</b><br>${j.item}<br>${j.start} ⮕ ${j.dest}<br>
+                    <button class="btn ${can?'btn-blue':'btn-dark'}" onclick="Game.Logistics.accept('${j.id}')" ${can?'':'disabled'}>COMMAND MISSION</button>
                 </div>`;
             });
             document.getElementById('freight-container').innerHTML = fH;
 
             let dH = '';
             Game.data.drivers.forEach(d => {
-                dH += `<div class="card"><b>👤 ${d.name}</b><br>Lokalizacja: ${d.currentCity}<br>Staź: ${d.xp} pkt. | Kondycja: ${100-d.damage}%</div>`;
+                dH += `<div class="card"><b>👤 ${d.name}</b><br>Location: ${d.currentCity}<br>Fatigue: ${d.fatigue}% | Condition: ${100-d.damage}%</div>`;
             });
-            dH += `<button class="btn btn-purple" onclick="Game.HR.hire()">WERBUJ KIEROWCĘ (20,000 PLN)</button>`;
+            dH += `<button class="btn btn-purple" onclick="Game.HR.hire()">RECRUIT DRIVER (25,000 PLN)</button>`;
             document.getElementById('driver-container').innerHTML = dH;
         }
     },
@@ -244,39 +265,38 @@ const Game = {
         gen() {
             const cities = Object.keys(Game.data.cities);
             setInterval(() => {
-                if(this.jobs.length > 7) this.jobs.shift();
+                if(this.jobs.length > 6) this.jobs.shift();
                 const s = cities[Math.floor(Math.random()*cities.length)], d = cities[Math.floor(Math.random()*cities.length)];
                 if(s !== d) {
                     const t = Math.floor(Math.random()*3);
-                    this.jobs.push({ id: Math.random().toString(36).substr(2,5), item: "PRODUKTY T" + (t+1), start: s, dest: d, reward: 15000 + (t*18000), tier: t });
+                    this.jobs.push({ id: Math.random().toString(36).substr(2,5), item: "CARGO TIER " + (t+1), start: s, dest: d, reward: 20000 + (t*25000), tier: t });
                     Game.UI.render();
                 }
-            }, 8000);
+            }, 9000);
         },
         async accept(id) {
             const j = this.jobs.find(x => x.id === id);
-            let drv = Game.data.drivers.find(d => d.busyUntil < Date.now());
-            if(!drv || Game.data.fuel < 3000) return alert("System: Brak wolnego kierowcy lub rezerwy paliwa!");
+            let drv = Game.data.drivers.find(d => d.busyUntil < Date.now() && d.fatigue < 80);
+            if(!drv || Game.data.fuel < 4000) return alert("NO READY DRIVERS OR LOW FUEL!");
 
-            // Logika trasy: BAZA -> START -> CEL
             const r1 = await this.route(Game.data.cities[drv.currentCity], Game.data.cities[j.start]);
             const r2 = await this.route(Game.data.cities[j.start], Game.data.cities[j.dest]);
             
             const m = {
                 id: j.id, path: [...r1, ...r2], split: r1.length, prog: 0,
                 reward: j.reward, dest: j.dest, load: j.start,
-                drvId: drv.id, drvName: drv.name, img: Game.data.models[j.tier].img,
-                status: 'DOJAZD'
+                drvId: drv.id, drvName: drv.name, img: ICONS.truck,
+                status: 'HEADING TO LOAD'
             };
 
-            drv.busyUntil = Date.now() + 10000000;
+            drv.busyUntil = Date.now() + 100000000;
             Game.data.missions.push(m);
-            Game.data.fuel -= 2500;
+            Game.data.fuel -= 3500;
             
-            Game.UI.lines[j.id] = L.polyline(m.path, {color: 'var(--blue)', weight: 4, opacity: 0.6, dashArray: '10, 10'}).addTo(Game.UI.map);
+            Game.UI.lines[j.id] = L.polyline(m.path, {color: 'var(--blue)', weight: 5, opacity: 0.8}).addTo(Game.UI.map);
             const icon = L.divIcon({ 
-                html: `<div class="truck-icon-wrap"><img src="${m.img}" class="truck-img"><br><div class="name-label">${m.drvName}</div></div>`, 
-                className: 'custom-m' 
+                html: `<div class="truck-icon-wrap"><img src="${m.img}" style="width:40px; filter:drop-shadow(0 0 5px cyan) invert(1);"><br><div class="name-label">${m.drvName}</div></div>`, 
+                className: 'c' 
             });
             Game.UI.markers[j.id] = L.marker(Game.data.cities[drv.currentCity], {icon: icon}).addTo(Game.UI.map);
             
@@ -284,7 +304,8 @@ const Game = {
             Game.UI.render();
         },
         async route(s, e) {
-            const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${s[1]},${s[0]};${e[1]},${e[0]}?overview=full&geometries=geojson`);
+            // Najkrótsza droga OSRM po nitce asfaltu
+            const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${s[1]},${s[0]};${e[1]},${e[0]}?overview=full&geometries=geojson&continue_straight=true`);
             const d = await r.json(); return d.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
         }
     },
@@ -299,10 +320,10 @@ const Game = {
 
     HR: {
         hire() { 
-            if(Game.data.cash >= 20000) { 
-                Game.data.cash -= 20000; 
-                const name = Game.fNames[Math.floor(Math.random()*10)] + " " + Game.lNames[Math.floor(Math.random()*10)];
-                Game.data.drivers.push({id: Date.now(), name: name, busyUntil: 0, currentCity: Game.data.homeCity, xp: 0, damage: 0}); 
+            if(Game.data.cash >= 25000) { 
+                Game.data.cash -= 25000; 
+                const n = Game.fNames[Math.floor(Math.random()*10)] + " " + Game.lNames[Math.floor(Math.random()*10)];
+                Game.data.drivers.push({id: Date.now(), name: n, busyUntil: 0, currentCity: Game.data.homeCity, xp: 0, damage: 0, fatigue: 0}); 
                 Game.UI.render(); Game.Persistence.save();
             } 
         }
@@ -313,19 +334,18 @@ const Game = {
             if(Game.data.missions.length === 0) return;
             const m = Game.data.missions[Math.floor(Math.random()*Game.data.missions.length)];
             const drv = Game.data.drivers.find(d => d.id === m.drvId);
-            const evs = [
-                {t: "AWARIA CHŁODNICY", d: "Ciężarówka uziemiona na godzinę. Koszt serwisu.", c: 9000},
-                {t: "KONTROLA TACHO", d: "Kierowca przekroczył czas pracy. Surowy mandat.", c: 6000},
-                {t: "ZŁY ZAŁADUNEK", d: "Towar uszkodzony podczas hamowania.", c: 4000}
-            ];
-            const e = evs[Math.floor(Math.random()*evs.length)];
+            const ev = [
+                {t: "ENGINE EXPLOSION", d: "Catastrophic failure in transit. Heavy repairs needed.", c: 15000},
+                {t: "CARGO THEFT", d: "Security breach at rest stop. Insurance deductible applied.", c: 10000},
+                {t: "HIGH SPEED CHASE", d: "Driver tried to outrun police. Massive fine.", c: 20000}
+            ][Math.floor(Math.random()*3)];
             Game.isPaused = true;
-            document.getElementById('event-title').innerText = e.t;
-            document.getElementById('event-desc').innerText = e.d;
-            document.getElementById('event-driver').innerText = "KIEROWCA: " + drv.name;
+            document.getElementById('event-title').innerText = ev.t;
+            document.getElementById('event-desc').innerText = ev.d;
+            document.getElementById('event-driver').innerText = "DRIVER: " + drv.name;
             document.getElementById('event-overlay').style.display = 'flex';
-            Game.data.cash -= e.c;
-            drv.damage += 15;
+            Game.data.cash -= ev.c;
+            drv.damage += 20;
             Game.UI.render();
         },
         close() { document.getElementById('event-overlay').style.display = 'none'; Game.isPaused = false; }
@@ -336,31 +356,31 @@ const Game = {
             if(Game.isPaused) return;
             let h = '';
             Game.data.missions = Game.data.missions.filter(m => {
-                m.prog += (0.002 * Game.tScale);
+                m.prog += (0.003 * Game.tScale);
                 const p = Math.min(1, m.prog);
                 const idx = Math.floor(p * (m.path.length - 1));
                 
-                m.status = idx < m.split ? "PUSTY (DOJAZD)" : "ZAŁADOWANY (KURS)";
+                m.status = idx < m.split ? "HEADING TO LOAD" : "DELIVERING CARGO";
 
                 if(p >= 1) {
-                    Game.data.cash += Number(m.reward); Game.data.reputation += 200;
+                    Game.data.cash += Number(m.reward); Game.data.reputation += 300;
                     const d = Game.data.drivers.find(x => x.id === m.drvId);
-                    if(d) { d.currentCity = m.dest; d.busyUntil = 0; d.xp += 300; }
+                    if(d) { d.currentCity = m.dest; d.busyUntil = 0; d.xp += 500; d.fatigue += 30; }
                     Game.UI.map.removeLayer(Game.UI.markers[m.id]); Game.UI.map.removeLayer(Game.UI.lines[m.id]);
                     Game.Persistence.save(); Game.UI.render();
                     return false;
                 }
 
                 Game.UI.markers[m.id].setLatLng(m.path[idx]);
-                h += `<div class="card" onclick="Game.UI.map.setView([${m.path[idx][0]}, ${m.path[idx][1]}], 8)">
-                    <span class="status-badge" style="background:${m.status.includes('PUSTY') ? 'var(--purple)':'var(--neon)'}">${m.status}</span>
-                    <b>${m.drvName}</b><br><small>${m.load} ⮕ ${m.dest}</small>
-                    <div class="prog-container"><div class="prog-bar" style="width:${p*100}%"></div><div class="prog-text">${Math.floor(p*100)}%</div></div>
+                h += `<div class="card" onclick="Game.UI.map.setView([${m.path[idx][0]}, ${m.path[idx][1]}], 10)">
+                    <span class="status-badge" style="background:${m.status.includes('LOAD') ? 'var(--purple)':'var(--neon)'}; color:#000">${m.status}</span>
+                    <b style="color:var(--blue)">${m.drvName}</b><br><small>${m.load} ⮕ ${m.dest}</small>
+                    <div class="prog-container"><div class="prog-bar" style="width:${p*100}%"></div><div class="prog-text">${Math.floor(p*100)}% COMPLETE</div></div>
                 </div>`;
                 return true;
             });
             document.getElementById('active-missions-container').innerHTML = h;
-            if(Math.random() > 0.999) Game.Events.trigger();
+            if(Math.random() > 0.9995) Game.Events.trigger();
         }, 50);
     }
 };
