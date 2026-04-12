@@ -3,53 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TRUCK EMPIRE: PERSISTENT WORLD</title>
+    <title>TRUCK EMPIRE: MEGA EXPANSION</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --gold: #f1c40f; --dark: #0a0a0a; --card: #161616; --green: #2ecc71; --blue: #3498db; --red: #e74c3c; --orange: #e67e22; }
+        :root { --gold: #f1c40f; --dark: #0a0a0a; --card: #161616; --green: #2ecc71; --blue: #3498db; --red: #e74c3c; --orange: #e67e22; --purple: #9b59b6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; overflow: hidden; }
         
         /* SYSTEM KOMUNIKATÓW X */
-        #event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 20000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .event-card { background: #222; border: 3px solid var(--gold); padding: 30px; border-radius: 15px; text-align: center; position: relative; max-width: 400px; }
-        .close-event { position: absolute; top: -15px; right: -15px; background: var(--red); color: white; border: 2px solid white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 20px; }
+        #event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 20000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .event-card { background: #111; border: 4px solid var(--gold); padding: 30px; border-radius: 20px; text-align: center; position: relative; max-width: 450px; box-shadow: 0 0 60px var(--gold); }
+        .close-event { position: absolute; top: -20px; right: -20px; background: var(--red); color: white; border: 3px solid white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 24px; z-index: 20001; }
 
-        /* EKRAN STARTOWY / WCZYTYWANIA */
-        #start-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .save-box { margin-bottom: 20px; padding: 20px; border: 1px dashed var(--gold); border-radius: 10px; }
+        /* CB RADIO */
+        #cb-radio { background: #222; color: var(--green); padding: 5px; font-family: monospace; font-size: 12px; border-bottom: 1px solid var(--green); height: 20px; overflow: hidden; white-space: nowrap; }
+        .cb-text { display: inline-block; animation: scroll-left 15s linear infinite; }
+        @keyframes scroll-left { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
         /* UI */
+        #start-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
         #header { background: #000; padding: 10px; display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 2px solid #cc0000; text-align: center; font-size: 11px; }
         .stat-val { font-size: 13px; font-weight: bold; color: var(--gold); display: block; }
         nav { display: flex; background: #1a1a1a; }
         .nav-tab { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; font-size: 10px; cursor: pointer; border-bottom: 3px solid transparent; }
         .nav-tab.active { color: white; border-bottom-color: #cc0000; background: #222; }
-        .screen { display: none; height: calc(100vh - 140px); overflow-y: auto; padding: 15px; box-sizing: border-box; }
+        .screen { display: none; height: calc(100vh - 160px); overflow-y: auto; padding: 15px; box-sizing: border-box; }
         .screen.active { display: block; }
-        .card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333; }
-        #map { height: 220px; width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid #444; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; text-transform: uppercase; }
-        #log-panel { position: fixed; bottom: 0; width: 100%; height: 50px; background: rgba(0,0,0,0.95); font-size: 10px; padding: 10px; border-top: 2px solid #cc0000; z-index: 1000; pointer-events: none; overflow: hidden; }
-        .truck-icon-map { font-size: 26px; }
+        .card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333; position: relative; }
+        #map { height: 220px; width: 100%; border-radius: 8px; margin-bottom: 10px; border: 2px solid #444; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; text-transform: uppercase; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        #log-panel { position: fixed; bottom: 0; width: 100%; height: 50px; background: rgba(0,0,0,0.95); font-size: 10px; padding: 10px; border-top: 2px solid #cc0000; z-index: 1000; pointer-events: none; }
+        .truck-icon-map { font-size: 28px; filter: drop-shadow(0 0 5px black); }
+        .progress-bar-container { background: #000; height: 10px; border-radius: 5px; margin-top: 8px; border: 1px solid #333; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--blue); width: 0%; transition: width 0.1s linear; }
     </style>
 </head>
 <body>
+
+<div id="cb-radio"><div class="cb-text" id="cb-content">Mobilki, jak dróżka na Warszawę? Czysto, szerokości!</div></div>
 
 <div id="event-overlay">
     <div class="event-card">
         <button class="close-event" onclick="Game.Events.close()">X</button>
         <h2 id="event-title" style="color:var(--gold)">📢 KOMUNIKAT</h2>
-        <p id="event-desc"></p>
-        <p id="event-driver" style="font-weight: bold; color: var(--blue);"></p>
+        <p id="event-desc" style="font-size: 18px; margin: 20px 0;"></p>
+        <div id="event-driver" style="background: var(--blue); padding: 10px; border-radius: 5px; font-weight: bold;"></div>
     </div>
 </div>
 
 <div id="start-screen">
-    <h1 style="color:var(--gold)">TRUCK EMPIRE 4.0</h1>
-    <div id="load-box" class="save-box" style="display:none;">
-        <p>Wykryto zapis Twojej firmy!</p>
-        <button class="btn" style="background:var(--green)" onclick="Game.Persistence.load()">KONTYNUUJ KARIERĘ</button>
-        <button onclick="Game.Persistence.clear()" style="background:none; color:red; border:none; cursor:pointer; margin-top:10px;">Usuń zapis i zacznij od nowa</button>
+    <h1 style="color:var(--gold)">TRUCK EMPIRE V5.0</h1>
+    <div id="load-box" style="display:none; margin-bottom: 20px;">
+        <button class="btn" style="background:var(--green); padding: 20px;" onclick="Game.Persistence.load()">KONTYNUUJ KARIERĘ</button>
     </div>
     <div id="new-game-box">
         <p>Wybierz miasto na pierwszą bazę:</p>
@@ -60,21 +65,21 @@
 <div id="header">
     <div>KASA<br><span id="val-cash" class="stat-val">0</span></div>
     <div>PALIWO<br><span id="val-fuel" class="stat-val">0</span></div>
-    <div>REP (XP)<br><span id="val-rep" class="stat-val">0</span></div>
-    <div>BAZA<br><span id="val-home" class="stat-val">-</span></div>
+    <div>REP<br><span id="val-rep" class="stat-val">0</span></div>
+    <div>CENA ON<br><span id="val-fuel-price" class="stat-val" style="color:var(--orange)">5.85</span></div>
 </div>
 
 <nav>
-    <button class="nav-tab active" onclick="Game.UI.switchTab('fleet')">FLOTA</button>
-    <button class="nav-tab" onclick="Game.UI.switchTab('map')">GIEŁDA/GPS</button>
+    <button class="nav-tab active" onclick="Game.UI.switchTab('fleet')">FLOTA / ON</button>
+    <button class="nav-tab" onclick="Game.UI.switchTab('map')">GIEŁDA / GPS</button>
     <button class="nav-tab" onclick="Game.UI.switchTab('hr')">KADRY</button>
 </nav>
 
 <div id="screen-fleet" class="screen active">
     <div class="card" style="border-left: 5px solid var(--orange)">
-        <h4>⛽ Magazyn Paliwa</h4>
-        <p>Stan: <span id="fuel-txt">0</span> / 2500 L</p>
-        <button class="btn" style="background:var(--orange)" onclick="Game.Mechanic.refuel()">Tankuj Bazę</button>
+        <h4>⛽ Giełda Paliw</h4>
+        <p>Baza: <span id="fuel-txt">0</span> / 5000 L</p>
+        <button class="btn" style="background:var(--orange)" onclick="Game.Mechanic.refuel()">KUP PALIWO (TERAZ!)</button>
     </div>
     <div id="market-container"></div>
 </div>
@@ -82,9 +87,8 @@
 <div id="screen-map" class="screen">
     <div id="map"></div>
     <div id="active-missions-container"></div>
-    <div class="card">
-        <h3 style="color:var(--blue)">📦 Giełda Towarowa</h3>
-        <button onclick="Game.Logistics.generateJobs()" class="btn" style="background:#222; margin-bottom:10px;">ODŚWIEŻ GIEŁDĘ</button>
+    <div class="card" style="background: #000;">
+        <h3 style="color:var(--blue)">📦 Giełda Ładunków</h3>
         <div id="freight-container"></div>
     </div>
 </div>
@@ -99,10 +103,11 @@
 <script>
 const Game = {
     isPaused: false,
+    fuelPrice: 5.85,
     data: {
-        cash: 10000, fuel: 2000, reputation: 0,
+        cash: 12000, fuel: 1000, maxFuel: 5000, reputation: 0,
         homeCity: null, trucksOwned: [1, 0, 0],
-        drivers: [{ name: "Szef", currentCity: null, busyUntil: 0 }],
+        drivers: [{ id: 0, name: "Szef", currentCity: null, busyUntil: 0 }],
         missions: [],
         cities: {
             "Warszawa": [52.23, 21.01], "Kraków": [50.06, 19.94], "Gdańsk": [54.35, 18.64],
@@ -110,21 +115,23 @@ const Game = {
             "Lublin": [51.24, 22.56], "Białystok": [53.13, 23.16]
         },
         models: [
-            { name: "Bus (3.5t)", price: 4000, img: "🚚", tier: 0 },
-            { name: "Solo (12t)", price: 26000, img: "🚛", tier: 1 },
-            { name: "TIR (24t)", price: 85000, img: "🚜", tier: 2 }
+            { name: "Bus", price: 4000, img: "🚚", tier: 0 },
+            { name: "Solo", price: 26000, img: "🚛", tier: 1 },
+            { name: "TIR", price: 90000, img: "🚜", tier: 2 }
         ]
     },
 
     init() {
-        if(localStorage.getItem('truckEmpireSave')) {
-            document.getElementById('load-box').style.display = 'block';
-        }
+        if(localStorage.getItem('truckEmpireSaveV5')) document.getElementById('load-box').style.display = 'block';
         const grid = document.getElementById('city-selection');
         Object.keys(this.data.cities).forEach(c => {
             const b = document.createElement('button'); b.className = 'city-btn'; b.innerText = c;
             b.onclick = () => this.startGame(c); grid.appendChild(b);
         });
+        setInterval(() => {
+            this.fuelPrice = (5.50 + Math.random() * 0.8).toFixed(2);
+            document.getElementById('val-fuel-price').innerText = this.fuelPrice;
+        }, 5000);
     },
 
     startGame(city) {
@@ -139,18 +146,13 @@ const Game = {
 
     Persistence: {
         save() {
-            const saveObj = {
-                cash: Game.data.cash, fuel: Game.data.fuel, rep: Game.data.reputation,
-                home: Game.data.homeCity, trucks: Game.data.trucksOwned,
-                drivers: Game.data.drivers.map(d => ({...d, busyUntil: 0})) // Resetujemy czas pracy przy zapisie dla bezpieczeństwa
-            };
-            localStorage.setItem('truckEmpireSave', JSON.stringify(saveObj));
+            const save = { cash: Game.data.cash, fuel: Game.data.fuel, rep: Game.data.reputation, home: Game.data.homeCity, trucks: Game.data.trucksOwned, drivers: Game.data.drivers };
+            localStorage.setItem('truckEmpireSaveV5', JSON.stringify(save));
         },
         load() {
-            const saved = JSON.parse(localStorage.getItem('truckEmpireSave'));
-            Game.data.cash = saved.cash; Game.data.fuel = saved.fuel;
-            Game.data.reputation = saved.rep; Game.data.homeCity = saved.home;
-            Game.data.trucksOwned = saved.trucks; Game.data.drivers = saved.drivers;
+            const saved = JSON.parse(localStorage.getItem('truckEmpireSaveV5'));
+            Object.assign(Game.data, saved);
+            Game.data.drivers.forEach(d => d.busyUntil = 0); // Reset po wczytaniu
             this.startGameFromSave();
         },
         startGameFromSave() {
@@ -159,15 +161,15 @@ const Game = {
             Game.Logistics.generateJobs();
             Game.loop();
             Game.UI.renderAll();
-        },
-        clear() { localStorage.removeItem('truckEmpireSave'); location.reload(); }
+        }
     },
 
     Events: {
         pool: [
-            { t: "👮 KONTROLA DROGOWA", d: "ITD sprawdza dokumenty. Kierowca musi stać.", fine: 200 },
-            { t: "🚧 KOREK", d: "Zator na drodze krajowej. Spore opóźnienie.", fine: 0 },
-            { t: "🔧 OSTRZEŻENIE", d: "Komputer pokładowy zgłasza błąd. Przymusowy postój.", fine: 400 }
+            { t: "🚔 MANDAT", d: "Przekroczenie prędkości! 500 PLN kary.", fine: 500 },
+            { t: "🚧 WYPADEK", d: "Droga zablokowana. Kierowca musi czekać.", fine: 0 },
+            { t: "⛽ AWARIA", d: "Pęknięty przewód hamulcowy. Serwis w trasie.", fine: 1200 },
+            { t: "🍔 GRATIS", d: "Kierowca znalazł 100 zł na parkingu!", fine: -100 }
         ],
         trigger() {
             if(Game.data.missions.length === 0) return;
@@ -176,7 +178,7 @@ const Game = {
             Game.isPaused = true;
             document.getElementById('event-title').innerText = ev.t;
             document.getElementById('event-desc').innerText = ev.d;
-            document.getElementById('event-driver').innerText = "Dotyczy: " + m.drv.name;
+            document.getElementById('event-driver').innerText = "Kierowca: " + m.drvName;
             document.getElementById('event-overlay').style.display = 'flex';
             if(ev.fine) Game.data.cash -= ev.fine;
         },
@@ -199,16 +201,15 @@ const Game = {
         renderAll() {
             document.getElementById('val-cash').innerText = Math.floor(Game.data.cash) + " PLN";
             document.getElementById('val-fuel').innerText = Math.floor(Game.data.fuel) + " L";
-            document.getElementById('val-rep').innerText = Game.data.reputation + " XP";
-            document.getElementById('val-home').innerText = Game.data.homeCity;
+            document.getElementById('val-rep').innerText = Game.data.reputation;
             document.getElementById('fuel-txt').innerText = Math.floor(Game.data.fuel);
             this.renderMarket(); this.renderFreight(); this.renderDrivers();
         },
         renderMarket() {
-            let h = '<h3>🛒 Salon Pojazdów</h3>';
+            let h = '<h3>Garaż</h3>';
             Game.data.models.forEach((m, i) => {
                 const p = Math.floor(m.price * Math.pow(1.3, Game.data.trucksOwned[i]));
-                h += `<div class="card"><b>${m.img} ${m.name}</b> (${Game.data.trucksOwned[i]} szt.)<br><button class="btn" style="background:var(--green)" onclick="Game.Mechanic.buyTruck(${i},${p})">KUP: ${p} PLN</button></div>`;
+                h += `<div class="card">${m.img} <b>${m.name}</b> (${Game.data.trucksOwned[i]})<br><button class="btn" style="background:var(--green)" onclick="Game.Mechanic.buyTruck(${i},${p})">KUP: ${p} PLN</button></div>`;
             });
             document.getElementById('market-container').innerHTML = h;
         },
@@ -217,20 +218,16 @@ const Game = {
             const best = Game.data.trucksOwned.reduce((m, q, i) => q > 0 ? i : m, 0);
             Game.Logistics.availableJobs.forEach(j => {
                 const can = best >= j.tier;
-                const isLocal = Game.data.drivers.some(d => d.currentCity === j.start && d.busyUntil < Date.now());
-                h += `<div class="card" style="border-left:5px solid ${isLocal?'var(--green)':'var(--blue)'}">
-                    <b>📦 ${j.item} (${j.weight}t)</b><br>📍 ${j.start} → ${j.dest} | 💰 ${j.reward} PLN<br>
-                    <button class="btn" style="background:${can?'var(--blue)':'#222'}" onclick="Game.Logistics.acceptJob('${j.id}')" ${can?'':'disabled'}>PRZYJMIJ</button>
-                </div>`;
+                h += `<div class="card" style="border-left:5px solid var(--blue)"><b>${j.item} (${j.weight}t)</b><br>📍 ${j.start} → ${j.dest} | 💰 ${j.reward} PLN<br><button class="btn" style="background:${can?'var(--blue)':'#222'}" onclick="Game.Logistics.acceptJob('${j.id}')" ${can?'':'disabled'}>PRZYJMIJ</button></div>`;
             });
-            document.getElementById('freight-container').innerHTML = h;
+            document.getElementById('freight-container').innerHTML = h || "Brak zleceń. Czekaj...";
         },
         renderDrivers() {
-            let h = '<h3>👥 Kierowcy</h3>';
+            let h = '<h3>Załoga</h3>';
             Game.data.drivers.forEach(d => {
-                h += `<div class="card"><b>👤 ${d.name}</b><br>Lokalizacja: ${d.currentCity}<br>Status: ${d.busyUntil > Date.now()?'W TRASIE':'W BAZIE'}</div>`;
+                h += `<div class="card"><b>👤 ${d.name}</b><br>Miasto: ${d.currentCity}<br>Status: ${d.busyUntil > Date.now()?'W TRASIE':'W BAZIE'}</div>`;
             });
-            h += `<button class="btn" style="background:var(--gold); color:black" onclick="Game.HR.hire()">ZATRUDNIJ (5000 PLN)</button>`;
+            h += `<button class="btn" style="background:var(--purple)" onclick="Game.HR.hire()">REKRUTUJ (5000 PLN)</button>`;
             document.getElementById('driver-container').innerHTML = h;
         },
         addLog(m) { const l = document.getElementById('log-panel'); l.innerHTML = `<div>${m}</div>` + l.innerHTML; }
@@ -239,22 +236,26 @@ const Game = {
     Logistics: {
         availableJobs: [],
         generateJobs() {
-            this.availableJobs = [];
             const cities = Object.keys(Game.data.cities);
-            Game.data.drivers.forEach(d => {
-                for(let i=0; i<2; i++) {
-                    let dC = cities[Math.floor(Math.random()*cities.length)];
-                    while(dC === d.currentCity) dC = cities[Math.floor(Math.random()*cities.length)];
-                    this.availableJobs.push({ id: Math.random().toString(36).substr(2,4), item: "Towar", start: d.currentCity, dest: dC, weight: 2.5, reward: 2500, tier: 0 });
+            setInterval(() => {
+                if(this.availableJobs.length > 10) this.availableJobs.shift();
+                const s = cities[Math.floor(Math.random()*cities.length)];
+                const d = cities[Math.floor(Math.random()*cities.length)];
+                if(s !== d) {
+                    const t = Math.floor(Math.random()*3);
+                    this.availableJobs.push({ id: Math.random().toString(36).substr(2,4), item: "Towar", start: s, dest: d, weight: (t*5+2), reward: 2000+(t*4000), tier: t });
+                    Game.UI.renderFreight();
                 }
-            });
-            Game.UI.renderAll();
+            }, 8000);
         },
         async acceptJob(id) {
             const j = this.availableJobs.find(x => x.id === id);
+            // KLUCZOWA POPRAWKA: Szukamy wolnego kierowcy i blokujemy go
             let drv = Game.data.drivers.find(d => d.busyUntil < Date.now() && d.currentCity === j.start);
             if(!drv) drv = Game.data.drivers.find(d => d.busyUntil < Date.now());
-            if(!drv || Game.data.fuel < 200) return alert("Błąd zasobów!");
+            
+            if(!drv) return alert("Brak wolnych kierowców!");
+            if(Game.data.fuel < 200) return alert("Brak paliwa w bazie!");
 
             const r1 = await this.getRoute(Game.data.cities[drv.currentCity], Game.data.cities[j.start]);
             const r2 = await this.getRoute(Game.data.cities[j.start], Game.data.cities[j.dest]);
@@ -263,7 +264,7 @@ const Game = {
             const m = {
                 id: j.id, path: path, pIdx: r1.length, 
                 start: Date.now(), dur: path.length * 100, // TURBO
-                reward: j.reward, dest: j.dest, drv: drv, status: 'dojazd', icon: Game.data.models[j.tier].img
+                reward: j.reward, dest: j.dest, drvId: drv.id, drvName: drv.name, status: 'dojazd', icon: Game.data.models[j.tier].img
             };
 
             drv.busyUntil = Date.now() + m.dur;
@@ -274,6 +275,7 @@ const Game = {
             Game.UI.markers[j.id] = L.marker(Game.data.cities[drv.currentCity], {icon: tIcon}).addTo(Game.UI.map);
             this.availableJobs = this.availableJobs.filter(x => x.id !== id);
             Game.UI.renderAll();
+            Game.Persistence.save();
         },
         async getRoute(s, e) {
             const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${s[1]},${s[0]};${e[1]},${e[0]}?overview=full&geometries=geojson`);
@@ -283,11 +285,22 @@ const Game = {
 
     Mechanic: {
         buyTruck(i, p) { if(Game.data.cash >= p) { Game.data.cash -= p; Game.data.trucksOwned[i]++; Game.UI.renderAll(); Game.Persistence.save(); } },
-        refuel() { const cost = (Game.data.maxFuel-Game.data.fuel)*5.85; if(Game.data.cash >= cost) { Game.data.cash -= cost; Game.data.fuel = Game.data.maxFuel; Game.UI.renderAll(); } }
+        refuel() { 
+            const amount = Game.data.maxFuel - Game.data.fuel;
+            const cost = amount * Game.fuelPrice;
+            if(Game.data.cash >= cost) { Game.data.cash -= cost; Game.data.fuel = Game.data.maxFuel; Game.UI.renderAll(); }
+        }
     },
 
     HR: {
-        hire() { if(Game.data.cash >= 5000) { Game.data.cash -= 5000; Game.data.drivers.push({name: "Kierowca "+Game.data.drivers.length, busyUntil: 0, currentCity: Game.data.homeCity}); Game.UI.renderAll(); Game.Persistence.save(); } }
+        hire() { 
+            if(Game.data.cash >= 5000) { 
+                Game.data.cash -= 5000; 
+                const newId = Game.data.drivers.length;
+                Game.data.drivers.push({id: newId, name: "Kierowca "+newId, busyUntil: 0, currentCity: Game.data.homeCity}); 
+                Game.UI.renderAll(); Game.Persistence.save();
+            } 
+        }
     },
 
     loop() {
@@ -299,20 +312,23 @@ const Game = {
                 const prog = Math.min(1, (now - m.start) / m.dur);
                 const idx = Math.floor(prog * (m.path.length - 1));
                 if(prog >= 1) {
-                    Game.data.cash += Number(m.reward); Game.data.reputation += 5;
-                    m.drv.currentCity = m.dest;
+                    Game.data.cash += Number(m.reward); Game.data.reputation += 10;
+                    const d = Game.data.drivers.find(x => x.id === m.drvId);
+                    if(d) d.currentCity = m.dest;
                     Game.UI.map.removeLayer(Game.UI.markers[m.id]); Game.UI.map.removeLayer(Game.UI.lines[m.id]);
-                    Game.UI.addLog(`Zakończono: ${m.drv.name} w ${m.dest}`);
+                    Game.UI.addLog(`💰 ${m.drvName} dowieźli towar!`);
                     Game.Persistence.save();
                     return false;
                 }
                 Game.UI.markers[m.id].setLatLng(m.path[idx]);
-                html += `<div class="card">${m.icon} <b>${m.drv.name}</b> ➡ ${m.dest} (${Math.floor(prog*100)}%)</div>`;
+                html += `<div class="card">${m.icon} <b>${m.drvName}</b> ➡ ${m.dest}
+                    <div class="progress-bar-container"><div class="progress-fill" style="width:${prog*100}%"></div></div>
+                </div>`;
                 return true;
             });
             document.getElementById('active-missions-container').innerHTML = html;
-            if(Math.random() > 0.998) Game.Events.trigger();
-        }, 80);
+            if(Math.random() > 0.999) Game.Events.trigger();
+        }, 100);
     }
 };
 
