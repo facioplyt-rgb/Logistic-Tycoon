@@ -3,407 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON TOWER WARS: ULTIMATE</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>TRUCK EMPIRE: PERSISTENT WORLD</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { 
-            --p1: #00f3ff; --p1-g: rgba(0, 243, 255, 0.3);
-            --p2: #ff003c; --p2-g: rgba(255, 0, 60, 0.3);
-            --p3: #b900ff; --p3-g: rgba(185, 0, 255, 0.3);
-            --speed: #ffea00; --fort: #b900ff;
-            --bg: #020205; 
-        }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Orbitron', sans-serif; color: white; user-select: none; -webkit-user-select: none; }
-        canvas { display: block; touch-action: none; background: var(--bg); outline: none; }
+        :root { --gold: #f1c40f; --dark: #0a0a0a; --card: #161616; --green: #2ecc71; --blue: #3498db; --red: #e74c3c; --orange: #e67e22; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; overflow: hidden; }
         
-        #ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
-        .hud-top { padding: 20px 10px; display: flex; justify-content: space-between; gap: 5px; }
-        
-        .stat-box { background: rgba(0,10,20,0.8); border: 1px solid var(--p1); padding: 8px 10px; border-radius: 8px; backdrop-filter: blur(5px); box-shadow: 0 0 10px var(--p1-g); min-width: 60px; text-align: center; flex-grow: 1; margin: 0 2px; }
-        .label { font-size: 8px; color: var(--p1); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
-        .value { font-size: 18px; color: white; font-weight: 900; }
+        /* SYSTEM KOMUNIKATÓW X */
+        #event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 20000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .event-card { background: #222; border: 3px solid var(--gold); padding: 30px; border-radius: 15px; text-align: center; position: relative; max-width: 400px; }
+        .close-event { position: absolute; top: -15px; right: -15px; background: var(--red); color: white; border: 2px solid white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 20px; }
 
-        #level-bar-bg { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.05); z-index: 20; }
-        #level-bar { height: 100%; background: var(--p1); width: 0%; box-shadow: 0 0 10px var(--p1); transition: width 0.3s; }
-        
-        #banner { position: fixed; top: 40%; left: 0; width: 100%; text-align: center; font-size: 40px; font-weight: 900; color: var(--p1); text-shadow: 0 0 20px var(--p1); opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 30; background: rgba(0,0,0,0.5); padding: 20px 0; border-top: 2px solid var(--p1); border-bottom: 2px solid var(--p1); backdrop-filter: blur(5px); }
+        /* EKRAN STARTOWY / WCZYTYWANIA */
+        #start-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .save-box { margin-bottom: 20px; padding: 20px; border: 1px dashed var(--gold); border-radius: 10px; }
 
-        .skills-container { padding: 15px; display: flex; justify-content: center; gap: 15px; pointer-events: auto; }
-        .skill-btn { position: relative; width: 60px; height: 60px; background: rgba(0,20,40,0.9); border: 2px solid var(--p1); border-radius: 12px; color: white; font-family: 'Orbitron'; font-size: 10px; font-weight: 700; cursor: pointer; overflow: hidden; box-shadow: 0 0 10px var(--p1-g); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.2s; outline: none; }
-        .skill-btn:active { transform: scale(0.9); }
-        .skill-btn.disabled { border-color: #555; color: #555; box-shadow: none; pointer-events: none; }
-        .skill-icon { font-size: 20px; margin-bottom: 2px; }
-        .skill-cd { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0, 243, 255, 0.3); height: 0%; transition: height 0.1s linear; }
-
-        /* MODUŁ PORADNIKA */
-        #guide-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); padding: 20px; }
-        #guide-box { background: #050a15; border: 2px solid var(--p1); padding: 25px; border-radius: 20px; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 30px var(--p1-g); }
-        h2 { color: var(--p1); text-align: center; margin-top: 0; text-shadow: 0 0 10px var(--p1); }
-        .g-sec { margin-bottom: 20px; font-size: 13px; line-height: 1.6; border-bottom: 1px solid rgba(0, 243, 255, 0.1); padding-bottom: 10px; }
-        .g-tit { color: var(--speed); font-weight: bold; margin-bottom: 5px; display: block; }
-        .close-btn { width: 100%; background: var(--p1); border: none; padding: 12px; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 8px; margin-top: 10px; }
-        .icon-box { display: inline-block; width: 20px; text-align: center; margin-right: 5px; }
+        /* UI */
+        #header { background: #000; padding: 10px; display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 2px solid #cc0000; text-align: center; font-size: 11px; }
+        .stat-val { font-size: 13px; font-weight: bold; color: var(--gold); display: block; }
+        nav { display: flex; background: #1a1a1a; }
+        .nav-tab { flex: 1; padding: 15px; border: none; background: none; color: #666; font-weight: bold; font-size: 10px; cursor: pointer; border-bottom: 3px solid transparent; }
+        .nav-tab.active { color: white; border-bottom-color: #cc0000; background: #222; }
+        .screen { display: none; height: calc(100vh - 140px); overflow-y: auto; padding: 15px; box-sizing: border-box; }
+        .screen.active { display: block; }
+        .card { background: var(--card); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333; }
+        #map { height: 220px; width: 100%; border-radius: 8px; margin-bottom: 10px; border: 1px solid #444; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px; text-transform: uppercase; }
+        #log-panel { position: fixed; bottom: 0; width: 100%; height: 50px; background: rgba(0,0,0,0.95); font-size: 10px; padding: 10px; border-top: 2px solid #cc0000; z-index: 1000; pointer-events: none; overflow: hidden; }
+        .truck-icon-map { font-size: 26px; }
     </style>
 </head>
 <body>
 
-    <div id="guide-overlay">
-        <div id="guide-box">
-            <h2>CENTRALNY PROTOKÓŁ</h2>
-            <div class="g-sec">
-                <span class="g-tit">PODSTAWY OPERACJI</span>
-                Przeciągnij palcem od **Twojej wieży (Błękitnej)** do celu, aby wysłać 50% stacjonujących tam wojsk. Twoim celem jest przejęcie wszystkich wież na mapie.
-            </div>
-            <div class="g-sec">
-                <span class="g-tit">KLASY WIEŻ</span>
-                <span class="icon-box">⚪</span> **NORMALNA:** Standardowa produkcja.<br>
-                <span class="icon-box" style="color:var(--speed)">▲</span> **SPEED:** Produkuje jednostki **2.5x szybciej**, ale ma mniejszy limit wojska.<br>
-                <span class="icon-box" style="color:var(--fort)">■</span> **FORTECA:** Redukuje otrzymywane obrażenia o **50%**. Idealna do obrony frontu.
-            </div>
-            <div class="g-sec">
-                <span class="g-tit">UMIEJĘTNOŚCI (SKILLS)</span>
-                **⚡ OVER:** Przez 5s Twoje wieże produkują jednostki 3x szybciej.<br>
-                **💥 EMP:** Natychmiast niszczy 30% jednostek w wieżach wroga.<br>
-                **🚀 WARP:** Wszystkie Twoje jednostki w drodze zyskują ekstremalną prędkość.
-            </div>
-            <div class="g-sec">
-                <span class="g-tit">SYSTEM REBIRTH</span>
-                Ukończ **10 Sektorów**, aby dokonać Rebirthu. <br>
-                Zyskasz: **+15 wojska startowego**, **+20 pojemności** i **+20% szybkości produkcji** na stałe!
-            </div>
-            <button class="close-btn" onclick="document.getElementById('guide-overlay').style.display='none'">ROZPOCZNIJ BITWĘ</button>
-        </div>
+<div id="event-overlay">
+    <div class="event-card">
+        <button class="close-event" onclick="Game.Events.close()">X</button>
+        <h2 id="event-title" style="color:var(--gold)">📢 KOMUNIKAT</h2>
+        <p id="event-desc"></p>
+        <p id="event-driver" style="font-weight: bold; color: var(--blue);"></p>
     </div>
+</div>
 
-    <div id="level-bar-bg"><div id="level-bar"></div></div>
-    <canvas id="stage"></canvas>
-
-    <div id="ui">
-        <div class="hud-top">
-            <div class="stat-box">
-                <div class="label">DOWÓDCA</div>
-                <div id="v-lvl" class="value">LVL 1</div>
-            </div>
-            <div class="stat-box" id="box-rebirth" style="display: none; border-color: var(--p3); box-shadow: 0 0 10px var(--p3-g);">
-                <div class="label" style="color: var(--p3);">REBIRTH</div>
-                <div id="v-rebirth" class="value">0</div>
-            </div>
-            <div class="stat-box" style="border-color: var(--p2); box-shadow: 0 0 10px var(--p2-g);">
-                <div class="label">SEKTOR</div>
-                <div id="v-sector" class="value">1</div>
-            </div>
-        </div>
-        
-        <div id="banner">SEKTOR 1</div>
-
-        <div class="skills-container">
-            <button class="skill-btn" id="btn-s1" onclick="Game.useSkill(1)">
-                <div class="skill-cd" id="cd-1"></div>
-                <div class="skill-icon">⚡</div>
-                <div>OVER</div>
-            </button>
-            <button class="skill-btn" id="btn-s2" onclick="Game.useSkill(2)">
-                <div class="skill-cd" id="cd-2"></div>
-                <div class="skill-icon">💥</div>
-                <div>EMP</div>
-            </button>
-            <button class="skill-btn" id="btn-s3" onclick="Game.useSkill(3)">
-                <div class="skill-cd" id="cd-3"></div>
-                <div class="skill-icon">🚀</div>
-                <div>WARP</div>
-            </button>
-        </div>
+<div id="start-screen">
+    <h1 style="color:var(--gold)">TRUCK EMPIRE 4.0</h1>
+    <div id="load-box" class="save-box" style="display:none;">
+        <p>Wykryto zapis Twojej firmy!</p>
+        <button class="btn" style="background:var(--green)" onclick="Game.Persistence.load()">KONTYNUUJ KARIERĘ</button>
+        <button onclick="Game.Persistence.clear()" style="background:none; color:red; border:none; cursor:pointer; margin-top:10px;">Usuń zapis i zacznij od nowa</button>
     </div>
+    <div id="new-game-box">
+        <p>Wybierz miasto na pierwszą bazę:</p>
+        <div class="city-grid" id="city-selection"></div>
+    </div>
+</div>
 
+<div id="header">
+    <div>KASA<br><span id="val-cash" class="stat-val">0</span></div>
+    <div>PALIWO<br><span id="val-fuel" class="stat-val">0</span></div>
+    <div>REP (XP)<br><span id="val-rep" class="stat-val">0</span></div>
+    <div>BAZA<br><span id="val-home" class="stat-val">-</span></div>
+</div>
+
+<nav>
+    <button class="nav-tab active" onclick="Game.UI.switchTab('fleet')">FLOTA</button>
+    <button class="nav-tab" onclick="Game.UI.switchTab('map')">GIEŁDA/GPS</button>
+    <button class="nav-tab" onclick="Game.UI.switchTab('hr')">KADRY</button>
+</nav>
+
+<div id="screen-fleet" class="screen active">
+    <div class="card" style="border-left: 5px solid var(--orange)">
+        <h4>⛽ Magazyn Paliwa</h4>
+        <p>Stan: <span id="fuel-txt">0</span> / 2500 L</p>
+        <button class="btn" style="background:var(--orange)" onclick="Game.Mechanic.refuel()">Tankuj Bazę</button>
+    </div>
+    <div id="market-container"></div>
+</div>
+
+<div id="screen-map" class="screen">
+    <div id="map"></div>
+    <div id="active-missions-container"></div>
+    <div class="card">
+        <h3 style="color:var(--blue)">📦 Giełda Towarowa</h3>
+        <button onclick="Game.Logistics.generateJobs()" class="btn" style="background:#222; margin-bottom:10px;">ODŚWIEŻ GIEŁDĘ</button>
+        <div id="freight-container"></div>
+    </div>
+</div>
+
+<div id="screen-hr" class="screen">
+    <div id="driver-container"></div>
+</div>
+
+<div id="log-panel"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// Wszystkie moduły zachowane: Sektory, Klasy wież, Skille, Rebirth
-const Game = (() => {
-    const canvas = document.getElementById('stage');
-    const ctx = canvas.getContext('2d', { alpha: false });
-    
-    const Theme = { p1: '#00f3ff', p2: '#ff003c', p3: '#b900ff', neu: '#555', speed: '#ffea00', fort: '#b900ff', towerR: 40 };
-
-    let State = {
-        towers: [], troops: [], particles: [],
-        mouse: { x: 0, y: 0, down: false, start: null },
-        lvl: 1, xp: 0, sector: 1, rebirth: 0, frame: 0,
-        gameState: 'playing',
-        buffs: { overclock: 0 },
-        skills: {
-            1: { cd: 20000, last: 0 },
-            2: { cd: 30000, last: 0 },
-            3: { cd: 15000, last: 0 }
-        }
-    };
-
-    class Particle {
-        constructor(x, y, color) {
-            this.x = x; this.y = y;
-            const a = Math.random() * Math.PI * 2;
-            const v = 1 + Math.random() * 5;
-            this.vx = Math.cos(a) * v;
-            this.vy = Math.sin(a) * v;
-            this.life = 1.0;
-            this.color = color;
-        }
-        update() { this.x += this.vx; this.y += this.vy; this.life -= 0.03; }
-        draw() {
-            ctx.globalAlpha = this.life;
-            ctx.fillStyle = this.color;
-            ctx.fillRect(this.x, this.y, 4, 4);
-        }
-    }
-
-    class Tower {
-        constructor(x, y, owner, count, type = 'normal') {
-            this.x = x; this.y = y;
-            this.owner = owner;
-            this.count = count;
-            this.type = type; 
-            this.lastProd = Date.now();
-            this.pulse = Math.random() * 10;
-        }
-        
-        get max() { 
-            let m = 50 + (State.lvl * 5); 
-            if(this.owner === 1) m += State.rebirth * 20; 
-            if(this.type === 'speed') return Math.floor(m * 0.6); 
-            if(this.type === 'fortress') return Math.floor(m * 1.5); 
-            return m;
-        }
-
-        update() {
-            this.pulse += 0.05;
-            let rate = 1000 - Math.min(State.lvl * 20, 800);
-            if(this.type === 'speed') rate /= 2.5; 
-            if(this.owner === 1) {
-                rate /= (1 + State.rebirth * 0.2);
-                if(Date.now() < State.buffs.overclock) rate /= 3; 
-            }
-            if (this.owner !== 0 && Date.now() - this.lastProd > rate) {
-                if (this.count < this.max) this.count++;
-                this.lastProd = Date.now();
-            }
-        }
-
-        draw() {
-            let baseColor = this.owner === 1 ? Theme.p1 : (this.owner === 2 ? Theme.p2 : Theme.neu);
-            const s = Math.sin(this.pulse) * 3;
-            if(this.owner === 1 && Date.now() < State.buffs.overclock) { ctx.shadowBlur = 30; ctx.shadowColor = Theme.p1; }
-            else { ctx.shadowBlur = 15; ctx.shadowColor = baseColor; }
-            ctx.strokeStyle = baseColor; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(this.x, this.y, Theme.towerR + s, 0, Math.PI*2); ctx.stroke();
-            ctx.shadowBlur = 0; ctx.fillStyle = "#050508"; ctx.fill();
-            
-            if(this.type === 'speed') {
-                ctx.strokeStyle = Theme.speed; ctx.beginPath();
-                ctx.moveTo(this.x, this.y - 15); ctx.lineTo(this.x + 15, this.y + 10); ctx.lineTo(this.x - 15, this.y + 10);
-                ctx.closePath(); ctx.stroke();
-            } else if (this.type === 'fortress') {
-                ctx.strokeStyle = Theme.fort; ctx.strokeRect(this.x - 12, this.y - 12, 24, 24);
-            }
-            ctx.beginPath(); ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 4;
-            ctx.arc(this.x, this.y, Theme.towerR - 8, 0, Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.strokeStyle = baseColor;
-            const arc = (this.count / this.max) * (Math.PI * 2);
-            ctx.arc(this.x, this.y, Theme.towerR - 8, -Math.PI/2, arc - Math.PI/2); ctx.stroke();
-            ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "900 22px Orbitron";
-            ctx.fillText(Math.floor(this.count), this.x, this.y + 8);
-        }
-    }
-
-    class Troop {
-        constructor(startX, startY, target, owner, amount) {
-            this.x = startX; this.y = startY; this.target = target;
-            this.owner = owner; this.amount = amount;
-            this.dead = false; this.speed = 4;
-        }
-        update() {
-            const dx = this.target.x - this.x, dy = this.target.y - this.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist < 25) { this.impact(); this.dead = true; }
-            else { this.x += (dx/dist)*this.speed; this.y += (dy/dist)*this.speed; }
-        }
-        impact() {
-            const color = this.owner === 1 ? Theme.p1 : Theme.p2;
-            for(let i=0; i<10; i++) State.particles.push(new Particle(this.x, this.y, color));
-            if (this.target.owner === this.owner) { this.target.count += this.amount; }
-            else {
-                let damage = this.amount;
-                if(this.target.type === 'fortress') damage *= 0.5; 
-                this.target.count -= damage;
-                if (this.target.count <= 0) {
-                    this.target.owner = this.owner;
-                    this.target.count = Math.abs(this.target.count); 
-                    if(this.owner === 1) addXP(30);
-                }
-            }
-        }
-        draw() {
-            const color = this.owner === 1 ? Theme.p1 : Theme.p2;
-            ctx.fillStyle = color; ctx.shadowBlur = 10; ctx.shadowColor = color;
-            if(this.speed > 5) {
-                ctx.beginPath(); ctx.arc(this.x, this.y, 4, 0, Math.PI*2); ctx.fill();
-            } else {
-                ctx.beginPath(); ctx.arc(this.x, this.y, 6, 0, Math.PI*2); ctx.fill();
-            }
-            ctx.shadowBlur = 0;
-        }
-    }
-
-    const showBanner = (text, isDeath = false, colorHex = null) => {
-        const b = document.getElementById('banner');
-        b.innerText = text;
-        const col = colorHex ? colorHex : (isDeath ? Theme.p2 : Theme.p1);
-        b.style.color = col; b.style.borderColor = col;
-        b.style.textShadow = `0 0 20px ${col}`; b.style.opacity = 1;
-        setTimeout(() => b.style.opacity = 0, 2000);
-    };
-
-    const generate = () => {
-        State.towers = []; State.troops = []; State.particles = [];
-        const w = canvas.width, h = canvas.height;
-        let pStart = 40 + (State.rebirth * 15); 
-        let aiStart = 15 + (State.sector * 3);
-        let numNeutral = 4 + Math.floor(State.sector / 2);
-        let numAIBases = 1 + Math.floor(State.sector / 4); 
-
-        State.towers.push(new Tower(w*0.2, h/2, 1, pStart, 'normal'));
-        for(let i = 0; i < numAIBases; i++) {
-            let yPos = (numAIBases === 1) ? h/2 : (h*0.2) + (h*0.6 / (numAIBases - 1)) * i;
-            State.towers.push(new Tower(w*0.8, yPos, 2, aiStart, Math.random() > 0.7 ? 'speed' : 'normal'));
-        }
-        const types = ['normal', 'normal', 'normal', 'speed', 'fortress'];
-        for(let i=0; i<numNeutral; i++) {
-            let maxNeu = 5 + (State.sector * 2);
-            State.towers.push(new Tower(w*0.35+Math.random()*w*0.3, h*0.15+Math.random()*h*0.5, 0, Math.floor(1 + Math.random()*maxNeu), types[Math.floor(Math.random() * types.length)]));
-        }
-        
-        for(let n=0; n<50; n++) {
-            State.towers.forEach(t1 => {
-                State.towers.forEach(t2 => {
-                    if(t1 === t2) return;
-                    const d = Math.hypot(t1.x-t2.x, t1.y-t2.y);
-                    if(d < Theme.towerR * 2.5) {
-                        const force = (Theme.towerR * 2.5 - d) * 0.1;
-                        const a = Math.atan2(t2.y-t1.y, t2.x-t1.x);
-                        t1.x -= Math.cos(a)*force; t1.y -= Math.sin(a)*force;
-                        t2.x += Math.cos(a)*force; t2.y += Math.sin(a)*force;
-                    }
-                });
-                t1.x = Math.max(Theme.towerR + 10, Math.min(w - Theme.towerR - 10, t1.x));
-                t1.y = Math.max(Theme.towerR + 60, Math.min(h - Theme.towerR - 120, t1.y));
-            });
-        }
-        State.gameState = 'playing';
-        showBanner("SEKTOR " + State.sector);
-        document.getElementById('v-sector').innerText = State.sector;
-    };
-
-    const addXP = (amt) => {
-        State.xp += amt;
-        if(State.xp >= State.lvl * 150) { State.lvl++; State.xp = 0; }
-        document.getElementById('v-lvl').innerText = "LVL " + State.lvl;
-        document.getElementById('level-bar').style.width = (State.xp/(State.lvl*150)*100) + "%";
-    };
-
-    const loop = () => {
-        State.frame++;
-        ctx.fillStyle = "#020205"; ctx.fillRect(0,0,canvas.width, canvas.height);
-        
-        // UI Skilli
-        const now = Date.now();
-        [1,2,3].forEach(id => {
-            const btn = document.getElementById('btn-s'+id);
-            const cdBar = document.getElementById('cd-'+id);
-            const skill = State.skills[id];
-            const timePassed = now - skill.last;
-            if(timePassed < skill.cd) { btn.classList.add('disabled'); cdBar.style.height = ((timePassed/skill.cd)*100)+"%"; }
-            else { btn.classList.remove('disabled'); cdBar.style.height = "100%"; }
-        });
-
-        if(State.gameState === 'playing') {
-            if(State.frame % Math.max(50, 150 - (State.sector * 8)) === 0) aiLogic();
-            if(State.mouse.down && State.mouse.start) {
-                ctx.strokeStyle = Theme.p1; ctx.lineWidth = 3; ctx.setLineDash([10, 10]);
-                ctx.beginPath(); ctx.moveTo(State.mouse.start.x, State.mouse.start.y); ctx.lineTo(State.mouse.x, State.mouse.y); ctx.stroke(); ctx.setLineDash([]);
-            }
-            State.towers.forEach(t => { t.update(); t.draw(); });
-            State.troops = State.troops.filter(t => !t.dead);
-            State.troops.forEach(t => { t.update(); t.draw(); });
-            checkWin();
-        }
-        State.particles = State.particles.filter(p => p.life > 0);
-        State.particles.forEach(p => { p.update(); p.draw(); });
-        requestAnimationFrame(loop);
-    };
-
-    const checkWin = () => {
-        const teams = [...new Set(State.towers.filter(t => t.owner !== 0).map(t => t.owner))];
-        if(teams.length === 1 && State.frame > 60) {
-            State.gameState = 'transition';
-            if(teams[0] === 1) { 
-                if(State.sector >= 10) {
-                    State.rebirth++; State.sector = 1; State.lvl = 1;
-                    document.getElementById('box-rebirth').style.display = 'block';
-                    document.getElementById('v-rebirth').innerText = State.rebirth;
-                    showBanner("REBIRTH!", false, Theme.p3);
-                    setTimeout(generate, 2500);
-                } else { State.sector++; setTimeout(generate, 1500); }
-            } else { showBanner("PORAŻKA", true); State.sector = 1; State.lvl = 1; setTimeout(generate, 2500); }
-            State.frame = 0;
-        }
-    };
-
-    const aiLogic = () => {
-        State.towers.filter(t => t.owner === 2).forEach(at => {
-            if(at.count > Math.max(10, 25 - State.sector)) {
-                const target = State.towers.filter(t => t.owner !== 2).sort((a,b) => (a.count*(a.type==='fortress'?2:1)) - (b.count*(b.type==='fortress'?2:1)))[0];
-                if(target) {
-                    const send = Math.floor(at.count * Math.min(0.8, 0.4 + (State.sector * 0.05)));
-                    at.count -= send; State.troops.push(new Troop(at.x, at.y, target, 2, send));
-                }
-            }
-        });
-    };
-
-    const handleInput = (e) => {
-        if(e.target.closest('.skills-container') || e.target.closest('#guide-box')) return;
-        const pos = e.changedTouches ? {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY} : {x: e.clientX, y: e.clientY};
-        if(e.type==='mousedown' || e.type==='touchstart') {
-            const t = State.towers.find(t => Math.hypot(t.x-pos.x, t.y-pos.y) < Theme.towerR*1.5);
-            if(t && t.owner===1) { State.mouse.start=t; State.mouse.down=true; State.mouse.x=pos.x; State.mouse.y=pos.y; }
-        } else if(e.type==='mousemove' || e.type==='touchmove') {
-            State.mouse.x=pos.x; State.mouse.y=pos.y;
-        } else if(e.type==='mouseup' || e.type==='touchend') {
-            if(State.mouse.down && State.mouse.start) {
-                const target = State.towers.find(t => Math.hypot(t.x-pos.x, t.y-pos.y) < Theme.towerR*1.5);
-                if(target && target!==State.mouse.start) {
-                    const send = Math.floor(State.mouse.start.count / 2);
-                    if(send > 0) { State.mouse.start.count-=send; State.troops.push(new Troop(State.mouse.start.x, State.mouse.start.y, target, 1, send)); }
-                }
-            }
-            State.mouse.down=false; State.mouse.start=null;
-        }
-    };
-
-    return {
-        start: () => {
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-            ['mousedown','mousemove','mouseup','touchstart','touchmove','touchend'].forEach(evt => canvas.addEventListener(evt, handleInput, {passive:false}));
-            generate(); requestAnimationFrame(loop);
+const Game = {
+    isPaused: false,
+    data: {
+        cash: 10000, fuel: 2000, reputation: 0,
+        homeCity: null, trucksOwned: [1, 0, 0],
+        drivers: [{ name: "Szef", currentCity: null, busyUntil: 0 }],
+        missions: [],
+        cities: {
+            "Warszawa": [52.23, 21.01], "Kraków": [50.06, 19.94], "Gdańsk": [54.35, 18.64],
+            "Wrocław": [51.10, 17.03], "Poznań": [52.40, 16.92], "Szczecin": [53.42, 14.55],
+            "Lublin": [51.24, 22.56], "Białystok": [53.13, 23.16]
         },
-        useSkill: (id) => {
-            if(State.gameState!=='playing' || Date.now()-State.skills[id].last < State.skills[id].cd) return;
-            State.skills[id].last = Date.now();
-            if(id===1) { State.buffs.overclock = Date.now()+5000; showBanner("OVERCLOCK!"); }
-            else if(id===2) { State.towers.filter(t=>t.owner===2).forEach(t=>t.count-=Math.floor(t.count*0.3)); showBanner("EMP!"); }
-            else if(id===3) { State.troops.filter(t=>t.owner===1).forEach(t=>t.speed=20); showBanner("WARP!"); }
+        models: [
+            { name: "Bus (3.5t)", price: 4000, img: "🚚", tier: 0 },
+            { name: "Solo (12t)", price: 26000, img: "🚛", tier: 1 },
+            { name: "TIR (24t)", price: 85000, img: "🚜", tier: 2 }
+        ]
+    },
+
+    init() {
+        if(localStorage.getItem('truckEmpireSave')) {
+            document.getElementById('load-box').style.display = 'block';
         }
-    };
-})();
-window.onload = Game.start;
+        const grid = document.getElementById('city-selection');
+        Object.keys(this.data.cities).forEach(c => {
+            const b = document.createElement('button'); b.className = 'city-btn'; b.innerText = c;
+            b.onclick = () => this.startGame(c); grid.appendChild(b);
+        });
+    },
+
+    startGame(city) {
+        this.data.homeCity = city;
+        this.data.drivers[0].currentCity = city;
+        document.getElementById('start-screen').style.display = 'none';
+        this.UI.initMap();
+        this.Logistics.generateJobs();
+        this.loop();
+        this.UI.renderAll();
+    },
+
+    Persistence: {
+        save() {
+            const saveObj = {
+                cash: Game.data.cash, fuel: Game.data.fuel, rep: Game.data.reputation,
+                home: Game.data.homeCity, trucks: Game.data.trucksOwned,
+                drivers: Game.data.drivers.map(d => ({...d, busyUntil: 0})) // Resetujemy czas pracy przy zapisie dla bezpieczeństwa
+            };
+            localStorage.setItem('truckEmpireSave', JSON.stringify(saveObj));
+        },
+        load() {
+            const saved = JSON.parse(localStorage.getItem('truckEmpireSave'));
+            Game.data.cash = saved.cash; Game.data.fuel = saved.fuel;
+            Game.data.reputation = saved.rep; Game.data.homeCity = saved.home;
+            Game.data.trucksOwned = saved.trucks; Game.data.drivers = saved.drivers;
+            this.startGameFromSave();
+        },
+        startGameFromSave() {
+            document.getElementById('start-screen').style.display = 'none';
+            Game.UI.initMap();
+            Game.Logistics.generateJobs();
+            Game.loop();
+            Game.UI.renderAll();
+        },
+        clear() { localStorage.removeItem('truckEmpireSave'); location.reload(); }
+    },
+
+    Events: {
+        pool: [
+            { t: "👮 KONTROLA DROGOWA", d: "ITD sprawdza dokumenty. Kierowca musi stać.", fine: 200 },
+            { t: "🚧 KOREK", d: "Zator na drodze krajowej. Spore opóźnienie.", fine: 0 },
+            { t: "🔧 OSTRZEŻENIE", d: "Komputer pokładowy zgłasza błąd. Przymusowy postój.", fine: 400 }
+        ],
+        trigger() {
+            if(Game.data.missions.length === 0) return;
+            const m = Game.data.missions[Math.floor(Math.random()*Game.data.missions.length)];
+            const ev = this.pool[Math.floor(Math.random()*this.pool.length)];
+            Game.isPaused = true;
+            document.getElementById('event-title').innerText = ev.t;
+            document.getElementById('event-desc').innerText = ev.d;
+            document.getElementById('event-driver').innerText = "Dotyczy: " + m.drv.name;
+            document.getElementById('event-overlay').style.display = 'flex';
+            if(ev.fine) Game.data.cash -= ev.fine;
+        },
+        close() { document.getElementById('event-overlay').style.display = 'none'; Game.isPaused = false; }
+    },
+
+    UI: {
+        map: null, markers: {}, lines: {},
+        initMap() {
+            this.map = L.map('map').setView([52.1, 19.2], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+        },
+        switchTab(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('screen-'+id).classList.add('active');
+            if(event) event.target.classList.add('active');
+            if(id === 'map' && this.map) setTimeout(() => this.map.invalidateSize(), 200);
+        },
+        renderAll() {
+            document.getElementById('val-cash').innerText = Math.floor(Game.data.cash) + " PLN";
+            document.getElementById('val-fuel').innerText = Math.floor(Game.data.fuel) + " L";
+            document.getElementById('val-rep').innerText = Game.data.reputation + " XP";
+            document.getElementById('val-home').innerText = Game.data.homeCity;
+            document.getElementById('fuel-txt').innerText = Math.floor(Game.data.fuel);
+            this.renderMarket(); this.renderFreight(); this.renderDrivers();
+        },
+        renderMarket() {
+            let h = '<h3>🛒 Salon Pojazdów</h3>';
+            Game.data.models.forEach((m, i) => {
+                const p = Math.floor(m.price * Math.pow(1.3, Game.data.trucksOwned[i]));
+                h += `<div class="card"><b>${m.img} ${m.name}</b> (${Game.data.trucksOwned[i]} szt.)<br><button class="btn" style="background:var(--green)" onclick="Game.Mechanic.buyTruck(${i},${p})">KUP: ${p} PLN</button></div>`;
+            });
+            document.getElementById('market-container').innerHTML = h;
+        },
+        renderFreight() {
+            let h = '';
+            const best = Game.data.trucksOwned.reduce((m, q, i) => q > 0 ? i : m, 0);
+            Game.Logistics.availableJobs.forEach(j => {
+                const can = best >= j.tier;
+                const isLocal = Game.data.drivers.some(d => d.currentCity === j.start && d.busyUntil < Date.now());
+                h += `<div class="card" style="border-left:5px solid ${isLocal?'var(--green)':'var(--blue)'}">
+                    <b>📦 ${j.item} (${j.weight}t)</b><br>📍 ${j.start} → ${j.dest} | 💰 ${j.reward} PLN<br>
+                    <button class="btn" style="background:${can?'var(--blue)':'#222'}" onclick="Game.Logistics.acceptJob('${j.id}')" ${can?'':'disabled'}>PRZYJMIJ</button>
+                </div>`;
+            });
+            document.getElementById('freight-container').innerHTML = h;
+        },
+        renderDrivers() {
+            let h = '<h3>👥 Kierowcy</h3>';
+            Game.data.drivers.forEach(d => {
+                h += `<div class="card"><b>👤 ${d.name}</b><br>Lokalizacja: ${d.currentCity}<br>Status: ${d.busyUntil > Date.now()?'W TRASIE':'W BAZIE'}</div>`;
+            });
+            h += `<button class="btn" style="background:var(--gold); color:black" onclick="Game.HR.hire()">ZATRUDNIJ (5000 PLN)</button>`;
+            document.getElementById('driver-container').innerHTML = h;
+        },
+        addLog(m) { const l = document.getElementById('log-panel'); l.innerHTML = `<div>${m}</div>` + l.innerHTML; }
+    },
+
+    Logistics: {
+        availableJobs: [],
+        generateJobs() {
+            this.availableJobs = [];
+            const cities = Object.keys(Game.data.cities);
+            Game.data.drivers.forEach(d => {
+                for(let i=0; i<2; i++) {
+                    let dC = cities[Math.floor(Math.random()*cities.length)];
+                    while(dC === d.currentCity) dC = cities[Math.floor(Math.random()*cities.length)];
+                    this.availableJobs.push({ id: Math.random().toString(36).substr(2,4), item: "Towar", start: d.currentCity, dest: dC, weight: 2.5, reward: 2500, tier: 0 });
+                }
+            });
+            Game.UI.renderAll();
+        },
+        async acceptJob(id) {
+            const j = this.availableJobs.find(x => x.id === id);
+            let drv = Game.data.drivers.find(d => d.busyUntil < Date.now() && d.currentCity === j.start);
+            if(!drv) drv = Game.data.drivers.find(d => d.busyUntil < Date.now());
+            if(!drv || Game.data.fuel < 200) return alert("Błąd zasobów!");
+
+            const r1 = await this.getRoute(Game.data.cities[drv.currentCity], Game.data.cities[j.start]);
+            const r2 = await this.getRoute(Game.data.cities[j.start], Game.data.cities[j.dest]);
+            const path = [...r1, ...r2];
+            
+            const m = {
+                id: j.id, path: path, pIdx: r1.length, 
+                start: Date.now(), dur: path.length * 100, // TURBO
+                reward: j.reward, dest: j.dest, drv: drv, status: 'dojazd', icon: Game.data.models[j.tier].img
+            };
+
+            drv.busyUntil = Date.now() + m.dur;
+            Game.data.missions.push(m);
+            Game.data.fuel -= 150;
+            Game.UI.lines[j.id] = L.polyline(path, {color: 'cyan', weight: 2}).addTo(Game.UI.map);
+            const tIcon = L.divIcon({ html: `<div class="truck-icon-map">${m.icon}</div>`, className: 'c' });
+            Game.UI.markers[j.id] = L.marker(Game.data.cities[drv.currentCity], {icon: tIcon}).addTo(Game.UI.map);
+            this.availableJobs = this.availableJobs.filter(x => x.id !== id);
+            Game.UI.renderAll();
+        },
+        async getRoute(s, e) {
+            const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${s[1]},${s[0]};${e[1]},${e[0]}?overview=full&geometries=geojson`);
+            const d = await r.json(); return d.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        }
+    },
+
+    Mechanic: {
+        buyTruck(i, p) { if(Game.data.cash >= p) { Game.data.cash -= p; Game.data.trucksOwned[i]++; Game.UI.renderAll(); Game.Persistence.save(); } },
+        refuel() { const cost = (Game.data.maxFuel-Game.data.fuel)*5.85; if(Game.data.cash >= cost) { Game.data.cash -= cost; Game.data.fuel = Game.data.maxFuel; Game.UI.renderAll(); } }
+    },
+
+    HR: {
+        hire() { if(Game.data.cash >= 5000) { Game.data.cash -= 5000; Game.data.drivers.push({name: "Kierowca "+Game.data.drivers.length, busyUntil: 0, currentCity: Game.data.homeCity}); Game.UI.renderAll(); Game.Persistence.save(); } }
+    },
+
+    loop() {
+        setInterval(() => {
+            if(Game.isPaused) return;
+            const now = Date.now();
+            let html = '<h3>📡 GPS LIVE</h3>';
+            Game.data.missions = Game.data.missions.filter(m => {
+                const prog = Math.min(1, (now - m.start) / m.dur);
+                const idx = Math.floor(prog * (m.path.length - 1));
+                if(prog >= 1) {
+                    Game.data.cash += Number(m.reward); Game.data.reputation += 5;
+                    m.drv.currentCity = m.dest;
+                    Game.UI.map.removeLayer(Game.UI.markers[m.id]); Game.UI.map.removeLayer(Game.UI.lines[m.id]);
+                    Game.UI.addLog(`Zakończono: ${m.drv.name} w ${m.dest}`);
+                    Game.Persistence.save();
+                    return false;
+                }
+                Game.UI.markers[m.id].setLatLng(m.path[idx]);
+                html += `<div class="card">${m.icon} <b>${m.drv.name}</b> ➡ ${m.dest} (${Math.floor(prog*100)}%)</div>`;
+                return true;
+            });
+            document.getElementById('active-missions-container').innerHTML = html;
+            if(Math.random() > 0.998) Game.Events.trigger();
+        }, 80);
+    }
+};
+
+window.onload = () => Game.init();
 </script>
 </body>
 </html>
