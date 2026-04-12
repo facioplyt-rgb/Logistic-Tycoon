@@ -3,774 +3,683 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POLISH TRANSPORT EMPIRE V18</title>
+    <title>POLAND LOGISTICS SIMULATOR V19</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- DESIGN SYSTEM: CARBON & NEON --- */
         :root {
-            --neon-blue: #00d4ff;
-            --neon-green: #39ff14;
-            --neon-red: #ff004c;
-            --gold: #ffcc00;
-            --bg-dark: #08090a;
-            --card-bg: #121417;
-            --glass: rgba(18, 20, 23, 0.95);
-            --border: #24282f;
+            --neon: #00f2ff; --warn: #ffcc00; --danger: #ff0055; --safe: #39ff14;
+            --bg: #0a0b0d; --surface: #14161a; --border: #262a30;
         }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
+        /* HUD & STATS */
+        #hud { 
+            height: 60px; background: #000; display: flex; align-items: center; 
+            justify-content: space-around; border-bottom: 2px solid var(--neon); 
+        }
+        .stat { text-align: center; }
+        .stat span { display: block; font-size: 10px; color: var(--neon); text-transform: uppercase; }
+        .stat b { font-size: 16px; }
 
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: var(--bg-dark); color: #e1e1e1; 
-            font-family: 'Inter', 'Segoe UI', sans-serif; overflow: hidden;
-        }
+        /* MAPA */
+        #map-container { height: 350px; width: 100%; position: relative; border-bottom: 1px solid var(--border); }
+        #map { height: 100%; width: 100%; background: #111; }
 
-        /* --- GŁÓWNY HUD (GÓRA) --- */
-        #top-hud {
-            height: 70px; background: #000; display: grid; 
-            grid-template-columns: repeat(4, 1fr); align-items: center;
-            border-bottom: 2px solid var(--neon-blue); position: relative; z-index: 1001;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        /* NAWIGACJA */
+        #tabs { display: flex; height: 50px; background: var(--surface); }
+        .tab-btn { 
+            flex: 1; border: none; background: none; color: #555; font-weight: bold; 
+            cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s;
         }
-        .stat-group { text-align: center; border-right: 1px solid var(--border); }
-        .stat-label { font-size: 9px; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 17px; font-weight: 800; display: block; color: #fff; }
+        .tab-btn.active { color: var(--neon); border-bottom-color: var(--neon); background: #1a1d24; }
 
-        /* --- CB RADIO TERMINAL --- */
-        #cb-bar {
-            height: 30px; background: #050505; border-bottom: 1px solid var(--neon-green);
-            display: flex; align-items: center; overflow: hidden; position: relative; z-index: 1000;
-        }
-        #cb-ticker {
-            position: absolute; white-space: nowrap; font-family: 'Consolas', monospace;
-            color: var(--neon-green); font-size: 13px; animation: ticker 25s linear infinite;
-        }
-        @keyframes ticker { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
-
-        /* --- VIEWPORT (MAPA) --- */
-        #viewport { height: 400px; width: 100%; position: relative; border-bottom: 2px solid var(--border); }
-        #map { height: 100%; width: 100%; background: #0b0c0d; }
-
-        /* --- NAVIGATION --- */
-        #main-nav { 
-            display: flex; background: #0f1114; height: 55px; 
-            border-bottom: 1px solid var(--border); 
-        }
-        .nav-item {
-            flex: 1; background: none; border: none; color: #555;
-            font-weight: bold; text-transform: uppercase; font-size: 11px;
-            cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent;
-        }
-        .nav-item.active { 
-            color: var(--neon-blue); border-bottom-color: var(--neon-blue); 
-            background: rgba(0, 212, 255, 0.05); 
-        }
-
-        /* --- EKRANY FUNKCYJNE --- */
-        #content-area { height: calc(100vh - 555px); overflow-y: auto; background: var(--bg-dark); }
-        .screen { display: none; padding: 20px; box-sizing: border-box; }
+        /* SCREENS */
+        #view { height: calc(100vh - 460px); overflow-y: auto; padding: 15px; }
+        .screen { display: none; }
         .screen.active { display: block; }
 
-        /* --- KOMPONENTY: KARTY --- */
-        .card {
-            background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: 8px; padding: 16px; margin-bottom: 15px;
-            position: relative; transition: 0.3s;
+        /* CARDS */
+        .card { 
+            background: var(--surface); border: 1px solid var(--border); 
+            border-radius: 8px; padding: 12px; margin-bottom: 10px; 
         }
-        .card:hover { border-color: #3d4450; transform: translateY(-2px); }
-        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .badge { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
-
-        /* --- PRZYCISKI --- */
-        .btn {
-            width: 100%; padding: 12px; border-radius: 6px; border: none;
+        .btn { 
+            width: 100%; padding: 10px; margin-top: 8px; border: none; border-radius: 4px;
             font-weight: bold; cursor: pointer; text-transform: uppercase;
-            font-size: 12px; transition: 0.2s;
         }
-        .btn-blue { background: var(--neon-blue); color: #000; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3); }
-        .btn-blue:hover { filter: brightness(1.2); }
+        .btn-main { background: var(--neon); color: #000; }
+        .btn-disabled { background: #333; color: #666; cursor: not-allowed; }
 
-        /* --- SCROLLBAR --- */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #08090a; }
-        ::-webkit-scrollbar-thumb { background: #24282f; border-radius: 10px; }
+        .tag { font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: bold; margin-right: 5px; }
     </style>
 </head>
 <body>
 
-<div id="top-hud">
-    <div class="stat-group"><span class="stat-label">Budżet</span><span id="val-cash" class="stat-value">50,000</span><small>PLN</small></div>
-    <div class="stat-group"><span class="stat-label">Paliwo Baza</span><span id="val-fuel" class="stat-value">25,000</span><small>L</small></div>
-    <div class="stat-group"><span class="stat-label">Flota</span><span id="val-fleet" class="stat-value">1</span><small>SZT</small></div>
-    <div class="stat-group"><span class="stat-label">Poziom</span><span id="val-rank" class="stat-value">START</span></div>
+<div id="hud">
+    <div class="stat"><span id="lbl-cash">Gotówka</span><b id="val-cash">50 000</b></div>
+    <div class="stat"><span>Paliwo</span><b id="val-fuel">5000</b></div>
+    <div class="stat"><span>Flota</span><b id="val-fleet">0/0</b></div>
 </div>
 
-<div id="cb-bar"><div id="cb-ticker">>>> SYSTEM LOGISTYCZNY V18 ONLINE. OCZEKIWANIE NA POŁĄCZENIE Z KIEROWCAMI...</div></div>
+<div id="map-container"><div id="map"></div></div>
 
-<div id="viewport"><div id="map"></div></div>
-
-<nav id="main-nav">
-    <button class="nav-item active" onclick="Core.UI.tab('market')">Giełda Cargo</button>
-    <button class="nav-item" onclick="Core.UI.tab('fleet')">Twoja Flota</button>
-    <button class="nav-item" onclick="Core.UI.tab('base')">Baza i HR</button>
+<nav id="tabs">
+    <button class="tab-btn active" onclick="App.UI.tab('market')">Giełda</button>
+    <button class="tab-btn" onclick="App.UI.tab('garage')">Garaż</button>
+    <button class="tab-btn" onclick="App.UI.tab('fleet')">Zlecenia</button>
 </nav>
 
-<div id="content-area">
+<div id="view">
     <div id="sc-market" class="screen active"></div>
+    <div id="sc-garage" class="screen"></div>
     <div id="sc-fleet" class="screen"></div>
-    <div id="sc-base" class="screen"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-/* --- CORE ENGINE START --- */
-const Core = {
-    data: {
-        cash: 50000, fuel: 25000, maxFuel: 100000, rank: "Spedytor",
+const App = {
+    state: {
+        cash: 50000,
+        fuel: 5000,
         cities: {
-            "Warszawa": [52.23, 21.01], "Kraków": [50.06, 19.94], "Gdańsk": [54.35, 18.65],
-            "Wrocław": [51.11, 17.04], "Poznań": [52.41, 16.92], "Lublin": [51.25, 22.57],
-            "Katowice": [50.26, 19.03], "Szczecin": [53.43, 14.55], "Łódź": [51.75, 19.45],
-            "Rzeszów": [50.04, 22.00], "Białystok": [53.13, 23.17]
+            "Warszawa": [52.23, 21.01], "Poznań": [52.41, 16.92], "Wrocław": [51.11, 17.04],
+            "Gdańsk": [54.35, 18.65], "Kraków": [50.06, 19.94], "Łódź": [51.75, 19.45]
         },
-        drivers: [
-            { id: 1, name: "Kierowca #01 (Szef)", busy: false, city: "Warszawa", fatigue: 0, condition: 100, xp: 0 }
-        ],
-        activeMissions: []
+        drivers: [], // { id, name, busy: bool }
+        trucks: [],  // { id, model, busy: bool, condition: 100 }
+        missions: []
     },
 
     UI: {
         map: null,
-        markers: {},
-        lines: {},
-
         init() {
-            // Inicjalizacja mapy w stylu Dark Mode
-            this.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.1, 19.2], 6);
+            this.map = L.map('map', { zoomControl: false }).setView([52.1, 19.2], 6);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.map);
-            this.updateStats();
-            console.log("Moduł 0: Załadowany.");
+            this.updateHUD();
         },
-
         tab(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll('.screen, .tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById('sc-' + id).classList.add('active');
             event.target.classList.add('active');
+            // Wywołaj renderowanie specyficzne dla zakładki
+            if(id === 'garage') App.Garage.render();
+            if(id === 'market') App.Market.render();
         },
-
-        updateStats() {
-            document.getElementById('val-cash').innerText = Math.floor(this.parent.data.cash).toLocaleString();
-            document.getElementById('val-fuel').innerText = Math.floor(this.parent.data.fuel).toLocaleString();
-            document.getElementById('val-fleet').innerText = this.parent.data.drivers.length;
-            document.getElementById('val-rank').innerText = this.parent.data.rank;
+        updateHUD() {
+            document.getElementById('val-cash').innerText = Math.floor(App.state.cash).toLocaleString() + " PLN";
+            document.getElementById('val-fuel').innerText = Math.floor(App.state.fuel).toLocaleString() + " L";
+            document.getElementById('val-fleet').innerText = `${App.state.trucks.length}/${App.state.drivers.length}`;
         }
     }
 };
-Core.UI.parent = Core; // Linkowanie
 
-window.onload = () => Core.UI.init();
-/* --- MODUŁ 1: LOGISTYKA I RUCH --- */
-Core.Logistics = {
-    // Definicje towarów z polskimi stawkami
-    cargoTypes: [
-        { name: "Elektronika (RTV)", multiplier: 2.8, color: "#00d4ff" },
-        { name: "Materiały budowlane", multiplier: 1.2, color: "#39ff14" },
-        { name: "Artykuły spożywcze", multiplier: 1.5, color: "#ffcc00" },
-        { name: "Paliwa (ADR)", multiplier: 3.5, color: "#ff004c" }
+window.onload = () => App.UI.init();
+/* --- MODUŁ 1: ASSETS & RECRUITMENT --- */
+App.Garage = {
+    truckModels: [
+        { model: "Star 200 (Używany)", price: 25000, tank: 400, consumption: 25, img: "🚛" },
+        { model: "Scania R450", price: 85000, tank: 1200, consumption: 30, img: "🚛" },
+        { model: "Volvo FH16", price: 110000, tank: 1400, consumption: 32, img: "🚛" }
     ],
 
-    // 1. GENERATOR GIEŁDY
-    generateMarket() {
-        const container = document.getElementById('sc-market');
-        container.innerHTML = `<h2 style="color:var(--neon-blue); margin-bottom:20px;">DOSTĘPNE ŁADUNKI</h2>`;
-        const cities = Object.keys(Core.data.cities);
+    candidates: [
+        { name: "Andrzej Nowak", wage: 2500, skill: 1 },
+        { name: "Mariusz " + "Pudzian", wage: 4500, skill: 2 },
+        { name: "Janusz " + "Transportu", wage: 1800, skill: 0.8 }
+    ],
 
-        for (let i = 0; i < 6; i++) {
-            const from = cities[Math.floor(Math.random() * cities.length)];
-            const to = cities.filter(c => c !== from)[Math.floor(Math.random() * (cities.length - 1))];
-            const type = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
-            const reward = Math.floor(12000 + (Math.random() * 15000 * type.multiplier));
+    render() {
+        const container = document.getElementById('sc-garage');
+        container.innerHTML = `
+            <h3 style="color:var(--neon)">SALON CIĘŻARÓWEK</h3>
+            <div id="truck-market" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;"></div>
+            
+            <h3 style="color:var(--neon); margin-top:20px;">BIURO KIEROWCÓW</h3>
+            <div id="driver-market"></div>
 
-            container.innerHTML += `
-                <div class="card" style="border-left: 4px solid ${type.color}">
-                    <div class="card-header">
-                        <span class="badge" style="background:${type.color}; color:#000">${type.name}</span>
-                        <b style="color:var(--neon-green)">${reward.toLocaleString()} PLN</b>
-                    </div>
-                    <div style="font-size:14px; margin-bottom:12px;"><b>${from}</b> ⮕ <b>${to}</b></div>
-                    <button class="btn btn-blue" onclick="Core.Logistics.acceptJob('${from}', '${to}', ${reward}, '${type.name}', '${type.color}')">PRZYJMIJ ZLECENIE</button>
-                </div>`;
+            <h3 style="color:var(--safe); margin-top:20px;">TWOJE ZASOBY</h3>
+            <div id="owned-assets"></div>
+        `;
+
+        this.renderTruckMarket();
+        this.renderDriverMarket();
+        this.renderOwned();
+    },
+
+    renderTruckMarket() {
+        const mkt = document.getElementById('truck-market');
+        this.truckModels.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.minWidth = '160px';
+            card.innerHTML = `
+                <div style="font-size:30px">${t.img}</div>
+                <b>${t.model}</b><br>
+                <small>${t.price.toLocaleString()} PLN</small>
+                <button class="btn btn-main" style="padding:5px; font-size:10px;" 
+                    onclick="App.Garage.buyTruck('${t.model}', ${t.price}, ${t.tank})">KUP</button>
+            `;
+            mkt.appendChild(card);
+        });
+    },
+
+    renderDriverMarket() {
+        const mkt = document.getElementById('driver-market');
+        this.candidates.forEach(c => {
+            mkt.innerHTML += `
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${c.name}</b><br><small>Oczekiwania: ${c.wage} PLN</small></div>
+                    <button class="btn btn-main" style="width:auto; padding:5px 15px;" 
+                        onclick="App.Garage.hireDriver('${c.name}', ${c.wage})">ZATRUDNIJ</button>
+                </div>
+            `;
+        });
+    },
+
+    renderOwned() {
+        const own = document.getElementById('owned-assets');
+        let html = "<div style='font-size:12px; color:#888;'>POJAZDY:</div>";
+        App.state.trucks.forEach(t => {
+            html += `<span class="tag" style="background:${t.busy ? '#444' : 'var(--safe)'}; color:#000">
+                ${t.model} [${t.busy ? 'W TRASIE' : 'WOLNY'}]</span> `;
+        });
+        html += "<div style='font-size:12px; color:#888; margin-top:10px;'>KIEROWCY:</div>";
+        App.state.drivers.forEach(d => {
+            html += `<span class="tag" style="background:${d.busy ? '#444' : 'var(--neon)'}; color:#000">
+                ${d.name} [${d.busy ? 'W TRASIE' : 'WOLNY'}]</span> `;
+        });
+        own.innerHTML = html;
+    },
+
+    buyTruck(model, price, tank) {
+        if(App.state.cash >= price) {
+            App.state.cash -= price;
+            App.state.trucks.push({ id: Date.now() + Math.random(), model: model, busy: false, fuel: tank, condition: 100 });
+            App.UI.updateHUD();
+            this.render();
+        } else { alert("Za mało gotówki!"); }
+    },
+
+    hireDriver(name, wage) {
+        if(App.state.cash >= wage) {
+            App.state.cash -= wage; // Opłata wstępna/Szkolenie
+            App.state.drivers.push({ id: Date.now() + Math.random(), name: name, busy: false });
+            App.UI.updateHUD();
+            this.render();
+        } else { alert("Brak środków na rekrutację!"); }
+    }
+};
+/* --- MODUŁ 2: MARKET & MISSION LOGIC --- */
+App.Market = {
+    jobs: [],
+
+    // 1. GENEROWANIE NOWYCH OFERT
+    generateJobs() {
+        this.jobs = [];
+        const cities = Object.keys(App.state.cities);
+        const cargo = [
+            { n: "Materiały budowlane", p: 1.2, c: "#39ff14" },
+            { n: "Elektronika", p: 2.5, c: "#00f2ff" },
+            { n: "Żywność (Chłodnia)", p: 1.8, c: "#ffcc00" },
+            { n: "Paliwo ADR", p: 3.2, c: "#ff0055" }
+        ];
+
+        for(let i=0; i<5; i++) {
+            const from = cities[Math.floor(Math.random()*cities.length)];
+            const to = cities.filter(c => c !== from)[Math.floor(Math.random()*(cities.length-1))];
+            const type = cargo[Math.floor(Math.random()*cargo.length)];
+            const dist = 200 + Math.floor(Math.random()*600);
+            this.jobs.push({
+                id: i, from, to, cargo: type.n, color: type.c,
+                reward: Math.floor(dist * type.p * 10)
+            });
         }
     },
 
-    // 2. SILNIK TRASOWANIA (API OSRM)
-    async acceptJob(from, to, reward, cargo, color) {
-        const driver = Core.data.drivers.find(d => !d.busy);
-        if (!driver) return alert("Wszyscy kierowcy są obecnie w trasie!");
-        if (Core.data.fuel < 2000) return alert("Za mało paliwa w bazie, aby wysłać transport!");
+    // 2. RENDEROWANIE GIEŁDY Z WYBOREM ZASOBÓW
+    render() {
+        if(this.jobs.length === 0) this.generateJobs();
+        const container = document.getElementById('sc-market');
+        
+        // Sprawdzamy dostępność
+        const freeTrucks = App.state.trucks.filter(t => !t.busy);
+        const freeDrivers = App.state.drivers.filter(d => !d.busy);
 
+        let html = `<h3 style="color:var(--neon)">GIEŁDA ŁADUNKÓW</h3>`;
+        
+        if(freeTrucks.length === 0 || freeDrivers.length === 0) {
+            html += `<div class="card" style="border: 1px solid var(--danger); color: var(--danger); font-size: 12px;">
+                ⚠️ BRAK WOLNYCH ZASOBÓW! Kup auto lub zatrudnij kierowcę w Garażu.
+            </div>`;
+        }
+
+        this.jobs.forEach(j => {
+            html += `
+                <div class="card" style="border-left: 4px solid ${j.color}">
+                    <div style="display:flex; justify-content:space-between;">
+                        <b>${j.cargo}</b>
+                        <b style="color:var(--safe)">${j.reward.toLocaleString()} PLN</b>
+                    </div>
+                    <div style="margin: 8px 0; font-size:13px;">Trasa: ${j.from} ⮕ ${j.to}</div>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
+                        <select id="sel-truck-${j.id}" style="background:#000; color:#fff; border:1px solid #444; font-size:11px;">
+                            ${freeTrucks.map(t => `<option value="${t.id}">${t.model}</option>`).join('') || '<option>Brak aut</option>'}
+                        </select>
+                        <select id="sel-driver-${j.id}" style="background:#000; color:#fff; border:1px solid #444; font-size:11px;">
+                            ${freeDrivers.map(d => `<option value="${d.id}">${d.name}</option>`).join('') || '<option>Brak osób</option>'}
+                        </select>
+                    </div>
+
+                    <button class="btn ${freeTrucks.length > 0 && freeDrivers.length > 0 ? 'btn-main' : 'btn-disabled'}" 
+                        onclick="App.Market.startMission(${j.id})" 
+                        ${freeTrucks.length > 0 && freeDrivers.length > 0 ? '' : 'disabled'}>
+                        WYŚLIJ TRANSPORT
+                    </button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    },
+
+    // 3. START MISJI (Fizyczne blokowanie ID)
+    async startMission(jobId) {
+        const job = this.jobs.find(j => j.id === jobId);
+        const truckId = document.getElementById(`sel-truck-${jobId}`).value;
+        const driverId = document.getElementById(`sel-driver-${jobId}`).value;
+
+        const truck = App.state.trucks.find(t => t.id == truckId);
+        const driver = App.state.drivers.find(d => d.id == driverId);
+
+        if(!truck || !driver) return;
+
+        // Blokujemy zasoby
+        truck.busy = true;
         driver.busy = true;
-        Core.data.fuel -= 1800; // Koszt paliwa na start
 
-        const startCoords = Core.data.cities[from];
-        const endCoords = Core.data.cities[to];
+        // Trasa OSRM
+        const start = App.state.cities[job.from];
+        const end = App.state.cities[job.to];
 
         try {
-            const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson`);
-            const json = await res.json();
-            const path = json.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`);
+            const data = await res.json();
+            const path = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
 
             const mission = {
                 id: Date.now(),
-                driver: driver,
-                path: path,
+                truck, driver, job, path,
                 progress: 0,
-                reward: reward,
-                cargo: cargo,
-                color: color,
-                // Elementy mapy
-                line: L.polyline(path, { color: color, weight: 4, opacity: 0.6 }).addTo(Core.UI.map),
+                line: L.polyline(path, { color: job.color, weight: 3, opacity: 0.5 }).addTo(App.UI.map),
                 marker: L.marker(path[0], {
                     icon: L.divIcon({
-                        className: 'truck-icon',
-                        html: `<div style="background:${color}; width:14px; height:14px; border:2px solid #fff; border-radius:3px; box-shadow:0 0 10px ${color}"></div>`
+                        className: 'truck-m',
+                        html: `<div style="background:${job.color}; width:12px; height:12px; border-radius:2px; border:1px solid #fff;"></div>`
                     })
-                }).addTo(Core.UI.map)
+                }).addTo(App.UI.map)
             };
 
-            Core.data.activeMissions.push(mission);
-            Core.UI.updateStats();
-            this.updateFleetUI();
-            
-            // Przełącz na widok floty
-            Core.UI.tab('fleet');
-        } catch (e) {
-            alert("Błąd połączenia z satelitą GPS. Spróbuj ponownie.");
+            App.state.missions.push(mission);
+            this.jobs = this.jobs.filter(j => j.id !== jobId); // Usuń zlecenie z giełdy
+            App.UI.updateHUD();
+            App.UI.tab('fleet');
+        } catch(e) {
+            alert("Błąd GPS. Sprawdź połączenie.");
+            truck.busy = false;
             driver.busy = false;
         }
-    },
+    }
+};
 
-    // 3. PĘTLA RUCHU (10 FPS)
-    runEngine() {
-        Core.data.activeMissions.forEach((m, index) => {
-            // Prędkość uzależniona od stanu technicznego (w przyszłym module)
-            m.progress += 0.003; 
-
-            if (m.progress >= 1) {
-                this.finishJob(index);
+// DOPISANIE SILNIKA RUCHU DO CORE
+App.Engine = {
+    tick() {
+        App.state.missions.forEach((m, idx) => {
+            m.progress += 0.005; // Prędkość bazowa
+            
+            if(m.progress >= 1) {
+                this.finish(idx);
             } else {
-                const step = Math.floor(m.progress * (m.path.length - 1));
-                m.marker.setLatLng(m.path[step]);
+                const pos = Math.floor(m.progress * (m.path.length - 1));
+                m.marker.setLatLng(m.path[pos]);
             }
         });
-        if (Core.data.activeMissions.length > 0) this.updateFleetUI();
+        if(App.state.missions.length > 0) this.renderFleet();
     },
 
-    finishJob(index) {
-        const m = Core.data.activeMissions[index];
-        Core.data.cash += m.reward;
+    finish(idx) {
+        const m = App.state.missions[idx];
+        App.state.cash += m.job.reward;
+        m.truck.busy = false;
         m.driver.busy = false;
-        
-        Core.UI.map.removeLayer(m.line);
-        Core.UI.map.removeLayer(m.marker);
-        Core.data.activeMissions.splice(index, 1);
-        
-        Core.UI.updateStats();
-        this.generateMarket();
-        this.updateFleetUI();
+        App.UI.map.removeLayer(m.line);
+        App.UI.map.removeLayer(m.marker);
+        App.state.missions.splice(idx, 1);
+        App.UI.updateHUD();
+        App.Market.generateJobs();
     },
 
-    updateFleetUI() {
+    renderFleet() {
         const container = document.getElementById('sc-fleet');
-        container.innerHTML = `<h2 style="color:var(--neon-blue); margin-bottom:20px;">AKTYWNE TRASY</h2>`;
-        
-        Core.data.activeMissions.forEach(m => {
-            const pct = Math.floor(m.progress * 100);
-            container.innerHTML += `
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <b>${m.driver.name}</b>
-                        <span style="color:var(--neon-blue)">${pct}%</span>
-                    </div>
-                    <div style="font-size:12px; color:#888;">Ładunek: ${m.cargo}</div>
-                    <div style="background:#000; height:8px; border-radius:4px; margin-top:10px; overflow:hidden; border:1px solid #222;">
-                        <div style="width:${pct}%; height:100%; background:${m.color}; transition:0.3s;"></div>
-                    </div>
-                </div>`;
-        });
-
-        if (Core.data.activeMissions.length === 0) {
-            container.innerHTML += `<p style="text-align:center; color:#555; margin-top:40px;">Brak aktywnych transportów.</p>`;
-        }
-    }
-};
-
-// DOPISZ DO STARTU GRY (W MODULE 0)
-const setupLogistics = () => {
-    Core.Logistics.generateMarket();
-    setInterval(() => Core.Logistics.runEngine(), 100);
-    
-    // CB Radio - Losowe komunikaty
-    const cbMsgs = [
-        "Mobilki, jak tam dróżka? - Czysto, śmiało leć!",
-        "Uwaga, miśki w okolicy suszą na wylocie!",
-        "Inspekcja stoją na wagach w okolicy uważajcie!",
-        "Szerokości i przyczepności wszystkim w trasie!",
-        "Wypadek!, korek na 15 minut."
-    ];
-    setInterval(() => {
-        document.getElementById('cb-ticker').innerText = ">>> CB KANAŁ 19: " + cbMsgs[Math.floor(Math.random()*cbMsgs.length)];
-    }, 15000);
-};
-
-// Podpięcie pod window.onload
-const oldInit = Core.UI.init;
-Core.UI.init = function() {
-    oldInit.apply(Core.UI);
-    setupLogistics();
-};
-/* --- MODUŁ 2: BASE OPERATIONS & HR --- */
-Core.Base = {
-    // 1. RENDEROWANIE ZAKŁADKI BAZA
-    renderBase() {
-        const container = document.getElementById('sc-base');
-        const fuelLevel = (Core.data.fuel / Core.data.maxFuel) * 100;
-        const refillCost = Math.floor((Core.data.maxFuel - Core.data.fuel) * 4.85);
-
-        container.innerHTML = `
-            <h2 style="color:var(--neon-blue); margin-bottom:20px;">CENTRUM OPERACYJNE</h2>
-            
-            <div class="card" style="border-left: 4px solid var(--neon-green)">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <b>MAGAZYN PALIW (HURT)</b>
-                    <span style="color:var(--neon-green)">${Math.floor(Core.data.fuel).toLocaleString()} / ${Core.data.maxFuel.toLocaleString()} L</span>
-                </div>
-                <div style="background:#000; height:15px; border-radius:10px; border:1px solid #333; overflow:hidden;">
-                    <div style="width:${fuelLevel}%; height:100%; background:linear-gradient(90deg, #111, var(--neon-green));"></div>
-                </div>
-                <button class="btn btn-blue" style="margin-top:15px; font-size:10px;" onclick="Core.Base.buyFuel()">UZUPEŁNIJ ZBIORNIKI (${refillCost.toLocaleString()} PLN)</button>
-            </div>
-
-            <h3 style="color:var(--neon-blue); margin-top:25px;">DOSTĘPNI KIEROWCY</h3>
-            <div id="hr-pool"></div>
-        `;
-        this.generateCandidates();
-    },
-
-    // 2. GENERATOR KANDYDATÓW
-    generateCandidates() {
-        const pool = document.getElementById('hr-pool');
-        const names = ["Andrzej", "Mariusz", "Sławek", "Robert", "Zbigniew"];
-        const surnames = ["Nowak", "Kowalski", "Wiśniewski", "Lewandowski", "Duda"];
-        
-        let html = "";
-        for(let i=0; i<2; i++) {
-            const name = names[Math.floor(Math.random()*names.length)] + " " + surnames[Math.floor(Math.random()*surnames.length)];
-            const hireCost = 15000 + Math.floor(Math.random()*10000);
+        let html = `<h3 style="color:var(--neon)">AKTYWNE TRANSPORTY</h3>`;
+        App.state.missions.forEach(m => {
+            const p = Math.floor(m.progress * 100);
             html += `
                 <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <b>${name}</b><br>
-                            <small style="color:#666;">Doświadczenie: Junior</small>
-                        </div>
-                        <button class="btn btn-blue" style="width:auto; padding:5px 15px;" onclick="Core.Base.hire('${name}', ${hireCost})">ZATRUDNIJ (${hireCost})</button>
+                    <div style="display:flex; justify-content:space-between; font-size:12px;">
+                        <span><b>${m.truck.model}</b> | ${m.driver.name}</span>
+                        <span>${p}%</span>
                     </div>
-                </div>`;
-        }
-        pool.innerHTML = html;
-    },
-
-    // 3. LOGIKA ZARZĄDZANIA
-    buyFuel() {
-        const amountNeeded = Core.data.maxFuel - Core.data.fuel;
-        const cost = Math.floor(amountNeeded * 4.85);
-        if(Core.data.cash >= cost) {
-            Core.data.cash -= cost;
-            Core.data.fuel = Core.data.maxFuel;
-            Core.UI.updateStats();
-            this.renderBase();
-            this.notify("ZAKUPIONO PALIWO DO BAZY", "var(--neon-green)");
-        } else {
-            this.notify("BRAK ŚRODKÓW NA PALIWO!", "var(--neon-red)");
-        }
-    },
-
-    hire(name, cost) {
-        if(Core.data.cash >= cost) {
-            Core.data.cash -= cost;
-            const newId = Core.data.drivers.length + 1;
-            Core.data.drivers.push({
-                id: newId, name: name, busy: false, city: "Warszawa", fatigue: 0, condition: 100, xp: 0
-            });
-            Core.UI.updateStats();
-            this.renderBase();
-            this.notify(`ZATRUDNIONO: ${name}`, "var(--neon-blue)");
-        } else {
-            this.notify("NIE STAĆ CIĘ NA KIEROWCĘ!", "var(--neon-red)");
-        }
-    },
-
-    repair(id) {
-        const d = Core.data.drivers.find(x => x.id === id);
-        const cost = (100 - d.condition) * 500;
-        if(Core.data.cash >= cost) {
-            Core.data.cash -= cost;
-            d.condition = 100;
-            Core.UI.updateStats();
-            Core.Logistics.updateFleetUI();
-            this.notify("POJAZD NAPRAWIONY", "var(--neon-green)");
-        }
-    },
-
-    notify(txt, color) {
-        const ticker = document.getElementById('cb-ticker');
-        ticker.innerText = `>>> SYSTEM: ${txt}`;
-        ticker.style.color = color;
-        setTimeout(() => { ticker.style.color = 'var(--neon-green)'; }, 3000);
+                    <div style="background:#000; height:6px; margin-top:8px; border-radius:3px; overflow:hidden;">
+                        <div style="width:${p}%; height:100%; background:${m.job.color};"></div>
+                    </div>
+                    <div style="font-size:10px; color:#666; margin-top:5px;">Cel: ${m.job.to}</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
     }
 };
 
-// INTEGRACJA: NADPISANIE UPDATE FLEET (By dodać serwisowanie)
-const oldUpdateFleetUI = Core.Logistics.updateFleetUI;
-Core.Logistics.updateFleetUI = function() {
-    oldUpdateFleetUI.apply(this);
-    const container = document.getElementById('sc-fleet');
-    
-    // Dodajemy sekcję kierowców/serwisu pod aktywnymi trasami
-    let html = `<h2 style="color:var(--neon-blue); margin: 30px 0 20px 0;">TWOI KIEROWCY I SERWIS</h2>`;
-    Core.data.drivers.forEach(d => {
-        const repairCost = (100 - d.condition) * 500;
-        html += `
-            <div class="card" style="border-left: 4px solid ${d.condition < 40 ? 'var(--neon-red)' : '#333'}">
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${d.name}</b>
-                    <span style="font-size:10px; color:${d.busy ? 'var(--neon-blue)' : 'var(--neon-green)'}">
-                        ${d.busy ? 'W TRASIE' : 'W BAZIE'}
-                    </span>
-                </div>
-                <div style="font-size:11px; color:#777; margin:5px 0;">Stan techniczny: ${d.condition}%</div>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="btn" style="background:#222; color:#fff; font-size:9px;" 
-                        onclick="Core.Base.repair(${d.id})" ${d.busy || d.condition === 100 ? 'disabled' : ''}>
-                        NAPRAW (${repairCost} PLN)
+// Start pętli silnika
+setInterval(() => App.Engine.tick(), 200);
+/* --- MODUŁ 3: FUEL & MAINTENANCE --- */
+App.Service = {
+    fuelPrice: 5.85, // Cena za litr ON w hurcie
+
+    // 1. ROZBUDOWA STATYSTYK W HUD (NADpisanie)
+    updateHUD() {
+        App.UI.updateHUD(); // Wywołanie bazowe
+        // Dodatkowe info o paliwie w bazie można dodać tutaj
+    },
+
+    // 2. LOGIKA ZUŻYCIA (Wywoływana w pętli silnika)
+    processWear(mission) {
+        const truck = mission.truck;
+        
+        // Spajanie paliwa (0.1L na tick)
+        if (App.state.fuel > 0) {
+            App.state.fuel -= 0.15;
+        } else {
+            // Jeśli zabraknie paliwa w bazie, misja drastycznie zwalnia (zakup na stacji drożej)
+            mission.progress += 0.0005; 
+            App.state.cash -= 2; // Kara za tankowanie na trasie
+        }
+
+        // Zużycie techniczne (losowe drobne uszkodzenia)
+        if (Math.random() > 0.99) {
+            truck.condition -= 0.5;
+        }
+
+        // Awaria silnika
+        if (truck.condition <= 0) {
+            truck.condition = 0;
+            mission.active = false; // Zatrzymanie misji
+        }
+    },
+
+    // 3. RENDEROWANIE PANELU ZARZĄDZANIA W GARAŻU
+    renderMaintenance() {
+        const container = document.getElementById('sc-garage');
+        
+        // Dodajemy sekcję paliwa na górze garażu
+        const fuelCard = document.createElement('div');
+        fuelCard.className = 'card';
+        fuelCard.style.borderTop = "4px solid var(--safe)";
+        const refillCost = Math.floor(5000 * this.fuelPrice); // Koszt tankowania 5000L
+        
+        fuelCard.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <b>HURTOWNIA PALIW</b>
+                <span style="color:var(--safe)">${Math.floor(App.state.fuel)} L</span>
+            </div>
+            <button class="btn btn-main" style="background:var(--safe); color:#000;" 
+                onclick="App.Service.buyFuel(5000)">DOSTAWKA 5000L (${refillCost} PLN)</button>
+        `;
+        container.prepend(fuelCard);
+
+        // Dodajemy opcję naprawy przy posiadanych autach
+        const assetList = document.getElementById('owned-assets');
+        let repairHtml = "<div style='font-size:12px; color:#888; margin-top:15px;'>STAN TECHNICZNY I SERWIS:</div>";
+        
+        App.state.trucks.forEach(t => {
+            const cost = Math.floor((100 - t.condition) * 250);
+            repairHtml += `
+                <div class="card" style="font-size:11px; margin-top:5px;">
+                    <b>${t.model}</b>: ${t.condition.toFixed(1)}% 
+                    <button class="btn" style="width:auto; float:right; padding:2px 10px; margin:0;" 
+                        onclick="App.Service.repairTruck(${t.id}, ${cost})" ${t.busy ? 'disabled' : ''}>
+                        NAPRAW (${cost} PLN)
                     </button>
-                    <button class="btn" style="background:#222; color:#fff; font-size:9px;" 
-                        onclick="alert('Pauza aktywna - kierowca odpoczywa')" ${d.busy ? 'disabled' : ''}>
-                        WYŚLIJ NA URLOP
-                    </button>
-                </div>
-            </div>`;
-    });
-    container.innerHTML += html;
+                    <div style="clear:both"></div>
+                </div>`;
+        });
+        assetList.innerHTML += repairHtml;
+    },
+
+    buyFuel(amount) {
+        const cost = Math.floor(amount * this.fuelPrice);
+        if (App.state.cash >= cost) {
+            App.state.cash -= cost;
+            App.state.fuel += amount;
+            App.UI.updateHUD();
+            App.Garage.render();
+        } else { alert("Brak funduszy na paliwo!"); }
+    },
+
+    repairTruck(id, cost) {
+        if (App.state.cash >= cost) {
+            const truck = App.state.trucks.find(t => t.id === id);
+            App.state.cash -= cost;
+            truck.condition = 100;
+            App.UI.updateHUD();
+            App.Garage.render();
+        } else { alert("Nie stać Cię na mechanika!"); }
+    }
 };
 
-// INTEGRACJA: ODŚWIEŻANIE BAZY PRZY PRZEŁĄCZANIU
-const oldTab = Core.UI.tab;
-Core.UI.tab = function(id) {
-    oldTab.apply(this, [id]);
-    if(id === 'base') Core.Base.renderBase();
-    if(id === 'fleet') Core.Logistics.updateFleetUI();
+// 4. INTEGRACJA Z SILNIKIEM (NADpisanie Engine.tick)
+const oldTick = App.Engine.tick;
+App.Engine.tick = function() {
+    App.state.missions.forEach(m => {
+        if (m.truck.condition > 0) {
+            App.Service.processWear(m);
+        }
+    });
+    oldTick.apply(App.Engine);
 };
-/* --- MODUŁ 3: DYNAMIC WORLD & WEATHER --- */
-Core.World = {
-    currentWeather: { name: "Słonecznie", multi: 1.0, color: "#ffcc00" },
+
+// 5. INTEGRACJA Z RENDEROWANIEM GARAŻU
+const oldGarageRender = App.Garage.render;
+App.Garage.render = function() {
+    oldGarageRender.apply(App.Garage);
+    App.Service.renderMaintenance();
+};
+/* --- MODUŁ 4: WEATHER & ROAD EVENTS --- */
+App.World = {
+    weather: { n: "Słonecznie", m: 1.0, c: "#ffcc00" },
     
     // 1. SYSTEM POGODOWY
     updateWeather() {
-        const weathers = [
-            { name: "Słonecznie", multi: 1.0, color: "#ffcc00" },
-            { name: "Ulewa", multi: 0.7, color: "#00a2ff" },
-            { name: "Gęsta Mgła", multi: 0.5, color: "#aaa" },
-            { name: "Śnieżyca", multi: 0.4, color: "#fff" }
+        const types = [
+            { n: "Słonecznie", m: 1.0, c: "#ffcc00" },
+            { n: "Ulewa", m: 0.7, c: "#00a2ff" },
+            { n: "Mgła", m: 0.5, c: "#aaa" },
+            { n: "Śnieżyca", m: 0.4, c: "#fff" }
         ];
         
         if (Math.random() > 0.8) {
-            this.currentWeather = weathers[Math.floor(Math.random() * weathers.length)];
-            Core.Base.notify(`ZMIANA POGODY: ${this.currentWeather.name.toUpperCase()}`, this.currentWeather.color);
-            this.applyWeatherStyle();
+            this.weather = types[Math.floor(Math.random() * types.length)];
+            this.notify(`ZMIANA POGODY: ${this.weather.n.toUpperCase()}`, this.weather.c);
+            // Efekt wizualny na mapie
+            document.getElementById('map').style.boxShadow = `inset 0 0 80px ${this.weather.c}22`;
         }
     },
 
-    applyWeatherStyle() {
-        const mapEl = document.getElementById('map');
-        mapEl.style.boxShadow = `inset 0 0 60px ${this.currentWeather.color}33`;
-    },
-
-    // 2. INCYDENTY DROGOWE
-    processEvents(mission) {
+    // 2. INCYDENTY LOSOWE
+    checkEvent(mission) {
         const roll = Math.random();
-        const drv = mission.driver;
 
         // Kontrola ITD (Inspekcja Transportu Drogowego)
-        if (roll > 0.9992) {
-            this.triggerITD(mission);
-        }
-        
-        // Korek lub Roboty Drogowe
-        else if (roll > 0.9985) {
-            this.triggerTraffic(mission);
-        }
-
-        // Zużycie techniczne w trasie
-        if (roll > 0.995) {
-            drv.condition -= 1;
-            drv.fatigue += 0.5;
-        }
-    },
-
-    triggerITD(m) {
-        let fine = 0;
-        let reason = "";
-
-        if (m.driver.fatigue > 80) { 
-            fine = 5000; reason = "PRZEKROCZENIE CZASU PRACY"; 
-        } else if (m.driver.condition < 40) { 
-            fine = 3500; reason = "ZŁY STAN TECHNICZNY"; 
+        if (roll > 0.9993) {
+            let fine = 0;
+            if (mission.truck.condition < 50) {
+                fine = 3000;
+                this.notify(`MANDAT ITD: 3000 PLN - Zły stan techniczny pojazdu!`, "var(--danger)");
+                App.state.cash -= fine;
+                App.UI.updateHUD();
+            } else {
+                this.notify("KONTROLA ITD: Wszystko w normie, szerokiej drogi!", "var(--safe)");
+            }
+            mission.progress -= 0.02; // Zatrzymanie na kontrolę
         }
 
-        if (fine > 0) {
-            Core.data.cash -= fine;
-            Core.Base.notify(`MANDAT ITD: -${fine} PLN (${reason})`, "var(--neon-red)");
-            Core.UI.updateStats();
-        } else {
-            Core.Base.notify(`KONTROLA ITD: Dokumenty w porządku. Szerokości!`, "var(--neon-green)");
+        // Korek drogowy
+        else if (roll > 0.998) {
+            this.notify(`KOREK: ${mission.driver.name} utknął w zatorze!`, "var(--warn)");
+            mission.progress -= 0.01;
         }
     },
 
-    triggerTraffic(m) {
-        Core.Base.notify(`KOREK: ${m.driver.name} utknął pod miastem ${m.end}`, "var(--gold)");
-        m.progress -= 0.02; // Cofnięcie o 2% symuluje stanie w zatorze
+    notify(msg, color) {
+        // Wykorzystujemy system powiadomień na pasku HUD lub konsoli (uproszczony alert/log)
+        console.log(`%c ${msg}`, `color: ${color}; font-weight: bold;`);
+        // Opcjonalnie: można tu dodać element DOM dla powiadomień
     }
 };
 
-// 3. INTEGRACJA Z SILNIKIEM (NADPSIANIE RUNENGINE)
-const originalRunEngine = Core.Logistics.runEngine;
-Core.Logistics.runEngine = function() {
-    Core.data.activeMissions.forEach((m) => {
-        // Prędkość modyfikowana przez pogodę i zmęczenie kierowcy
-        const weatherMod = Core.World.currentWeather.multi;
-        const fatigueMod = m.driver.fatigue > 90 ? 0.3 : 1.0;
+// 3. INTEGRACJA Z SILNIKIEM (NADPISANIE)
+const engineTickWithWorld = App.Engine.tick;
+App.Engine.tick = function() {
+    App.state.missions.forEach(m => {
+        // Wpływ pogody na prędkość
+        const weatherPenalty = App.World.weather.m;
+        // Sprawdzanie zdarzeń
+        App.World.checkEvent(m);
         
-        m.progress += (0.003 * weatherMod * fatigueMod);
-        
-        // Sprawdzanie zdarzeń losowych dla każdej misji
-        Core.World.processEvents(m);
+        // Modyfikacja prędkości (bazowo 0.005 z Modułu 2)
+        // Jeśli pogoda jest zła, progres jest wolniejszy
+        const baseSpeed = 0.005;
+        m.progress += (baseSpeed * weatherPenalty) - baseSpeed; 
     });
-
-    // Oryginalna logika (kończenie zadań i rysowanie na mapie)
-    Core.data.activeMissions.forEach((m, index) => {
-        if (m.progress >= 1) {
-            Core.Logistics.finishJob(index);
-        } else {
-            const step = Math.floor(m.progress * (m.path.length - 1));
-            m.marker.setLatLng(m.path[step]);
-        }
-    });
-
-    if (Core.data.activeMissions.length > 0) Core.Logistics.updateFleetUI();
+    
+    engineTickWithWorld.apply(App.Engine);
 };
 
-// 4. SYMULACJA NOCY I DNIA
-setInterval(() => {
-    const hour = new Date().getHours();
-    const mapEl = document.getElementById('map');
-    if (hour >= 20 || hour <= 6) {
-        mapEl.style.filter = "brightness(0.5) contrast(1.2) saturate(1.4)";
-    } else {
-        mapEl.style.filter = "brightness(0.8) contrast(1.1)";
-    }
-}, 30000);
-
-// Pętla pogodowa co 20 sekund
-setInterval(() => Core.World.updateWeather(), 20000);
-/* --- MODUŁ 4: TRAILERS & SPECIALIZATION --- */
-Core.Garage = {
-    // 1. DEFINICJE NACZEP
-    trailerTypes: [
-        { id: 'curtain', name: "Firanka (Standard)", cost: 45000, bonus: 1.2, cargo: "Materiały budowlane", color: "#39ff14" },
-        { id: 'frigo', name: "Chłodnia", cost: 85000, bonus: 1.8, cargo: "Artykuły spożywcze", color: "#ffcc00" },
-        { id: 'tanker', name: "Cysterna ADR", cost: 120000, bonus: 2.5, cargo: "Paliwa (ADR)", color: "#ff004c" }
+// Start pętli pogodowej co 30 sekund
+setInterval(() => App.World.updateWeather(), 30000);
+/* --- MODUŁ 5: TRAILERS & SPECIALIZATION --- */
+App.Trailers = {
+    types: [
+        { id: 'curtain', n: "Plandeka (Standard)", price: 30000, target: "Materiały budowlane", bonus: 1.0 },
+        { id: 'frigo', n: "Chłodnia", price: 65000, target: "Żywność (Chłodnia)", bonus: 1.5 },
+        { id: 'tanker', n: "Cysterna ADR", price: 95000, target: "Paliwo ADR", bonus: 2.2 }
     ],
 
-    ownedTrailers: [],
+    owned: [], // { id, typeId, busy: bool }
 
-    // 2. RENDEROWANIE SKLEPU W BAZIE
-    renderGarage() {
-        const baseScreen = document.getElementById('sc-base');
-        let html = `<h3 style="color:var(--neon-blue); margin-top:25px;">SALON NACZEP</h3>
-                    <p style="font-size:10px; color:#666; margin-bottom:15px;">Własna naczepa zwiększa zyski z konkretnego typu ładunku.</p>
-                    <div style="display:grid; grid-template-columns: 1fr; gap:10px;">`;
-
-        this.trailerTypes.forEach(t => {
-            const count = this.ownedTrailers.filter(ot => ot.id === t.id).length;
+    // 1. SKLEP I ZARZĄDZANIE W GARAŻU
+    render() {
+        const container = document.getElementById('sc-garage');
+        
+        let html = `<h3 style="color:var(--warn); margin-top:20px;">SALON NACZEP</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
+        
+        this.types.forEach(t => {
             html += `
-                <div class="card" style="border-left: 4px solid ${t.color}">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <b>${t.name}</b><br>
-                            <small>Bonus: +${Math.round((t.bonus-1)*100)}% do: ${t.cargo}</small>
-                        </div>
-                        <div style="text-align:right">
-                            <div style="font-size:12px; color:var(--neon-green); font-weight:bold;">${t.cost.toLocaleString()} PLN</div>
-                            <small>Posiadasz: ${count}</small>
-                        </div>
-                    </div>
-                    <button class="btn btn-blue" style="margin-top:10px; padding:5px; font-size:10px;" 
-                        onclick="Core.Garage.buyTrailer('${t.id}')">KUP NACZEPĘ</button>
+                <div class="card" style="font-size:11px;">
+                    <b>${t.n}</b><br>
+                    Cena: ${t.price.toLocaleString()} PLN<br>
+                    <button class="btn btn-main" style="padding:4px; font-size:9px; background:var(--warn)" 
+                        onclick="App.Trailers.buy('${t.id}')">KUP NACZEPĘ</button>
                 </div>`;
         });
-
         html += `</div>`;
-        baseScreen.innerHTML += html;
-    },
 
-    // 3. LOGIKA ZAKUPU
-    buyTrailer(trailerId) {
-        const trailer = this.trailerTypes.find(t => t.id === trailerId);
-        if (Core.data.cash >= trailer.cost) {
-            Core.data.cash -= trailer.cost;
-            this.ownedTrailers.push({...trailer, assigned: false});
-            Core.UI.updateStats();
-            Core.Base.renderBase(); // Odśwież widok bazy
-            Core.Base.notify(`ZAKUPIONO: ${trailer.name}`, "var(--neon-blue)");
-        } else {
-            Core.Base.notify("NIE STAĆ CIĘ NA TĘ NACZEPĘ!", "var(--neon-red)");
-        }
-    },
-
-    // 4. MODYFIKATOR ZAROBKÓW (HOOK DO LOGISTYKI)
-    calculateBonus(cargoName, currentReward) {
-        // Sprawdzamy czy mamy wolną naczepę pasującą do towaru
-        const matchingTrailer = this.ownedTrailers.find(t => t.cargo === cargoName && !t.assigned);
-        if (matchingTrailer) {
-            return Math.floor(currentReward * matchingTrailer.bonus);
-        }
-        return currentReward;
-    }
-};
-
-// INTEGRACJA: WPŁYW NACZEP NA ZAROBKI
-const originalAcceptJob = Core.Logistics.acceptJob;
-Core.Logistics.acceptJob = async function(from, to, reward, cargo, color) {
-    // Sprawdź czy mamy naczepę pod ten ładunek
-    const finalReward = Core.Garage.calculateBonus(cargo, reward);
-    
-    // Jeśli nagroda jest wyższa, oznacza to, że naczepa została użyta
-    if (finalReward > reward) {
-        Core.Base.notify("UŻYTO WŁASNEJ NACZEPY - PREMIA DO FRachtu!", "var(--neon-green)");
-        // Oznaczamy naczepę jako zajętą na czas trwania misji
-        const trailer = Core.Garage.ownedTrailers.find(t => t.cargo === cargo && !t.assigned);
-        if(trailer) trailer.assigned = true;
-    }
-
-    // Wywołaj oryginalną funkcję z (potencjalnie) nową nagrodą
-    await originalAcceptJob.apply(this, [from, to, finalReward, cargo, color]);
-};
-
-// INTEGRACJA: ZWALNIANIE NACZEPY PO TRASIE
-const originalFinishJob = Core.Logistics.finishJob;
-Core.Logistics.finishJob = function(index) {
-    const m = Core.data.activeMissions[index];
-    // Znajdź i zwolnij naczepę po zakończeniu kursu
-    const trailer = Core.Garage.ownedTrailers.find(t => t.cargo === m.cargo && t.assigned);
-    if(trailer) trailer.assigned = false;
-
-    originalFinishJob.apply(this, [index]);
-};
-
-// INTEGRACJA: RENDEROWANIE GARAŻU PRZY OTWIERANIU BAZY
-const oldBaseRender = Core.Base.renderBase;
-Core.Base.renderBase = function() {
-    oldBaseRender.apply(this);
-    Core.Garage.renderGarage();
-};
-/* --- MODUŁ 5: ANALYTICS & OFFICE UPGRADES --- */
-Core.Analytics = {
-    totalDistance: 0,
-    totalFuelUsed: 0,
-    totalJobs: 0,
-    officeLevel: 1,
-
-    // 1. RENDEROWANIE PANELU STATYSTYK W BAZIE
-    renderStats() {
-        const baseScreen = document.getElementById('sc-base');
-        const upgradeCost = this.officeLevel * 100000;
-        
-        let html = `
-            <div class="card" style="border-top: 4px solid var(--neon-blue); margin-top: 30px; background: rgba(0,0,0,0.4);">
-                <h3 style="color:var(--neon-blue); margin-top:0;">RAPORT DYREKCYJNY</h3>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
-                    <div>Przejechane: <b style="color:#fff;">${Math.floor(this.totalDistance)} km</b></div>
-                    <div>Zużyte paliwo: <b style="color:#fff;">${Math.floor(this.totalFuelUsed)} L</b></div>
-                    <div>Zrealizowane kursy: <b style="color:#fff;">${this.totalJobs}</b></div>
-                    <div>Poziom Biura: <b style="color:var(--gold);">${this.officeLevel}</b></div>
-                </div>
-                
-                <div style="margin-top:20px; padding-top:15px; border-top: 1px solid #222;">
-                    <b>ROZBUDOWA BIURA</b><br>
-                    <small style="color:#666; font-size:10px;">Wyższy poziom odblokowuje rzadsze zlecenia i większą bazę.</small>
-                    <button class="btn btn-blue" style="margin-top:10px; background:var(--gold); color:#000;" 
-                        onclick="Core.Analytics.upgradeOffice()">AWANSUJ NA POZIOM ${this.officeLevel + 1} (${upgradeCost.toLocaleString()} PLN)</button>
-                </div>
-            </div>
-        `;
-        baseScreen.innerHTML += html;
-    },
-
-    // 2. LOGIKA ROZWOJU
-    upgradeOffice() {
-        const cost = this.officeLevel * 100000;
-        if (Core.data.cash >= cost) {
-            Core.data.cash -= cost;
-            this.officeLevel++;
-            Core.data.maxFuel += 50000;
-            Core.data.rank = this.officeLevel > 3 ? "Magnat Transportu" : "Dyrektor Logistyki";
-            
-            Core.UI.updateStats();
-            Core.Base.renderBase();
-            Core.Base.notify(`AWANS BIURA: POZIOM ${this.officeLevel}!`, "var(--gold)");
-        } else {
-            Core.Base.notify("NIE MASZ TYLE GOTÓWKI NA ROZBUDOWĘ!", "var(--neon-red)");
-        }
-    },
-
-    // 3. REJESTROWANIE DANYCH (HOOKI)
-    trackProgress(mission) {
-        // Obliczamy spalone paliwo (średnio 30L/100km)
-        const fuelBurned = 0.3; 
-        this.totalFuelUsed += fuelBurned;
-        this.totalDistance += 1.2; // Stały przyrost dystansu na tik silnika
-    }
-};
-
-// INTEGRACJA: REJESTROWANIE PRACY W PĘTLI
-const originalEngineRun = Core.Logistics.runEngine;
-Core.Logistics.runEngine = function() {
-    originalEngineRun.apply(this);
-    
-    // Jeśli są aktywne misje, nabijaj statystyki
-    if (Core.data.activeMissions.length > 0) {
-        Core.data.activeMissions.forEach(m => {
-            Core.Analytics.trackProgress(m);
+        // Wyświetlanie posiadanych naczep
+        let ownedHtml = "<div style='font-size:12px; color:#888; margin-top:10px;'>TWOJE NACZEPY:</div>";
+        this.owned.forEach(o => {
+            const type = this.types.find(t => t.id === o.typeId);
+            ownedHtml += `<span class="tag" style="background:${o.busy ? '#444' : 'var(--warn)'}; color:#000">
+                ${type.n} [${o.busy ? 'W TRASIE' : 'WOLNA'}]</span> `;
         });
+
+        // Wstrzykiwanie do garażu
+        const trailerSection = document.createElement('div');
+        trailerSection.innerHTML = html + ownedHtml;
+        container.appendChild(trailerSection);
+    },
+
+    buy(typeId) {
+        const type = this.types.find(t => t.id === typeId);
+        if(App.state.cash >= type.price) {
+            App.state.cash -= type.price;
+            this.owned.push({ id: Date.now() + Math.random(), typeId: typeId, busy: false });
+            App.UI.updateHUD();
+            App.Garage.render();
+        } else { alert("Nie stać Cię na tę naczepę!"); }
     }
 };
 
-// INTEGRACJA: LICZENIE ZLECEŃ
-const finalJobFinish = Core.Logistics.finishJob;
-Core.Logistics.finishJob = function(index) {
-    Core.Analytics.totalJobs++;
-    finalJobFinish.apply(this, [index]);
+// 2. INTEGRACJA Z GIEŁDĄ (NADPISANIE RENDEROWANIA RYNKU)
+const oldMarketRender = App.Market.render;
+App.Market.render = function() {
+    oldMarketRender.apply(App.Market);
+    const container = document.getElementById('sc-market');
+    
+    // Dodajemy info o wymaganych naczepach do kart zleceń
+    const jobCards = container.querySelectorAll('.card');
+    App.Market.jobs.forEach((j, idx) => {
+        const reqTrailer = App.Trailers.types.find(t => t.target === j.cargo);
+        if(reqTrailer && jobCards[idx+1]) { // +1 bo pierwszy element to nagłówek/alert
+            const badge = document.createElement('div');
+            badge.style = "font-size:9px; color:var(--warn); margin-top:5px;";
+            badge.innerHTML = `⚠️ WYMAGANA: ${reqTrailer.n}`;
+            jobCards[idx+1].appendChild(badge);
+            
+            // Sprawdzamy czy gracz ma wolną taką naczepę
+            const hasFree = App.Trailers.owned.find(o => o.typeId === reqTrailer.id && !o.busy);
+            if(!hasFree) {
+                const btn = jobCards[idx+1].querySelector('button');
+                btn.className = "btn btn-disabled";
+                btn.disabled = true;
+                btn.innerText = "BRAK NACZEPY";
+            }
+        }
+    });
 };
 
-// INTEGRACJA: DODANIE STATYSTYK DO WIDOKU BAZY
-const finalBaseRender = Core.Base.renderBase;
-Core.Base.renderBase = function() {
-    finalBaseRender.apply(this);
-    Core.Analytics.renderStats();
+// 3. INTEGRACJA ZE STARTEM MISJI
+const oldStartMission = App.Market.startMission;
+App.Market.startMission = async function(jobId) {
+    const job = App.Market.jobs.find(j => j.id === jobId);
+    const reqTrailer = App.Trailers.types.find(t => t.target === job.cargo);
+    
+    // Blokujemy naczepę
+    const trailer = App.Trailers.owned.find(o => o.typeId === reqTrailer.id && !o.busy);
+    if(trailer) trailer.busy = true;
+
+    await oldStartMission.apply(App.Market, [jobId]);
+    
+    // Przypisujemy naczepę do misji (aby zwolnić ją na końcu)
+    const mission = App.state.missions[App.state.missions.length - 1];
+    if(mission) mission.trailer = trailer;
 };
 
+// 4. INTEGRACJA Z KOŃCEM MISJI
+const oldFinishMission = App.Engine.finish;
+App.Engine.finish = function(idx) {
+    const m = App.state.missions[idx];
+    if(m.trailer) m.trailer.busy = false; // Zwalniamy naczepę
+    oldFinishMission.apply(App.Engine, [idx]);
+};
+
+// 5. DODANIE NACZEP DO WIDOKU GARAŻU
+const finalGarageRender = App.Garage.render;
+App.Garage.render = function() {
+    finalGarageRender.apply(App.Garage);
+    App.Trailers.render();
+};
 </script>
 </body>
 </html>
