@@ -1695,6 +1695,85 @@ App.Service.repairTruck = function(id, cost) {
         App.Notifications.show("Brak gotówki na naprawę!", "error");
     }
 };
+    /* --- MODUŁ 15: EMERGENCY RENDERER & DIAGNOSTICS --- */
+
+// 1. UNIWERSALNY PRZEŁĄCZNIK (Nadpisuje wszystko inne)
+App.Company.subTab = function(view) {
+    console.log("Próba wyrenderowania widoku:", view);
+    
+    const content = document.getElementById('company-content');
+    if (!content) {
+        console.error("KRYTYCZNY BŁĄD: Brak elementu 'company-content' w HTML!");
+        return;
+    }
+
+    content.innerHTML = `<div style="padding:20px; color:#555;">Ładowanie danych firmy...</div>`;
+
+    try {
+        switch(view) {
+            case 'stats':
+                this.renderStats(content);
+                break;
+            case 'assets':
+                this.renderAssets(content);
+                break;
+            case 'market':
+                this.renderUnifiedMarket(content);
+                break;
+            case 'bank':
+                this.renderBank(content);
+                break;
+            default:
+                content.innerHTML = "Nieznany widok.";
+        }
+    } catch (err) {
+        console.error("Błąd podczas renderowania zakładki " + view + ":", err);
+        content.innerHTML = `<div class="card" style="border:1px solid red;">
+            <b style="color:red;">BŁĄD RENDEROWANIA</b><br>
+            <small>${err.message}</small><br>
+            <p>Sprawdź konsolę (F12) po szczegóły.</p>
+        </div>`;
+    }
+};
+
+// 2. WYMUSZONA INICJALIZACJA STRUKTURY
+// Wywołaj to raz, aby upewnić się, że kontenery istnieją
+App.Company.initStructure = function() {
+    const container = document.getElementById('sc-company');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div id="company-nav" style="display: flex; gap: 5px; margin-bottom: 15px; padding: 10px; background: #111; border-radius: 8px;">
+            <button class="btn" style="flex:1; background:var(--neon); color:black;" onclick="App.Company.subTab('stats')">STATYSTYKI</button>
+            <button class="btn" style="flex:1; background:var(--neon); color:black;" onclick="App.Company.subTab('assets')">TABOR</button>
+            <button class="btn" style="flex:1; background:var(--neon); color:black;" onclick="App.Company.subTab('market')">SALON</button>
+            <button class="btn" style="flex:1; background:#ff00ff; color:white;" onclick="App.Company.subTab('bank')">BANK</button>
+        </div>
+        <div id="company-content" style="min-height: 300px; padding: 5px;"></div>
+    `;
+    this.subTab('stats');
+};
+
+// 3. PODPIĘCIE POD GŁÓWNĄ NAWIGACJĘ
+const finalTabSwitch = App.UI.tab;
+App.UI.tab = function(id) {
+    // Standardowe przełączanie ekranów
+    document.querySelectorAll('.screen, .tab-btn').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById('sc-' + id);
+    if(target) target.classList.add('active');
+    
+    // Specyficzna akcja dla firmy
+    if(id === 'company') {
+        App.Company.initStructure();
+    }
+    
+    // Wizualne zaznaczenie przycisku w menu głównym
+    const btn = document.querySelector(`.tab-btn[onclick*="'${id}'"]`);
+    if(btn) btn.classList.add('active');
+};
+
+// Autostart naprawy po wklejeniu
+console.log("Moduł 15 załadowany. System gotowy.");
 </script>
 </body>
 </html>
