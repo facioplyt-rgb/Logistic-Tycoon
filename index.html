@@ -1579,6 +1579,122 @@ App.Company.render = function() {
     `;
     this.subTab('stats'); // Startujemy od statystyk
 };
+    /* --- MODUŁ 14: ASSETS & MARKET ENGINE FIX --- */
+
+// 1. NAPRAWA WYŚWIETLANIA TABORU I KADR
+App.Company.renderAssets = function(container) {
+    let html = `<h3 style="color:var(--safe); margin-top:0;">TWOJA FLOTA</h3>`;
+    
+    if (App.state.trucks.length === 0) {
+        html += `<div class="card" style="color:#666;">Brak pojazdów. Kup swój pierwszy zestaw w Salonie!</div>`;
+    } else {
+        App.state.trucks.forEach(t => {
+            const repairCost = Math.floor((100 - t.condition) * 280);
+            html += `
+                <div class="card" style="margin-bottom:10px; border-left: 4px solid ${t.busy ? 'var(--warn)' : 'var(--safe)'}">
+                    <div style="display:flex; justify-content:space-between;">
+                        <b>${t.model}</b>
+                        <small style="color:#888;">${t.id}</small>
+                    </div>
+                    <div style="font-size:12px; margin:5px 0;">
+                        Stan: <b style="color:${t.condition < 40 ? 'var(--danger)' : 'white'}">${t.condition.toFixed(1)}%</b> | 
+                        Lokalizacja: <b>${t.currentCity || 'Warszawa'}</b>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                        <span class="tag" style="background:${t.busy ? '#444' : 'var(--safe)'}; color:#000; font-size:9px;">
+                            ${t.busy ? 'W TRASIE' : 'WOLNY'}
+                        </span>
+                        <button class="btn" style="width:auto; padding:4px 12px; margin:0; font-size:11px;" 
+                            onclick="App.Service.repairTruck('${t.id}', ${repairCost})" 
+                            ${t.busy || t.condition >= 100 ? 'disabled' : ''}>
+                            NAPRAW (${repairCost} PLN)
+                        </button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    html += `<h3 style="color:var(--neon); margin-top:20px;">KADRA KIEROWCÓW</h3>`;
+    if (App.state.drivers.length === 0) {
+        html += `<div class="card" style="color:#666;">Brak zatrudnionych kierowców.</div>`;
+    } else {
+        App.state.drivers.forEach(d => {
+            html += `
+                <div class="card" style="margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <b>${d.name}</b><br>
+                        <small style="color:#888;">Efektywność: ${Math.floor(d.skill*100)}%</small>
+                    </div>
+                    <span class="tag" style="background:${d.busy ? '#444' : 'var(--neon)'}; color:#000; font-size:9px;">
+                        ${d.busy ? 'W TRASIE' : 'W BAZIE'}
+                    </span>
+                </div>`;
+        });
+    }
+    container.innerHTML = html;
+};
+
+// 2. NAPRAWA SALONU I REKRUTACJI (Zintegrowany Market)
+App.Company.renderUnifiedMarket = function(container) {
+    if(!App.Garage.truckOffers) App.Generators.refreshMarkets();
+    if(!App.Trailers.types[0].currentPrice) App.Trailers.generatePrices();
+
+    let html = `<h3 style="color:var(--neon); margin-top:0;">SALON POJAZDÓW</h3>
+                <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">`;
+    
+    App.Garage.truckOffers.forEach(t => {
+        html += `
+            <div class="card" style="min-width:150px; flex-shrink:0;">
+                <b style="font-size:13px;">${t.model}</b><br>
+                <small style="color:#888;">Stan: ${t.condition}%</small><br>
+                <b style="color:var(--safe)">${t.price.toLocaleString()} PLN</b><br>
+                <button class="btn btn-main" style="margin-top:8px;" onclick="App.Garage.buyGeneratedTruck('${t.id}')">KUP</button>
+            </div>`;
+    });
+    html += `</div>`;
+
+    html += `<h3 style="color:var(--warn); margin-top:20px;">NACZEPY</h3>
+             <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;">`;
+    App.Trailers.types.forEach(t => {
+        html += `
+            <div class="card" style="min-width:140px; flex-shrink:0; border-bottom: 2px solid var(--warn);">
+                <b style="font-size:12px;">${t.n}</b><br>
+                <b style="color:var(--safe)">${t.currentPrice.toLocaleString()} PLN</b><br>
+                <button class="btn btn-main" style="background:var(--warn); color:black; margin-top:8px;" onclick="App.Trailers.buy('${t.id}')">KUP</button>
+            </div>`;
+    });
+    html += `</div>`;
+
+    html += `<h3 style="color:var(--neon); margin-top:20px;">BIURO REKRUTACJI</h3>`;
+    App.Garage.candidates.forEach(c => {
+        html += `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div>
+                    <b>${c.name}</b><br>
+                    <small>Skill: ${Math.floor(c.skill*100)}% | Koszt: ${c.wage} PLN</small>
+                </div>
+                <button class="btn btn-main" style="width:auto; padding:5px 15px;" onclick="App.Garage.hireGeneratedDriver('${c.id}')">ZATRUDNIJ</button>
+            </div>`;
+    });
+
+    container.innerHTML = html;
+};
+
+// 3. FIX DLA FUNKCJI NAPRAWY (Obsługa obiektów i ID)
+App.Service.repairTruck = function(id, cost) {
+    if (App.state.cash >= cost) {
+        const truck = App.state.trucks.find(t => t.id === id);
+        if (truck) {
+            App.state.cash -= cost;
+            truck.condition = 100;
+            App.Notifications.show(`Pojazd ${truck.model} został naprawiony!`, "success");
+            App.UI.updateHUD();
+            App.Company.subTab('assets'); // Odśwież widok taboru
+        }
+    } else {
+        App.Notifications.show("Brak gotówki na naprawę!", "error");
+    }
+};
 </script>
 </body>
 </html>
