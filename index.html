@@ -2609,6 +2609,75 @@ document.head.appendChild(forceStyle);
 
 // Wymuszone odświeżenie na Giełdzie
 App.UI.safeTab('market');
+/* --- MODUŁ 26: MENU NAVIGATION RESCUE --- */
+
+App.UI.fixNavigation = function() {
+    // 1. Znajdź kontener menu (zazwyczaj div z klasą nav lub menu)
+    // Jeśli Twoje menu nie ma klasy, szukamy po elementach button
+    const nav = document.querySelector('nav') || document.querySelector('.menu') || document.querySelector('.nav');
+    
+    if (nav) {
+        nav.style.setProperty('display', 'flex', 'important');
+        nav.style.setProperty('position', 'fixed', 'important');
+        nav.style.setProperty('bottom', '0', 'important');
+        nav.style.setProperty('left', '0', 'important');
+        nav.style.setProperty('width', '100%', 'important');
+        nav.style.setProperty('height', '60px', 'important');
+        nav.style.setProperty('background', '#111', 'important');
+        nav.style.setProperty('z-index', '9999', 'important'); // Najwyższa możliwa warstwa
+        nav.style.setProperty('border-top', '2px solid var(--neon)', 'important');
+        nav.style.setProperty('justify-content', 'space-around', 'important');
+        nav.style.setProperty('align-items', 'center', 'important');
+    } else {
+        console.error("Nie znaleziono tagu <nav>. Szukam alternatywnych przycisków...");
+        // Jeśli nie masz tagu <nav>, wymuś naprawę na wszystkich przyciskach tab-btn
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach(btn => {
+            btn.parentElement.style.setProperty('position', 'fixed', 'important');
+            btn.parentElement.style.setProperty('bottom', '0', 'important');
+            btn.parentElement.style.setProperty('z-index', '9999', 'important');
+            btn.parentElement.style.setProperty('background', '#111', 'important');
+            btn.parentElement.style.setProperty('width', '100%', 'important');
+            btn.parentElement.style.setProperty('display', 'flex', 'important');
+        });
+    }
+};
+
+// Dodatkowy CSS, aby upewnić się, że ekrany nie zasłaniają dołu
+const navStyle = document.createElement('style');
+navStyle.innerHTML = `
+    .tab-btn {
+        flex: 1 !important;
+        height: 100% !important;
+        background: transparent !important;
+        color: #888 !important;
+        border: none !important;
+        font-size: 12px !important;
+        text-transform: uppercase !important;
+        font-weight: bold !important;
+    }
+    .tab-btn.active {
+        color: var(--neon) !important;
+        box-shadow: inset 0 -3px 0 var(--neon) !important;
+    }
+    /* Gwarancja, że treść kończy się przed menu */
+    .screen {
+        margin-bottom: 60px !important; 
+    }
+`;
+document.head.appendChild(navStyle);
+
+// Uruchom naprawę menu
+setTimeout(() => {
+    App.UI.fixNavigation();
+}, 100);
+
+// Podepnij pod przełączanie zakładek
+const originalTabWithNav = App.UI.tab;
+App.UI.tab = function(id) {
+    originalTabWithNav.apply(this, [id]);
+    App.UI.fixNavigation();
+};
 
 </script>
 </body>
