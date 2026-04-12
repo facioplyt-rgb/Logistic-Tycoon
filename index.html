@@ -1964,6 +1964,76 @@ App.Market.generateJobs = function() {
 
 // Start giełdy
 App.Market.render();
+    /* --- MODUŁ 18: INDEPENDENT MARKET ENGINE --- */
+
+// 1. FUNKCJA REANIMACJI GIEŁDY
+App.Market.reanimate = function() {
+    console.log("Reanimacja Giełdy...");
+    const container = document.getElementById('sc-market');
+    
+    if (!container) {
+        console.error("Błąd: Nie znaleziono kontenera sc-market w HTML!");
+        return;
+    }
+
+    // Wymuszone generowanie ładunków, jeśli ich nie ma
+    if (!this.jobs || this.jobs.length === 0) {
+        this.jobs = [];
+        const cities = ["Warszawa", "Gdańsk", "Kraków", "Wrocław", "Poznań"];
+        for(let i=0; i<4; i++) {
+            this.jobs.push({
+                id: 'J'+Math.random().toString(36).substr(2,4).toUpperCase(),
+                from: cities[i],
+                to: cities[cities.length - 1 - i],
+                cargo: "Ładunek Testowy",
+                reward: 15000,
+                color: "#00f2ff"
+            });
+        }
+    }
+
+    // RENDEROWANIE
+    let html = `<h2 style="color:var(--neon)">GIEŁDA TRANSPORTOWA</h2>`;
+    this.jobs.forEach(j => {
+        html += `
+        <div class="card" style="border-left: 4px solid ${j.color}; margin-bottom: 10px;">
+            <div style="display:flex; justify-content:space-between;">
+                <b>${j.cargo}</b>
+                <b style="color:var(--safe)">${j.reward} PLN</b>
+            </div>
+            <div style="font-size:12px;">${j.from} ➔ ${j.to}</div>
+            
+            <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                <select id="sel-truck-${j.id}" style="background:#222; color:#fff; padding:5px; border-radius:4px; font-size:10px;">
+                    <option value="">Wybierz auto</option>
+                    ${App.state.trucks.filter(t => !t.busy).map(t => `<option value="${t.id}">${t.model}</option>`).join('')}
+                </select>
+                <select id="sel-driver-${j.id}" style="background:#222; color:#fff; padding:5px; border-radius:4px; font-size:10px;">
+                    <option value="">Kierowca</option>
+                    ${App.state.drivers.filter(d => !d.busy).map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+                </select>
+            </div>
+
+            <button class="btn btn-main" style="margin-top:10px; background:${j.color}; color:#000;" 
+                onclick="App.Market.startMission('${j.id}')">WYŚLIJ</button>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+};
+
+// 2. WYMUSZONE PODPIĘCIE POD PRZYCISK MENU
+// Znajdujemy przycisk Giełdy i przypisujemy mu nową funkcję naprawczą
+setTimeout(() => {
+    const marketBtn = document.querySelector('button[onclick*="market"]');
+    if (marketBtn) {
+        marketBtn.setAttribute('onclick', "App.UI.tab('market'); App.Market.reanimate();");
+        console.log("Podpięto naprawę pod przycisk menu.");
+    }
+}, 1000);
+
+// Pierwsze wywołanie
+App.Market.reanimate();
 </script>
 </body>
 </html>
