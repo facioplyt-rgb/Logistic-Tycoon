@@ -1456,6 +1456,129 @@ App.Company.renderUnifiedMarket = function() {
 // 6. NOWE PĘTLE CZASOWE
 setInterval(() => App.Service.updateFuelPrice(), 60000); // Nowa cena paliwa co minutę
 setInterval(() => App.Trailers.generatePrices(), 120000); // Nowe ceny naczep co 2 minuty
+    /* --- MODUŁ 13: CORE RENDERER & BANK FIX --- */
+
+// 1. GŁÓWNA NAPRAWA PRZEŁĄCZANIA
+App.Company.subTab = function(view) {
+    // Musimy upewnić się, że kontener istnieje w DOM
+    const content = document.getElementById('company-content');
+    if (!content) {
+        console.error("Błąd: Nie znaleziono kontenera company-content!");
+        return;
+    }
+
+    // Czyścimy wszystko przed nowym renderem
+    content.innerHTML = "";
+
+    // Mały efekt ładowania (opcjonalnie)
+    content.style.opacity = "0";
+
+    setTimeout(() => {
+        content.style.opacity = "1";
+        content.style.transition = "opacity 0.2s";
+
+        switch(view) {
+            case 'stats':
+                this.renderStats(content);
+                break;
+            case 'assets':
+                this.renderAssets(content);
+                break;
+            case 'market':
+                this.renderUnifiedMarket(content);
+                break;
+            case 'bank':
+                this.renderBank(content);
+                break;
+        }
+    }, 10);
+};
+
+// 2. NAPRAWIONA FUNKCJA BANKU
+App.Company.renderBank = function(container) {
+    const loan = App.Bank.loanAmount || 0;
+    const max = App.Bank.maxLoan || 300000;
+    
+    container.innerHTML = `
+        <div class="card" style="border-left: 5px solid #ff00ff; background: rgba(255, 0, 255, 0.05); padding: 20px;">
+            <h2 style="color:#ff00ff; margin-top:0;">CENTRALNY BANK LOGISTYKI</h2>
+            <p style="font-size: 12px; color: #aaa;">Zarządzaj kredytami swojej firmy. Pamiętaj o regularnej spłacie!</p>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>AKTUALNE ZADŁUŻENIE:</span>
+                <span style="font-size: 24px; font-weight: bold; color: ${loan > 0 ? 'var(--danger)' : 'var(--safe)'}">
+                    ${loan.toLocaleString()} PLN
+                </span>
+            </div>
+
+            <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="card" style="background: #1a1a1a; text-align: center;">
+                    <small style="color:#888;">DOSTĘPNY LIMIT</small><br>
+                    <b style="color:var(--neon)">${(max - loan).toLocaleString()} PLN</b>
+                    <button class="btn btn-main" style="background:#ff00ff; color:white; margin-top:10px;" 
+                        onclick="App.Bank.takeLoan(50000)">WEŹ 50.000</button>
+                </div>
+                <div class="card" style="background: #1a1a1a; text-align: center;">
+                    <small style="color:#888;">OPERACJA SPŁATY</small><br>
+                    <b style="color:var(--safe)">SZYBKA RATA</b>
+                    <button class="btn" style="border: 1px solid var(--safe); color:var(--safe); margin-top:10px;" 
+                        onclick="App.Bank.repayLoan(20000)" ${loan < 20000 ? 'disabled' : ''}>SPŁAĆ 20.000</button>
+                </div>
+            </div>
+            <p style="margin-top:15px; font-size:10px; color:#555;">* Bank automatycznie pobiera 10% od każdego zarobionego frachtu na poczet odsetek i kapitału.</p>
+        </div>
+    `;
+};
+
+// 3. NAPRAWA STATYSTYK (Aby nie było pustego ekranu)
+App.Company.renderStats = function(container) {
+    const cash = App.state.cash || 0;
+    const fuel = App.state.fuel || 0;
+    const trucksCount = App.state.trucks.length;
+
+    container.innerHTML = `
+        <div class="card" style="border-top: 4px solid var(--neon);">
+            <h3 style="color:var(--neon); margin-top:0;">STATYSTYKI FIRMY</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="stat-box">
+                    <small>GOTÓWKA</small><br>
+                    <b style="font-size:18px;">${cash.toLocaleString()} PLN</b>
+                </div>
+                <div class="stat-box">
+                    <small>PALIWO W BAZIE</small><br>
+                    <b style="font-size:18px;">${Math.floor(fuel)} L</b>
+                </div>
+                <div class="stat-box">
+                    <small>FLOTA</small><br>
+                    <b style="font-size:18px;">${trucksCount} SZT.</b>
+                </div>
+                <div class="stat-box">
+                    <small>CENA PALIWA (RYNEK)</small><br>
+                    <b style="font-size:18px; color:var(--safe);">${(App.Service.fuelPrice || 5.50).toFixed(2)} PLN</b>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+// 4. WYMUSZENIE RE-INICJALIZACJI
+// Nadpisujemy funkcję render głównej zakładki Firma
+const oldCompanyRender = App.Company.render;
+App.Company.render = function() {
+    const container = document.getElementById('sc-company');
+    container.innerHTML = `
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding: 10px 0;">
+            <button class="btn btn-main" style="background:var(--neon); color:black; flex:1;" onclick="App.Company.subTab('stats')">STATYSTYKI</button>
+            <button class="btn btn-main" style="background:var(--neon); color:black; flex:1;" onclick="App.Company.subTab('assets')">TABOR I KADRY</button>
+            <button class="btn btn-main" style="background:var(--neon); color:black; flex:1;" onclick="App.Company.subTab('market')">SALON/BIURO</button>
+            <button class="btn btn-main" style="background:#ff00ff; color:white; flex:1;" onclick="App.Company.subTab('bank')">BANK</button>
+        </div>
+        <div id="company-content" style="min-height: 200px; border: 1px dashed #333; border-radius: 8px; padding: 10px;">
+            </div>
+    `;
+    this.subTab('stats'); // Startujemy od statystyk
+};
 </script>
 </body>
 </html>
