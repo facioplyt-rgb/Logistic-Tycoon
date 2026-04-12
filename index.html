@@ -1774,6 +1774,96 @@ App.UI.tab = function(id) {
 
 // Autostart naprawy po wklejeniu
 console.log("Moduł 15 załadowany. System gotowy.");
+    /* --- MODUŁ 16: TOTAL MISSION REPAIR --- */
+
+App.Market.startMission = async function(jobId) {
+    console.log("Próba startu misji dla ID:", jobId);
+    
+    // 1. Znalezienie elementów UI
+    const truckSelect = document.getElementById(`sel-truck-${jobId}`);
+    const driverSelect = document.getElementById(`sel-driver-${jobId}`);
+    const btn = event.target; // Przycisk, który został kliknięty
+
+    if (!truckSelect || !driverSelect) {
+        console.error("Nie znaleziono list wyboru dla tego zlecenia!");
+        App.Notifications.show("Błąd techniczny giełdy", "error");
+        return;
+    }
+
+    const truckId = truckSelect.value;
+    const driverId = driverSelect.value;
+
+    // 2. Pobranie obiektów z bazy
+    const truck = App.state.trucks.find(t => t.id === truckId);
+    const driver = App.state.drivers.find(d => d.id === driverId);
+    const job = this.jobs.find(j => j.id === jobId);
+
+    if (!truck || !driver || !job) {
+        App.Notifications.show("Wybierz kierowcę i auto!", "warn");
+        return;
+    }
+
+    // 3. Sprawdzenie naczepy (jeśli wymagana)
+    const reqTrailer = App.Trailers.types.find(t => t.target === job.cargo);
+    let trailerObj = null;
+    if (reqTrailer) {
+        trailerObj = App.Trailers.owned.find(o => o.typeId === reqTrailer.id && !o.busy);
+        if (!trailerObj) {
+            App.Notifications.show(`Wymagana naczepa: ${reqTrailer.n}`, "error");
+            return;
+        }
+    }
+
+    // 4. Blokada przycisku i pobieranie trasy
+    btn.disabled = true;
+    btn.innerText = "PLANOWANIE...";
+
+    try {
+        const start = App.state.cities[job.from];
+        const end = App.state.cities[job.to];
+        
+        const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`);
+        const data = await response.json();
+
+        if (!data.routes || data.routes.length === 0) throw new Error("Brak trasy");
+
+        const path = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+
+        // 5. Sukces - Blokowanie zasobów i start
+        truck.busy = true;
+        driver.busy = true;
+        if (trailerObj) trailerObj.busy = true;
+
+        const mission = {
+            id: Date.now(),
+            truck, driver, job, path,
+            trailer: trailerObj,
+            progress: 0,
+            line: L.polyline(path, { color: job.color, weight: 4, opacity: 0.6 }).addTo(App.UI.map),
+            marker: L.marker(path[0], {
+                icon: L.divIcon({
+                    className: 'truck-m',
+                    html: `<div style="background:${job.color}; width:16px; height:16px; border-radius:3px; border:2px solid #fff; box-shadow: 0 0 10px ${job.color};"></div>`
+                })
+            }).addTo(App.UI.map)
+        };
+
+        App.state.missions.push(mission);
+        
+        // Usunięcie zlecenia z giełdy
+        this.jobs = this.jobs.filter(j => j.id !== jobId);
+        
+        App.Notifications.show("Szerokiej drogi!", "success");
+        App.UI.updateHUD();
+        App.UI.tab('fleet'); // Przełącz na mapę/trasy
+
+    } catch (err) {
+        console.error("Błąd GPS:", err);
+        App.Notifications.show("Błąd połączenia z GPS", "error");
+        btn.disabled = false;
+        btn.innerText = "WYŚLIJ TRANSPORT";
+    }
+};
 </script>
 </body>
 </html>
