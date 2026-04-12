@@ -3,306 +3,774 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TRUCK EMPIRE V16: TOTAL OVERLORD</title>
+    <title>POLISH TRANSPORT EMPIRE V18</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { 
-            --gold: #ffcc00; --bg: #050608; --card: rgba(20, 22, 28, 0.98); 
-            --blue: #00a2ff; --neon: #39ff14; --red: #ff3e3e; --purple: #bc13fe;
+        /* --- DESIGN SYSTEM: CARBON & NEON --- */
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-green: #39ff14;
+            --neon-red: #ff004c;
+            --gold: #ffcc00;
+            --bg-dark: #08090a;
+            --card-bg: #121417;
+            --glass: rgba(18, 20, 23, 0.95);
+            --border: #24282f;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; margin: 0; overflow: hidden; }
 
-        /* HEADER COMMAND CENTER */
-        #header { 
-            background: #000; padding: 15px; display: grid; grid-template-columns: repeat(4, 1fr); 
-            border-bottom: 2px solid var(--blue); text-align: center; box-shadow: 0 0 25px rgba(0,162,255,0.4);
-            position: relative; z-index: 1000;
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--bg-dark); color: #e1e1e1; 
+            font-family: 'Inter', 'Segoe UI', sans-serif; overflow: hidden;
         }
-        .stat-val { font-size: 18px; font-weight: 800; color: #fff; display: block; text-shadow: 0 0 10px var(--blue); }
-        .stat-label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* CB RADIO - KONTEKSTOWE */
-        #cb-bar { background: #000; height: 35px; border-bottom: 1px solid var(--neon); overflow: hidden; position: relative; display: flex; align-items: center; box-shadow: inset 0 0 10px var(--neon); }
-        #cb-msg { color: var(--neon); font-family: 'Consolas', monospace; white-space: nowrap; position: absolute; animation: scroll 22s linear infinite; font-size: 14px; }
-        @keyframes scroll { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
+        /* --- GŁÓWNY HUD (GÓRA) --- */
+        #top-hud {
+            height: 70px; background: #000; display: grid; 
+            grid-template-columns: repeat(4, 1fr); align-items: center;
+            border-bottom: 2px solid var(--neon-blue); position: relative; z-index: 1001;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        }
+        .stat-group { text-align: center; border-right: 1px solid var(--border); }
+        .stat-label { font-size: 9px; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 17px; font-weight: 800; display: block; color: #fff; }
 
-        /* MAPA */
-        #map { height: 380px; width: 100%; border-bottom: 2px solid #333; filter: contrast(1.1) brightness(0.9); }
-        
-        nav { display: flex; background: #111; border-bottom: 1px solid #222; }
-        .nav-btn { flex: 1; padding: 15px; border: none; background: none; color: #555; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; transition: 0.3s; }
-        .nav-btn.active { color: var(--blue); border-bottom: 3px solid var(--blue); background: rgba(0,162,255,0.1); }
+        /* --- CB RADIO TERMINAL --- */
+        #cb-bar {
+            height: 30px; background: #050505; border-bottom: 1px solid var(--neon-green);
+            display: flex; align-items: center; overflow: hidden; position: relative; z-index: 1000;
+        }
+        #cb-ticker {
+            position: absolute; white-space: nowrap; font-family: 'Consolas', monospace;
+            color: var(--neon-green); font-size: 13px; animation: ticker 25s linear infinite;
+        }
+        @keyframes ticker { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
 
-        /* EKRANY */
-        .screen { display: none; height: calc(100vh - 330px); overflow-y: auto; padding: 20px; box-sizing: border-box; background: linear-gradient(180deg, #0a0b0e 0%, #000 100%); }
+        /* --- VIEWPORT (MAPA) --- */
+        #viewport { height: 400px; width: 100%; position: relative; border-bottom: 2px solid var(--border); }
+        #map { height: 100%; width: 100%; background: #0b0c0d; }
+
+        /* --- NAVIGATION --- */
+        #main-nav { 
+            display: flex; background: #0f1114; height: 55px; 
+            border-bottom: 1px solid var(--border); 
+        }
+        .nav-item {
+            flex: 1; background: none; border: none; color: #555;
+            font-weight: bold; text-transform: uppercase; font-size: 11px;
+            cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent;
+        }
+        .nav-item.active { 
+            color: var(--neon-blue); border-bottom-color: var(--neon-blue); 
+            background: rgba(0, 212, 255, 0.05); 
+        }
+
+        /* --- EKRANY FUNKCYJNE --- */
+        #content-area { height: calc(100vh - 555px); overflow-y: auto; background: var(--bg-dark); }
+        .screen { display: none; padding: 20px; box-sizing: border-box; }
         .screen.active { display: block; }
 
-        /* KARTY */
-        .card { 
-            background: var(--card); border: 1px solid #2d3139; padding: 18px; 
-            margin-bottom: 15px; border-radius: 12px; position: relative;
-            border-left: 4px solid var(--blue); box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        /* --- KOMPONENTY: KARTY --- */
+        .card {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: 16px; margin-bottom: 15px;
+            position: relative; transition: 0.3s;
         }
-        .badge { position: absolute; top: 15px; right: 15px; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .card:hover { border-color: #3d4450; transform: translateY(-2px); }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .badge { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
 
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.2s; }
-        .btn-main { background: linear-gradient(45deg, var(--blue), #0055ff); color: white; box-shadow: 0 4px 15px rgba(0,162,255,0.3); }
-        .btn-repair { background: #222; color: var(--gold); border: 1px solid var(--gold); font-size: 10px; padding: 5px; }
+        /* --- PRZYCISKI --- */
+        .btn {
+            width: 100%; padding: 12px; border-radius: 6px; border: none;
+            font-weight: bold; cursor: pointer; text-transform: uppercase;
+            font-size: 12px; transition: 0.2s;
+        }
+        .btn-blue { background: var(--neon-blue); color: #000; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3); }
+        .btn-blue:hover { filter: brightness(1.2); }
 
-        /* PROGRES */
-        .prog-bg { background: #000; height: 14px; border-radius: 7px; margin: 12px 0; overflow: hidden; border: 1px solid #333; position: relative; }
-        .prog-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--purple)); transition: width 0.3s linear; }
-        .prog-text { position: absolute; inset: 0; text-align: center; font-size: 10px; line-height: 14px; font-weight: bold; color: #fff; }
-
-        /* TRUCK ICON STYLE */
-        .truck-icon-v16 { border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+        /* --- SCROLLBAR --- */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #08090a; }
+        ::-webkit-scrollbar-thumb { background: #24282f; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<div id="cb-bar"><div id="cb-msg">>>> SYSTEM V16 ONLINE. MONITOROWANIE FLOTY AKTYWNE...</div></div>
-
-<div id="header">
-    <div><span class="stat-label">Kapitał</span><span id="ui-cash" class="stat-val">0 PLN</span></div>
-    <div><span class="stat-label">Paliwo Baza</span><span id="ui-fuel" class="stat-val">0 L</span></div>
-    <div><span class="stat-label">Prestiż</span><span id="ui-rep" class="stat-val">0 XP</span></div>
-    <div><span class="stat-label">ON Rynek</span><span id="ui-price" class="stat-val" style="color:var(--neon)">0.00</span></div>
+<div id="top-hud">
+    <div class="stat-group"><span class="stat-label">Budżet</span><span id="val-cash" class="stat-value">50,000</span><small>PLN</small></div>
+    <div class="stat-group"><span class="stat-label">Paliwo Baza</span><span id="val-fuel" class="stat-value">25,000</span><small>L</small></div>
+    <div class="stat-group"><span class="stat-label">Flota</span><span id="val-fleet" class="stat-value">1</span><small>SZT</small></div>
+    <div class="stat-group"><span class="stat-label">Poziom</span><span id="val-rank" class="stat-value">START</span></div>
 </div>
 
-<div id="map"></div>
+<div id="cb-bar"><div id="cb-ticker">>>> SYSTEM LOGISTYCZNY V18 ONLINE. OCZEKIWANIE NA POŁĄCZENIE Z KIEROWCAMI...</div></div>
 
-<nav>
-    <button class="nav-btn active" onclick="Game.UI.tab('market')">Giełda Ładunków</button>
-    <button class="nav-btn" onclick="Game.UI.tab('fleet')">Aktywne Trasy</button>
-    <button class="nav-btn" onclick="Game.UI.tab('hr')">Kierowcy i Serwis</button>
+<div id="viewport"><div id="map"></div></div>
+
+<nav id="main-nav">
+    <button class="nav-item active" onclick="Core.UI.tab('market')">Giełda Cargo</button>
+    <button class="nav-item" onclick="Core.UI.tab('fleet')">Twoja Flota</button>
+    <button class="nav-item" onclick="Core.UI.tab('base')">Baza i HR</button>
 </nav>
 
-<div id="sc-market" class="screen active"><div id="market-list"></div></div>
-<div id="sc-fleet" class="screen">
-    <div class="card" style="border-left-color: var(--neon)">
-        <b style="color:var(--neon)">ZARZĄDZANIE PALIWEM (HURTOWNIA)</b>
-        <p>Pojemność: <span id="ui-fuel-max">0</span> / 250,000 L</p>
-        <button class="btn btn-main" onclick="Game.Actions.refuelBase()">Zatankuj bazę do pełna</button>
-    </div>
-    <div id="active-missions"></div>
+<div id="content-area">
+    <div id="sc-market" class="screen active"></div>
+    <div id="sc-fleet" class="screen"></div>
+    <div id="sc-base" class="screen"></div>
 </div>
-<div id="sc-hr" class="screen"><div id="driver-list"></div></div>
-
-<div id="log-panel" style="position:fixed; bottom:0; width:100%; height:40px; background:rgba(0,0,0,0.9); font-size:10px; color:#555; padding:5px; border-top:1px solid #222; overflow:hidden;"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const Game = {
-    state: {
-        cash: 55000, fuel: 35000, maxFuel: 250000, rep: 0, fuelPrice: 5.15,
-        drivers: [
-            { id: 0, name: "Szef (Operator)", city: "Warszawa", busy: false, xp: 0, damage: 0, fatigue: 0 }
-        ],
-        missions: [],
+/* --- CORE ENGINE START --- */
+const Core = {
+    data: {
+        cash: 50000, fuel: 25000, maxFuel: 100000, rank: "Spedytor",
         cities: {
             "Warszawa": [52.23, 21.01], "Kraków": [50.06, 19.94], "Gdańsk": [54.35, 18.65],
             "Wrocław": [51.11, 17.04], "Poznań": [52.41, 16.92], "Lublin": [51.25, 22.57],
-            "Katowice": [50.26, 19.03], "Łódź": [51.75, 19.45], "Rzeszów": [50.04, 22.00],
-            "Szczecin": [53.43, 14.55], "Białystok": [53.13, 23.17]
+            "Katowice": [50.26, 19.03], "Szczecin": [53.43, 14.55], "Łódź": [51.75, 19.45],
+            "Rzeszów": [50.04, 22.00], "Białystok": [53.13, 23.17]
         },
-        cargo: [
-            { n: "Elektronika (High Value)", p: 60, color: "#bc13fe" },
-            { n: "Materiały Budowlane", p: 25, color: "#00a2ff" },
-            { n: "Paliwa (ADR)", p: 90, color: "#ff3e3e" },
-            { n: "Części Samochodowe", p: 45, color: "#39ff14" },
-            { n: "Wyroby Hutnicze", p: 35, color: "#ffcc00" }
-        ]
-    },
-
-    init() {
-        this.UI.initMap();
-        this.Logic.generateMarket();
-        this.Logic.startLoops();
-        this.UI.update();
-    },
-
-    Logic: {
-        generateMarket() {
-            const list = document.getElementById('market-list');
-            list.innerHTML = "";
-            const cities = Object.keys(Game.state.cities);
-            
-            for(let i=0; i<6; i++) {
-                const s = cities[Math.floor(Math.random()*cities.length)];
-                const e = cities.filter(c => c !== s)[Math.floor(Math.random()*(cities.length-1))];
-                const type = Game.state.cargo[Math.floor(Math.random()*Game.state.cargo.length)];
-                const reward = Math.floor(12000 + Math.random() * 25000);
-
-                list.innerHTML += `
-                    <div class="card" style="border-left-color: ${type.color}">
-                        <span class="badge" style="background:${type.color}; color:#000">${type.n}</span>
-                        <div class="card-title">${reward} PLN</div>
-                        <p>${s} ⮕ ${e}</p>
-                        <button class="btn btn-main" onclick="Game.Actions.takeJob('${s}', '${e}', ${reward}, '${type.n}')">Akceptuj Fracht</button>
-                    </div>`;
-            }
-        },
-
-        startLoops() {
-            setInterval(() => {
-                Game.state.fuelPrice = (4.85 + Math.random() * 0.9).toFixed(2);
-                this.updateCB();
-                Game.UI.update();
-            }, 12000);
-
-            setInterval(() => {
-                Game.state.missions.forEach((m, i) => {
-                    const drv = Game.state.drivers.find(d => d.name === m.driver);
-                    // Modyfikator prędkości zależny od uszkodzeń i zmęczenia
-                    const speed = 0.002 * (1 - (drv.damage / 200)) * (1 - (drv.fatigue / 300));
-                    m.prog += speed;
-
-                    if(m.prog >= 1) {
-                        Game.Actions.completeJob(i);
-                    } else {
-                        const idx = Math.floor(m.prog * (m.path.length - 1));
-                        m.marker.setLatLng(m.path[idx]);
-                        // Realistyczne zużycie paliwa i zmęczenia w trasie
-                        Game.state.fuel -= 0.15;
-                        drv.fatigue += 0.01;
-                        if(Math.random() > 0.9997) drv.damage += 1;
-                    }
-                });
-                if(Game.state.missions.length > 0) this.updateMissionUI();
-            }, 100);
-        },
-
-        updateCB() {
-            const msgs = [
-                "Mobilki, czysto pod Warszawą, szerokości!",
-                "Uwaga, krokodyle (ITD) suszą na S8 pod Łodzią!",
-                "Wypadek na A4, korek pod Katowicami na 15 minut.",
-                "Jak tam dróżka na Gdańsk? - Czysto, śmiało leć!",
-                "Stoję pod Rzeszowem, pauza 45min, ktoś na kawę?"
-            ];
-            document.getElementById('cb-msg').innerText = ">>> CB-RADIO: " + msgs[Math.floor(Math.random()*msgs.length)];
-        },
-
-        updateMissionUI() {
-            const container = document.getElementById('active-missions');
-            let h = '<h3 style="color:var(--blue)">AKTYWNE OPERACJE</h3>';
-            Game.state.missions.forEach(m => {
-                h += `
-                    <div class="card">
-                        <span class="badge" style="background:var(--purple)">W TRASIE</span>
-                        <b>${m.driver}</b> | ${m.cargo}<br>
-                        <small>${m.start} ⮕ ${m.end}</small>
-                        <div class="prog-bg">
-                            <div class="prog-fill" style="width:${m.prog*100}%"></div>
-                            <div class="prog-text">${Math.floor(m.prog*100)}%</div>
-                        </div>
-                    </div>`;
-            });
-            container.innerHTML = h;
-        }
-    },
-
-    Actions: {
-        async takeJob(start, end, reward, cargo) {
-            const drv = Game.state.drivers.find(d => !d.busy && d.fatigue < 90);
-            if(!drv) return alert("Brak gotowych kierowców (wszyscy zajęci lub przemęczeni)!");
-            if(Game.state.fuel < 3000) return alert("Krytyczny poziom paliwa w bazie!");
-
-            drv.busy = true;
-            Game.state.fuel -= 2000;
-
-            const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${Game.state.cities[start][1]},${Game.state.cities[start][0]};${Game.state.cities[end][1]},${Game.state.cities[end][0]}?overview=full&geometries=geojson`);
-            const data = await res.json();
-            const path = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-
-            // Dynamiczna ikona (naprawiona!)
-            const marker = L.marker(path[0], {
-                icon: L.divIcon({ 
-                    className: 'truck-icon-v16', 
-                    html: `<div style="background:var(--blue); width:14px; height:14px; border:2px solid #fff; box-shadow:0 0 10px var(--blue);"></div>`
-                })
-            }).addTo(Game.UI.map);
-
-            const line = L.polyline(path, { color: 'var(--blue)', weight: 4, opacity: 0.6, dashArray: '5, 10' }).addTo(Game.UI.map);
-
-            Game.state.missions.push({ id: Date.now(), start, end, reward, cargo, path, marker, line, prog: 0, driver: drv.name });
-            Game.UI.update();
-        },
-
-        completeJob(index) {
-            const m = Game.state.missions[index];
-            Game.state.cash += m.reward;
-            Game.state.rep += 200;
-            Game.UI.map.removeLayer(m.marker);
-            Game.UI.map.removeLayer(m.line);
-            
-            const drv = Game.state.drivers.find(d => d.name === m.driver);
-            drv.busy = false; drv.city = m.end; drv.xp += 300;
-            
-            Game.state.missions.splice(index, 1);
-            Game.Logic.generateMarket();
-            Game.UI.update();
-        },
-
-        repair(id) {
-            const d = Game.state.drivers.find(x => x.id === id);
-            const cost = d.damage * 500;
-            if(Game.state.cash >= cost) {
-                Game.state.cash -= cost; d.damage = 0; Game.UI.update();
-            }
-        },
-
-        rest(id) {
-            const d = Game.state.drivers.find(x => x.id === id);
-            if(!d.busy) { d.fatigue = 0; alert("Kierowca odpoczął."); Game.UI.update(); }
-        },
-
-        refuelBase() {
-            const needed = Game.state.maxFuel - Game.state.fuel;
-            const cost = Math.floor(needed * Game.state.fuelPrice);
-            if(Game.state.cash >= cost) {
-                Game.state.cash -= cost; Game.state.fuel = Game.state.maxFuel; Game.UI.update();
-            }
-        }
+        drivers: [
+            { id: 1, name: "Kierowca #01 (Szef)", busy: false, city: "Warszawa", fatigue: 0, condition: 100, xp: 0 }
+        ],
+        activeMissions: []
     },
 
     UI: {
         map: null,
-        initMap() {
-            this.map = L.map('map', { zoomControl: false }).setView([52.1, 19.2], 6);
+        markers: {},
+        lines: {},
+
+        init() {
+            // Inicjalizacja mapy w stylu Dark Mode
+            this.map = L.map('map', { zoomControl: false, attributionControl: false }).setView([52.1, 19.2], 6);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.map);
+            this.updateStats();
+            console.log("Moduł 0: Załadowany.");
         },
+
         tab(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('sc-' + id).classList.add('active');
             event.target.classList.add('active');
         },
-        update() {
-            document.getElementById('ui-cash').innerText = Math.floor(Game.state.cash) + " PLN";
-            document.getElementById('ui-fuel').innerText = Math.floor(Game.state.fuel) + " L";
-            document.getElementById('ui-rep').innerText = Game.state.rep + " XP";
-            document.getElementById('ui-price').innerText = Game.state.fuelPrice;
-            document.getElementById('ui-fuel-max').innerText = Math.floor(Game.state.fuel);
+
+        updateStats() {
+            document.getElementById('val-cash').innerText = Math.floor(this.parent.data.cash).toLocaleString();
+            document.getElementById('val-fuel').innerText = Math.floor(this.parent.data.fuel).toLocaleString();
+            document.getElementById('val-fleet').innerText = this.parent.data.drivers.length;
+            document.getElementById('val-rank').innerText = this.parent.data.rank;
+        }
+    }
+};
+Core.UI.parent = Core; // Linkowanie
+
+window.onload = () => Core.UI.init();
+/* --- MODUŁ 1: LOGISTYKA I RUCH --- */
+Core.Logistics = {
+    // Definicje towarów z polskimi stawkami
+    cargoTypes: [
+        { name: "Elektronika (RTV)", multiplier: 2.8, color: "#00d4ff" },
+        { name: "Materiały budowlane", multiplier: 1.2, color: "#39ff14" },
+        { name: "Artykuły spożywcze", multiplier: 1.5, color: "#ffcc00" },
+        { name: "Paliwa (ADR)", multiplier: 3.5, color: "#ff004c" }
+    ],
+
+    // 1. GENERATOR GIEŁDY
+    generateMarket() {
+        const container = document.getElementById('sc-market');
+        container.innerHTML = `<h2 style="color:var(--neon-blue); margin-bottom:20px;">DOSTĘPNE ŁADUNKI</h2>`;
+        const cities = Object.keys(Core.data.cities);
+
+        for (let i = 0; i < 6; i++) {
+            const from = cities[Math.floor(Math.random() * cities.length)];
+            const to = cities.filter(c => c !== from)[Math.floor(Math.random() * (cities.length - 1))];
+            const type = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
+            const reward = Math.floor(12000 + (Math.random() * 15000 * type.multiplier));
+
+            container.innerHTML += `
+                <div class="card" style="border-left: 4px solid ${type.color}">
+                    <div class="card-header">
+                        <span class="badge" style="background:${type.color}; color:#000">${type.name}</span>
+                        <b style="color:var(--neon-green)">${reward.toLocaleString()} PLN</b>
+                    </div>
+                    <div style="font-size:14px; margin-bottom:12px;"><b>${from}</b> ⮕ <b>${to}</b></div>
+                    <button class="btn btn-blue" onclick="Core.Logistics.acceptJob('${from}', '${to}', ${reward}, '${type.name}', '${type.color}')">PRZYJMIJ ZLECENIE</button>
+                </div>`;
+        }
+    },
+
+    // 2. SILNIK TRASOWANIA (API OSRM)
+    async acceptJob(from, to, reward, cargo, color) {
+        const driver = Core.data.drivers.find(d => !d.busy);
+        if (!driver) return alert("Wszyscy kierowcy są obecnie w trasie!");
+        if (Core.data.fuel < 2000) return alert("Za mało paliwa w bazie, aby wysłać transport!");
+
+        driver.busy = true;
+        Core.data.fuel -= 1800; // Koszt paliwa na start
+
+        const startCoords = Core.data.cities[from];
+        const endCoords = Core.data.cities[to];
+
+        try {
+            const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson`);
+            const json = await res.json();
+            const path = json.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+
+            const mission = {
+                id: Date.now(),
+                driver: driver,
+                path: path,
+                progress: 0,
+                reward: reward,
+                cargo: cargo,
+                color: color,
+                // Elementy mapy
+                line: L.polyline(path, { color: color, weight: 4, opacity: 0.6 }).addTo(Core.UI.map),
+                marker: L.marker(path[0], {
+                    icon: L.divIcon({
+                        className: 'truck-icon',
+                        html: `<div style="background:${color}; width:14px; height:14px; border:2px solid #fff; border-radius:3px; box-shadow:0 0 10px ${color}"></div>`
+                    })
+                }).addTo(Core.UI.map)
+            };
+
+            Core.data.activeMissions.push(mission);
+            Core.UI.updateStats();
+            this.updateFleetUI();
             
-            let h = '<h3 style="color:var(--gold)">PERSONEL I SERWIS</h3>';
-            Game.state.drivers.forEach(d => {
-                h += `
-                    <div class="card" style="border-left-color: ${d.fatigue > 70 ? 'var(--red)' : 'var(--blue)'}">
-                        <b>👤 ${d.name}</b> [${d.city}]<br>
-                        <small>PD: ${d.xp} | Zmęczenie: ${Math.floor(d.fatigue)}% | Uszkodzenia: ${d.damage}%</small>
-                        <div style="display:flex; gap:10px; margin-top:10px;">
-                            <button class="btn btn-repair" onclick="Game.Actions.repair(${d.id})">NAPRAW (${d.damage*500} PLN)</button>
-                            <button class="btn btn-repair" onclick="Game.Actions.rest(${d.id})">WYŚLIJ NA PAUZĘ</button>
-                        </div>
-                    </div>`;
-            });
-            document.getElementById('driver-list').innerHTML = h;
+            // Przełącz na widok floty
+            Core.UI.tab('fleet');
+        } catch (e) {
+            alert("Błąd połączenia z satelitą GPS. Spróbuj ponownie.");
+            driver.busy = false;
+        }
+    },
+
+    // 3. PĘTLA RUCHU (10 FPS)
+    runEngine() {
+        Core.data.activeMissions.forEach((m, index) => {
+            // Prędkość uzależniona od stanu technicznego (w przyszłym module)
+            m.progress += 0.003; 
+
+            if (m.progress >= 1) {
+                this.finishJob(index);
+            } else {
+                const step = Math.floor(m.progress * (m.path.length - 1));
+                m.marker.setLatLng(m.path[step]);
+            }
+        });
+        if (Core.data.activeMissions.length > 0) this.updateFleetUI();
+    },
+
+    finishJob(index) {
+        const m = Core.data.activeMissions[index];
+        Core.data.cash += m.reward;
+        m.driver.busy = false;
+        
+        Core.UI.map.removeLayer(m.line);
+        Core.UI.map.removeLayer(m.marker);
+        Core.data.activeMissions.splice(index, 1);
+        
+        Core.UI.updateStats();
+        this.generateMarket();
+        this.updateFleetUI();
+    },
+
+    updateFleetUI() {
+        const container = document.getElementById('sc-fleet');
+        container.innerHTML = `<h2 style="color:var(--neon-blue); margin-bottom:20px;">AKTYWNE TRASY</h2>`;
+        
+        Core.data.activeMissions.forEach(m => {
+            const pct = Math.floor(m.progress * 100);
+            container.innerHTML += `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <b>${m.driver.name}</b>
+                        <span style="color:var(--neon-blue)">${pct}%</span>
+                    </div>
+                    <div style="font-size:12px; color:#888;">Ładunek: ${m.cargo}</div>
+                    <div style="background:#000; height:8px; border-radius:4px; margin-top:10px; overflow:hidden; border:1px solid #222;">
+                        <div style="width:${pct}%; height:100%; background:${m.color}; transition:0.3s;"></div>
+                    </div>
+                </div>`;
+        });
+
+        if (Core.data.activeMissions.length === 0) {
+            container.innerHTML += `<p style="text-align:center; color:#555; margin-top:40px;">Brak aktywnych transportów.</p>`;
         }
     }
 };
 
-window.onload = () => Game.init();
+// DOPISZ DO STARTU GRY (W MODULE 0)
+const setupLogistics = () => {
+    Core.Logistics.generateMarket();
+    setInterval(() => Core.Logistics.runEngine(), 100);
+    
+    // CB Radio - Losowe komunikaty
+    const cbMsgs = [
+        "Mobilki, jak tam dróżka? - Czysto, śmiało leć!",
+        "Uwaga, miśki w okolicy suszą na wylocie!",
+        "Inspekcja stoją na wagach w okolicy uważajcie!",
+        "Szerokości i przyczepności wszystkim w trasie!",
+        "Wypadek!, korek na 15 minut."
+    ];
+    setInterval(() => {
+        document.getElementById('cb-ticker').innerText = ">>> CB KANAŁ 19: " + cbMsgs[Math.floor(Math.random()*cbMsgs.length)];
+    }, 15000);
+};
+
+// Podpięcie pod window.onload
+const oldInit = Core.UI.init;
+Core.UI.init = function() {
+    oldInit.apply(Core.UI);
+    setupLogistics();
+};
+/* --- MODUŁ 2: BASE OPERATIONS & HR --- */
+Core.Base = {
+    // 1. RENDEROWANIE ZAKŁADKI BAZA
+    renderBase() {
+        const container = document.getElementById('sc-base');
+        const fuelLevel = (Core.data.fuel / Core.data.maxFuel) * 100;
+        const refillCost = Math.floor((Core.data.maxFuel - Core.data.fuel) * 4.85);
+
+        container.innerHTML = `
+            <h2 style="color:var(--neon-blue); margin-bottom:20px;">CENTRUM OPERACYJNE</h2>
+            
+            <div class="card" style="border-left: 4px solid var(--neon-green)">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <b>MAGAZYN PALIW (HURT)</b>
+                    <span style="color:var(--neon-green)">${Math.floor(Core.data.fuel).toLocaleString()} / ${Core.data.maxFuel.toLocaleString()} L</span>
+                </div>
+                <div style="background:#000; height:15px; border-radius:10px; border:1px solid #333; overflow:hidden;">
+                    <div style="width:${fuelLevel}%; height:100%; background:linear-gradient(90deg, #111, var(--neon-green));"></div>
+                </div>
+                <button class="btn btn-blue" style="margin-top:15px; font-size:10px;" onclick="Core.Base.buyFuel()">UZUPEŁNIJ ZBIORNIKI (${refillCost.toLocaleString()} PLN)</button>
+            </div>
+
+            <h3 style="color:var(--neon-blue); margin-top:25px;">DOSTĘPNI KIEROWCY</h3>
+            <div id="hr-pool"></div>
+        `;
+        this.generateCandidates();
+    },
+
+    // 2. GENERATOR KANDYDATÓW
+    generateCandidates() {
+        const pool = document.getElementById('hr-pool');
+        const names = ["Andrzej", "Mariusz", "Sławek", "Robert", "Zbigniew"];
+        const surnames = ["Nowak", "Kowalski", "Wiśniewski", "Lewandowski", "Duda"];
+        
+        let html = "";
+        for(let i=0; i<2; i++) {
+            const name = names[Math.floor(Math.random()*names.length)] + " " + surnames[Math.floor(Math.random()*surnames.length)];
+            const hireCost = 15000 + Math.floor(Math.random()*10000);
+            html += `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b>${name}</b><br>
+                            <small style="color:#666;">Doświadczenie: Junior</small>
+                        </div>
+                        <button class="btn btn-blue" style="width:auto; padding:5px 15px;" onclick="Core.Base.hire('${name}', ${hireCost})">ZATRUDNIJ (${hireCost})</button>
+                    </div>
+                </div>`;
+        }
+        pool.innerHTML = html;
+    },
+
+    // 3. LOGIKA ZARZĄDZANIA
+    buyFuel() {
+        const amountNeeded = Core.data.maxFuel - Core.data.fuel;
+        const cost = Math.floor(amountNeeded * 4.85);
+        if(Core.data.cash >= cost) {
+            Core.data.cash -= cost;
+            Core.data.fuel = Core.data.maxFuel;
+            Core.UI.updateStats();
+            this.renderBase();
+            this.notify("ZAKUPIONO PALIWO DO BAZY", "var(--neon-green)");
+        } else {
+            this.notify("BRAK ŚRODKÓW NA PALIWO!", "var(--neon-red)");
+        }
+    },
+
+    hire(name, cost) {
+        if(Core.data.cash >= cost) {
+            Core.data.cash -= cost;
+            const newId = Core.data.drivers.length + 1;
+            Core.data.drivers.push({
+                id: newId, name: name, busy: false, city: "Warszawa", fatigue: 0, condition: 100, xp: 0
+            });
+            Core.UI.updateStats();
+            this.renderBase();
+            this.notify(`ZATRUDNIONO: ${name}`, "var(--neon-blue)");
+        } else {
+            this.notify("NIE STAĆ CIĘ NA KIEROWCĘ!", "var(--neon-red)");
+        }
+    },
+
+    repair(id) {
+        const d = Core.data.drivers.find(x => x.id === id);
+        const cost = (100 - d.condition) * 500;
+        if(Core.data.cash >= cost) {
+            Core.data.cash -= cost;
+            d.condition = 100;
+            Core.UI.updateStats();
+            Core.Logistics.updateFleetUI();
+            this.notify("POJAZD NAPRAWIONY", "var(--neon-green)");
+        }
+    },
+
+    notify(txt, color) {
+        const ticker = document.getElementById('cb-ticker');
+        ticker.innerText = `>>> SYSTEM: ${txt}`;
+        ticker.style.color = color;
+        setTimeout(() => { ticker.style.color = 'var(--neon-green)'; }, 3000);
+    }
+};
+
+// INTEGRACJA: NADPISANIE UPDATE FLEET (By dodać serwisowanie)
+const oldUpdateFleetUI = Core.Logistics.updateFleetUI;
+Core.Logistics.updateFleetUI = function() {
+    oldUpdateFleetUI.apply(this);
+    const container = document.getElementById('sc-fleet');
+    
+    // Dodajemy sekcję kierowców/serwisu pod aktywnymi trasami
+    let html = `<h2 style="color:var(--neon-blue); margin: 30px 0 20px 0;">TWOI KIEROWCY I SERWIS</h2>`;
+    Core.data.drivers.forEach(d => {
+        const repairCost = (100 - d.condition) * 500;
+        html += `
+            <div class="card" style="border-left: 4px solid ${d.condition < 40 ? 'var(--neon-red)' : '#333'}">
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${d.name}</b>
+                    <span style="font-size:10px; color:${d.busy ? 'var(--neon-blue)' : 'var(--neon-green)'}">
+                        ${d.busy ? 'W TRASIE' : 'W BAZIE'}
+                    </span>
+                </div>
+                <div style="font-size:11px; color:#777; margin:5px 0;">Stan techniczny: ${d.condition}%</div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn" style="background:#222; color:#fff; font-size:9px;" 
+                        onclick="Core.Base.repair(${d.id})" ${d.busy || d.condition === 100 ? 'disabled' : ''}>
+                        NAPRAW (${repairCost} PLN)
+                    </button>
+                    <button class="btn" style="background:#222; color:#fff; font-size:9px;" 
+                        onclick="alert('Pauza aktywna - kierowca odpoczywa')" ${d.busy ? 'disabled' : ''}>
+                        WYŚLIJ NA URLOP
+                    </button>
+                </div>
+            </div>`;
+    });
+    container.innerHTML += html;
+};
+
+// INTEGRACJA: ODŚWIEŻANIE BAZY PRZY PRZEŁĄCZANIU
+const oldTab = Core.UI.tab;
+Core.UI.tab = function(id) {
+    oldTab.apply(this, [id]);
+    if(id === 'base') Core.Base.renderBase();
+    if(id === 'fleet') Core.Logistics.updateFleetUI();
+};
+/* --- MODUŁ 3: DYNAMIC WORLD & WEATHER --- */
+Core.World = {
+    currentWeather: { name: "Słonecznie", multi: 1.0, color: "#ffcc00" },
+    
+    // 1. SYSTEM POGODOWY
+    updateWeather() {
+        const weathers = [
+            { name: "Słonecznie", multi: 1.0, color: "#ffcc00" },
+            { name: "Ulewa", multi: 0.7, color: "#00a2ff" },
+            { name: "Gęsta Mgła", multi: 0.5, color: "#aaa" },
+            { name: "Śnieżyca", multi: 0.4, color: "#fff" }
+        ];
+        
+        if (Math.random() > 0.8) {
+            this.currentWeather = weathers[Math.floor(Math.random() * weathers.length)];
+            Core.Base.notify(`ZMIANA POGODY: ${this.currentWeather.name.toUpperCase()}`, this.currentWeather.color);
+            this.applyWeatherStyle();
+        }
+    },
+
+    applyWeatherStyle() {
+        const mapEl = document.getElementById('map');
+        mapEl.style.boxShadow = `inset 0 0 60px ${this.currentWeather.color}33`;
+    },
+
+    // 2. INCYDENTY DROGOWE
+    processEvents(mission) {
+        const roll = Math.random();
+        const drv = mission.driver;
+
+        // Kontrola ITD (Inspekcja Transportu Drogowego)
+        if (roll > 0.9992) {
+            this.triggerITD(mission);
+        }
+        
+        // Korek lub Roboty Drogowe
+        else if (roll > 0.9985) {
+            this.triggerTraffic(mission);
+        }
+
+        // Zużycie techniczne w trasie
+        if (roll > 0.995) {
+            drv.condition -= 1;
+            drv.fatigue += 0.5;
+        }
+    },
+
+    triggerITD(m) {
+        let fine = 0;
+        let reason = "";
+
+        if (m.driver.fatigue > 80) { 
+            fine = 5000; reason = "PRZEKROCZENIE CZASU PRACY"; 
+        } else if (m.driver.condition < 40) { 
+            fine = 3500; reason = "ZŁY STAN TECHNICZNY"; 
+        }
+
+        if (fine > 0) {
+            Core.data.cash -= fine;
+            Core.Base.notify(`MANDAT ITD: -${fine} PLN (${reason})`, "var(--neon-red)");
+            Core.UI.updateStats();
+        } else {
+            Core.Base.notify(`KONTROLA ITD: Dokumenty w porządku. Szerokości!`, "var(--neon-green)");
+        }
+    },
+
+    triggerTraffic(m) {
+        Core.Base.notify(`KOREK: ${m.driver.name} utknął pod miastem ${m.end}`, "var(--gold)");
+        m.progress -= 0.02; // Cofnięcie o 2% symuluje stanie w zatorze
+    }
+};
+
+// 3. INTEGRACJA Z SILNIKIEM (NADPSIANIE RUNENGINE)
+const originalRunEngine = Core.Logistics.runEngine;
+Core.Logistics.runEngine = function() {
+    Core.data.activeMissions.forEach((m) => {
+        // Prędkość modyfikowana przez pogodę i zmęczenie kierowcy
+        const weatherMod = Core.World.currentWeather.multi;
+        const fatigueMod = m.driver.fatigue > 90 ? 0.3 : 1.0;
+        
+        m.progress += (0.003 * weatherMod * fatigueMod);
+        
+        // Sprawdzanie zdarzeń losowych dla każdej misji
+        Core.World.processEvents(m);
+    });
+
+    // Oryginalna logika (kończenie zadań i rysowanie na mapie)
+    Core.data.activeMissions.forEach((m, index) => {
+        if (m.progress >= 1) {
+            Core.Logistics.finishJob(index);
+        } else {
+            const step = Math.floor(m.progress * (m.path.length - 1));
+            m.marker.setLatLng(m.path[step]);
+        }
+    });
+
+    if (Core.data.activeMissions.length > 0) Core.Logistics.updateFleetUI();
+};
+
+// 4. SYMULACJA NOCY I DNIA
+setInterval(() => {
+    const hour = new Date().getHours();
+    const mapEl = document.getElementById('map');
+    if (hour >= 20 || hour <= 6) {
+        mapEl.style.filter = "brightness(0.5) contrast(1.2) saturate(1.4)";
+    } else {
+        mapEl.style.filter = "brightness(0.8) contrast(1.1)";
+    }
+}, 30000);
+
+// Pętla pogodowa co 20 sekund
+setInterval(() => Core.World.updateWeather(), 20000);
+/* --- MODUŁ 4: TRAILERS & SPECIALIZATION --- */
+Core.Garage = {
+    // 1. DEFINICJE NACZEP
+    trailerTypes: [
+        { id: 'curtain', name: "Firanka (Standard)", cost: 45000, bonus: 1.2, cargo: "Materiały budowlane", color: "#39ff14" },
+        { id: 'frigo', name: "Chłodnia", cost: 85000, bonus: 1.8, cargo: "Artykuły spożywcze", color: "#ffcc00" },
+        { id: 'tanker', name: "Cysterna ADR", cost: 120000, bonus: 2.5, cargo: "Paliwa (ADR)", color: "#ff004c" }
+    ],
+
+    ownedTrailers: [],
+
+    // 2. RENDEROWANIE SKLEPU W BAZIE
+    renderGarage() {
+        const baseScreen = document.getElementById('sc-base');
+        let html = `<h3 style="color:var(--neon-blue); margin-top:25px;">SALON NACZEP</h3>
+                    <p style="font-size:10px; color:#666; margin-bottom:15px;">Własna naczepa zwiększa zyski z konkretnego typu ładunku.</p>
+                    <div style="display:grid; grid-template-columns: 1fr; gap:10px;">`;
+
+        this.trailerTypes.forEach(t => {
+            const count = this.ownedTrailers.filter(ot => ot.id === t.id).length;
+            html += `
+                <div class="card" style="border-left: 4px solid ${t.color}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b>${t.name}</b><br>
+                            <small>Bonus: +${Math.round((t.bonus-1)*100)}% do: ${t.cargo}</small>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-size:12px; color:var(--neon-green); font-weight:bold;">${t.cost.toLocaleString()} PLN</div>
+                            <small>Posiadasz: ${count}</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-blue" style="margin-top:10px; padding:5px; font-size:10px;" 
+                        onclick="Core.Garage.buyTrailer('${t.id}')">KUP NACZEPĘ</button>
+                </div>`;
+        });
+
+        html += `</div>`;
+        baseScreen.innerHTML += html;
+    },
+
+    // 3. LOGIKA ZAKUPU
+    buyTrailer(trailerId) {
+        const trailer = this.trailerTypes.find(t => t.id === trailerId);
+        if (Core.data.cash >= trailer.cost) {
+            Core.data.cash -= trailer.cost;
+            this.ownedTrailers.push({...trailer, assigned: false});
+            Core.UI.updateStats();
+            Core.Base.renderBase(); // Odśwież widok bazy
+            Core.Base.notify(`ZAKUPIONO: ${trailer.name}`, "var(--neon-blue)");
+        } else {
+            Core.Base.notify("NIE STAĆ CIĘ NA TĘ NACZEPĘ!", "var(--neon-red)");
+        }
+    },
+
+    // 4. MODYFIKATOR ZAROBKÓW (HOOK DO LOGISTYKI)
+    calculateBonus(cargoName, currentReward) {
+        // Sprawdzamy czy mamy wolną naczepę pasującą do towaru
+        const matchingTrailer = this.ownedTrailers.find(t => t.cargo === cargoName && !t.assigned);
+        if (matchingTrailer) {
+            return Math.floor(currentReward * matchingTrailer.bonus);
+        }
+        return currentReward;
+    }
+};
+
+// INTEGRACJA: WPŁYW NACZEP NA ZAROBKI
+const originalAcceptJob = Core.Logistics.acceptJob;
+Core.Logistics.acceptJob = async function(from, to, reward, cargo, color) {
+    // Sprawdź czy mamy naczepę pod ten ładunek
+    const finalReward = Core.Garage.calculateBonus(cargo, reward);
+    
+    // Jeśli nagroda jest wyższa, oznacza to, że naczepa została użyta
+    if (finalReward > reward) {
+        Core.Base.notify("UŻYTO WŁASNEJ NACZEPY - PREMIA DO FRachtu!", "var(--neon-green)");
+        // Oznaczamy naczepę jako zajętą na czas trwania misji
+        const trailer = Core.Garage.ownedTrailers.find(t => t.cargo === cargo && !t.assigned);
+        if(trailer) trailer.assigned = true;
+    }
+
+    // Wywołaj oryginalną funkcję z (potencjalnie) nową nagrodą
+    await originalAcceptJob.apply(this, [from, to, finalReward, cargo, color]);
+};
+
+// INTEGRACJA: ZWALNIANIE NACZEPY PO TRASIE
+const originalFinishJob = Core.Logistics.finishJob;
+Core.Logistics.finishJob = function(index) {
+    const m = Core.data.activeMissions[index];
+    // Znajdź i zwolnij naczepę po zakończeniu kursu
+    const trailer = Core.Garage.ownedTrailers.find(t => t.cargo === m.cargo && t.assigned);
+    if(trailer) trailer.assigned = false;
+
+    originalFinishJob.apply(this, [index]);
+};
+
+// INTEGRACJA: RENDEROWANIE GARAŻU PRZY OTWIERANIU BAZY
+const oldBaseRender = Core.Base.renderBase;
+Core.Base.renderBase = function() {
+    oldBaseRender.apply(this);
+    Core.Garage.renderGarage();
+};
+/* --- MODUŁ 5: ANALYTICS & OFFICE UPGRADES --- */
+Core.Analytics = {
+    totalDistance: 0,
+    totalFuelUsed: 0,
+    totalJobs: 0,
+    officeLevel: 1,
+
+    // 1. RENDEROWANIE PANELU STATYSTYK W BAZIE
+    renderStats() {
+        const baseScreen = document.getElementById('sc-base');
+        const upgradeCost = this.officeLevel * 100000;
+        
+        let html = `
+            <div class="card" style="border-top: 4px solid var(--neon-blue); margin-top: 30px; background: rgba(0,0,0,0.4);">
+                <h3 style="color:var(--neon-blue); margin-top:0;">RAPORT DYREKCYJNY</h3>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
+                    <div>Przejechane: <b style="color:#fff;">${Math.floor(this.totalDistance)} km</b></div>
+                    <div>Zużyte paliwo: <b style="color:#fff;">${Math.floor(this.totalFuelUsed)} L</b></div>
+                    <div>Zrealizowane kursy: <b style="color:#fff;">${this.totalJobs}</b></div>
+                    <div>Poziom Biura: <b style="color:var(--gold);">${this.officeLevel}</b></div>
+                </div>
+                
+                <div style="margin-top:20px; padding-top:15px; border-top: 1px solid #222;">
+                    <b>ROZBUDOWA BIURA</b><br>
+                    <small style="color:#666; font-size:10px;">Wyższy poziom odblokowuje rzadsze zlecenia i większą bazę.</small>
+                    <button class="btn btn-blue" style="margin-top:10px; background:var(--gold); color:#000;" 
+                        onclick="Core.Analytics.upgradeOffice()">AWANSUJ NA POZIOM ${this.officeLevel + 1} (${upgradeCost.toLocaleString()} PLN)</button>
+                </div>
+            </div>
+        `;
+        baseScreen.innerHTML += html;
+    },
+
+    // 2. LOGIKA ROZWOJU
+    upgradeOffice() {
+        const cost = this.officeLevel * 100000;
+        if (Core.data.cash >= cost) {
+            Core.data.cash -= cost;
+            this.officeLevel++;
+            Core.data.maxFuel += 50000;
+            Core.data.rank = this.officeLevel > 3 ? "Magnat Transportu" : "Dyrektor Logistyki";
+            
+            Core.UI.updateStats();
+            Core.Base.renderBase();
+            Core.Base.notify(`AWANS BIURA: POZIOM ${this.officeLevel}!`, "var(--gold)");
+        } else {
+            Core.Base.notify("NIE MASZ TYLE GOTÓWKI NA ROZBUDOWĘ!", "var(--neon-red)");
+        }
+    },
+
+    // 3. REJESTROWANIE DANYCH (HOOKI)
+    trackProgress(mission) {
+        // Obliczamy spalone paliwo (średnio 30L/100km)
+        const fuelBurned = 0.3; 
+        this.totalFuelUsed += fuelBurned;
+        this.totalDistance += 1.2; // Stały przyrost dystansu na tik silnika
+    }
+};
+
+// INTEGRACJA: REJESTROWANIE PRACY W PĘTLI
+const originalEngineRun = Core.Logistics.runEngine;
+Core.Logistics.runEngine = function() {
+    originalEngineRun.apply(this);
+    
+    // Jeśli są aktywne misje, nabijaj statystyki
+    if (Core.data.activeMissions.length > 0) {
+        Core.data.activeMissions.forEach(m => {
+            Core.Analytics.trackProgress(m);
+        });
+    }
+};
+
+// INTEGRACJA: LICZENIE ZLECEŃ
+const finalJobFinish = Core.Logistics.finishJob;
+Core.Logistics.finishJob = function(index) {
+    Core.Analytics.totalJobs++;
+    finalJobFinish.apply(this, [index]);
+};
+
+// INTEGRACJA: DODANIE STATYSTYK DO WIDOKU BAZY
+const finalBaseRender = Core.Base.renderBase;
+Core.Base.renderBase = function() {
+    finalBaseRender.apply(this);
+    Core.Analytics.renderStats();
+};
+
 </script>
 </body>
 </html>
