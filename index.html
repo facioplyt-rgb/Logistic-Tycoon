@@ -3,89 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TRUCK EMPIRE V6.0: HYPER-DRIVE</title>
+    <title>TRUCK EMPIRE V7.0: MEGA EDITION</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --gold: #f1c40f; --dark: #050505; --card: #121212; --green: #2ecc71; --blue: #3498db; --red: #e74c3c; --orange: #e67e22; --purple: #9b59b6; --neon: #00f2ff; }
-        body { font-family: 'Arial Black', sans-serif; background: var(--dark); color: white; margin: 0; overflow: hidden; border: 2px solid var(--gold); box-sizing: border-box; }
+        :root { --gold: #f1c40f; --dark: #020202; --card: #0d0d0d; --green: #2ecc71; --blue: #3498db; --red: #e74c3c; --orange: #e67e22; --purple: #9b59b6; --neon: #00f2ff; --white: #ffffff; }
+        body { font-family: 'Segoe UI', 'Arial Black', sans-serif; background: var(--dark); color: var(--white); margin: 0; overflow: hidden; border: 4px solid #222; box-sizing: border-box; }
         
-        /* KOMUNIKATY X - JESZCZE WIĘKSZE */
-        #event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 30000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .event-card { background: #000; border: 5px solid var(--red); padding: 40px; border-radius: 0; text-align: center; position: relative; max-width: 500px; box-shadow: 0 0 100px var(--red); }
-        .close-event { position: absolute; top: -30px; right: -30px; background: var(--red); color: white; border: 5px solid white; width: 70px; height: 70px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 40px; }
+        /* PORADNIK */
+        #tutorial-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 40000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; border: 10px double var(--blue); }
+        .tutorial-step { background: #111; padding: 25px; border-radius: 15px; border: 2px solid var(--blue); max-width: 500px; }
 
-        /* CB RADIO */
-        #cb-radio { background: #002200; color: #00ff00; padding: 5px; font-family: 'Courier New', monospace; font-size: 14px; border-bottom: 2px solid #00ff00; height: 25px; overflow: hidden; }
-        .cb-text { display: inline-block; white-space: nowrap; animation: scroll-left 12s linear infinite; }
-        @keyframes scroll-left { 0% { transform: translateX(100%); } 100% { transform: translateX(-150%); } }
+        /* EVENT X */
+        #event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 30000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .event-card { background: #000; border: 6px solid var(--red); padding: 40px; border-radius: 0; text-align: center; position: relative; max-width: 550px; box-shadow: 0 0 150px rgba(231, 76, 60, 0.6); }
+        .close-event { position: absolute; top: -35px; right: -35px; background: var(--red); color: white; border: 5px solid white; width: 80px; height: 80px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 45px; display: flex; align-items: center; justify-content: center; }
 
-        /* HUD */
-        #header { background: #111; padding: 10px; display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 3px solid var(--neon); text-align: center; }
-        .stat-val { font-size: 16px; font-weight: bold; color: var(--neon); display: block; text-shadow: 0 0 5px var(--neon); }
+        /* CB RADIO & POGODA */
+        #cb-radio { background: #001a00; color: #00ff41; padding: 8px; font-family: 'Courier New', monospace; font-size: 15px; border-bottom: 3px solid #00ff41; height: 30px; overflow: hidden; text-transform: uppercase; }
+        .cb-text { display: inline-block; white-space: nowrap; animation: scroll-left 14s linear infinite; }
+        @keyframes scroll-left { 0% { transform: translateX(100%); } 100% { transform: translateX(-180%); } }
 
-        nav { display: flex; background: #000; border-bottom: 1px solid #444; }
-        .nav-tab { flex: 1; padding: 18px; border: none; background: none; color: #888; font-weight: bold; font-size: 12px; cursor: pointer; }
-        .nav-tab.active { color: #fff; background: #222; border-bottom: 4px solid var(--neon); }
+        /* HUD & STATS */
+        #header { background: #000; padding: 12px; display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 4px solid var(--gold); text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .stat-val { font-size: 18px; font-weight: bold; color: var(--gold); display: block; filter: drop-shadow(0 0 2px var(--gold)); }
 
-        .screen { display: none; height: calc(100vh - 170px); overflow-y: scroll; padding: 15px; }
+        nav { display: flex; background: #111; border-bottom: 2px solid #333; }
+        .nav-tab { flex: 1; padding: 20px; border: none; background: none; color: #777; font-weight: bold; font-size: 13px; cursor: pointer; transition: 0.3s; }
+        .nav-tab.active { color: var(--neon); background: #1a1a1a; border-bottom: 5px solid var(--neon); text-shadow: 0 0 10px var(--neon); }
+
+        .screen { display: none; height: calc(100vh - 190px); overflow-y: scroll; padding: 20px; }
         .screen.active { display: block; }
-        .card { background: var(--card); border: 1px solid #333; padding: 20px; margin-bottom: 15px; box-shadow: 5px 5px 0px #000; }
+        .card { background: var(--card); border: 2px solid #222; padding: 20px; margin-bottom: 20px; border-radius: 5px; position: relative; }
         
-        #map { height: 200px; width: 100%; border: 3px solid #333; filter: grayscale(0.5) contrast(1.2); }
-        .btn { width: 100%; padding: 15px; border: none; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; font-size: 14px; margin-top: 5px; }
+        /* MAPA - ZAWSZE WIDOCZNA */
+        #map { height: 250px; width: 100%; border: 4px solid #1a1a1a; background: #000; }
+        .btn { width: 100%; padding: 18px; border: none; font-weight: bold; cursor: pointer; color: white; text-transform: uppercase; font-size: 15px; margin-top: 10px; border-radius: 4px; box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
+        .btn:hover { filter: brightness(1.2); }
         
-        /* IKONKI POJAZDÓW */
-        .truck-img { width: 50px; height: 35px; object-fit: contain; }
-        .map-icon-img { width: 45px; height: 45px; filter: drop-shadow(2px 2px 0px black); }
+        .truck-img { width: 60px; height: 40px; object-fit: contain; background: #222; border-radius: 5px; padding: 5px; }
+        .map-icon-img { width: 50px; height: 50px; filter: drop-shadow(0 0 8px rgba(0,0,0,1)); transition: all 0.1s linear; }
 
-        .progress-bar-container { background: #333; height: 15px; border-radius: 0; margin-top: 10px; border: 1px solid #000; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--neon)); width: 0%; }
+        .progress-bar-container { background: #111; height: 20px; border-radius: 10px; margin-top: 12px; border: 2px solid #333; overflow: hidden; position: relative; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #00c6ff, #0072ff); width: 0%; box-shadow: 0 0 10px #00c6ff; }
         
-        #log-panel { position: fixed; bottom: 0; width: 100%; height: 60px; background: #000; border-top: 3px solid var(--gold); padding: 5px; font-size: 12px; z-index: 5000; color: var(--gold); }
+        #log-panel { position: fixed; bottom: 0; width: 100%; height: 70px; background: rgba(0,0,0,0.9); border-top: 4px solid var(--neon); padding: 10px; font-size: 13px; z-index: 5000; color: var(--neon); overflow: hidden; }
     </style>
 </head>
 <body>
 
-<div id="cb-radio"><div class="cb-text" id="cb-content">>>> CB KANAŁ 19: Mobilki, suszą pod Mławą! | Krokodyle na S8! | Czysto, ogień na tłoki! <<<</div></div>
+<div id="cb-radio"><div class="cb-text" id="cb-content">>>> KANAŁ 19: ŁADOWANIE SYSTEMU CB... PROSZĘ CZEKAĆ... <<<</div></div>
+
+<div id="tutorial-overlay">
+    <div class="tutorial-step">
+        <h2 style="color:var(--blue)">🚚 WITAJ SZEFIE!</h2>
+        <p>Twoim celem jest zbudowanie największego imperium transportowego w Polsce.</p>
+        <ul style="text-align: left; font-size: 14px;">
+            <li><b>GIEŁDA:</b> Tu bierzesz zlecenia. Zwracaj uwagę na trasę!</li>
+            <li><b>GARAŻ:</b> Kupuj nowe auta. TIR-y dają największy zarobek.</li>
+            <li><b>PALIWO:</b> Kupuj tanio na giełdzie ON, by oszczędzać.</li>
+            <li><b>ZDARZENIA:</b> Gdy zobaczysz czerwony alarm, kliknij <b>X</b>, by wznowić jazdę.</li>
+        </ul>
+        <button class="btn" style="background:var(--blue)" onclick="document.getElementById('tutorial-overlay').style.display='none'">ZROZUMIAŁEM, RUSZAMY!</button>
+    </div>
+</div>
 
 <div id="event-overlay">
     <div class="event-card">
         <button class="close-event" onclick="Game.Events.close()">X</button>
-        <h2 id="event-title" style="color:var(--red)">🚨 ALARM LOGISTYCZNY</h2>
-        <p id="event-desc"></p>
-        <div id="event-driver" style="border: 2px solid white; padding: 15px; margin-top: 20px; font-size: 20px; background: #111;"></div>
+        <h2 id="event-title" style="color:var(--red)">🚨 RAPORT Z TRASY</h2>
+        <p id="event-desc" style="font-size: 20px; margin: 25px 0; line-height: 1.4;"></p>
+        <div id="event-driver" style="border: 3px dashed var(--gold); padding: 20px; font-size: 22px; background: #0a0a0a; color: var(--gold);"></div>
     </div>
 </div>
 
 <div id="start-screen">
-    <h1 style="color:var(--gold); font-size: 40px;">TRUCK EMPIRE V6</h1>
-    <div id="load-box" style="display:none;">
-        <button class="btn" style="background:var(--green); margin-bottom: 20px;" onclick="Game.Persistence.load()">WCZYTAJ IMPERIUM</button>
+    <h1 style="color:var(--gold); font-size: 50px; text-shadow: 3px 3px 0 #333;">TRUCK EMPIRE 7</h1>
+    <div id="load-box" style="display:none; margin-bottom: 30px;">
+        <button class="btn" style="background:var(--green); font-size: 20px; padding: 25px;" onclick="Game.Persistence.load()">KONTYNUUJ KARIERĘ</button>
     </div>
     <div id="new-game-box">
-        <h3>WYBIERZ MIASTO STARTOWE:</h3>
-        <div class="city-grid" id="city-selection"></div>
+        <h3>WYBIERZ SWOJĄ PIERWSZĄ BAZĘ OPERACYJNĄ:</h3>
+        <div class="city-grid" id="city-selection" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
     </div>
 </div>
 
 <div id="header">
-    <div>PLN<br><span id="val-cash" class="stat-val">0</span></div>
-    <div>ON (L)<br><span id="val-fuel" class="stat-val">0</span></div>
-    <div>XP<br><span id="val-rep" class="stat-val">0</span></div>
-    <div>GIEŁDA ON<br><span id="val-fuel-price" class="stat-val" style="color:var(--orange)">5.00</span></div>
+    <div>GOTÓWKA<br><span id="val-cash" class="stat-val">0</span></div>
+    <div>BAZA ON (L)<br><span id="val-fuel" class="stat-val">0</span></div>
+    <div>RENOMA<br><span id="val-rep" class="stat-val">0</span></div>
+    <div>CENA ON/L<br><span id="val-fuel-price" class="stat-val" style="color:var(--orange)">0.00</span></div>
 </div>
 
 <nav>
-    <button class="nav-tab active" onclick="Game.UI.switchTab('fleet')">GARAŻ/PALIWO</button>
-    <button class="nav-tab" onclick="Game.UI.switchTab('map')">GIEŁDA/GPS</button>
-    <button class="nav-tab" onclick="Game.UI.switchTab('hr')">ZESPÓŁ</button>
+    <button class="nav-tab active" onclick="Game.UI.switchTab('fleet')">🚛 FLOTA & ON</button>
+    <button class="nav-tab" onclick="Game.UI.switchTab('map')">🗺️ MAPA & GIEŁDA</button>
+    <button class="nav-tab" onclick="Game.UI.switchTab('hr')">👔 KADRY</button>
 </nav>
 
 <div id="screen-fleet" class="screen active">
-    <div class="card" style="border: 2px solid var(--orange)">
-        <h2 style="color:var(--orange)">⛽ ZAKUP PALIWA</h2>
-        <p>Zbiornik: <span id="fuel-txt">0</span> / 10000 L</p>
-        <button class="btn" style="background:var(--orange)" onclick="Game.Mechanic.refuel()">TANKUJ DO PEŁNA</button>
+    <div class="card" style="border: 2px solid var(--orange); background: linear-gradient(135deg, #0d0d0d 0%, #1a0f00 100%);">
+        <h2 style="color:var(--orange)">⛽ GIEŁDA PALIWOWA</h2>
+        <p>W Twoich zbiornikach: <b id="fuel-txt" style="font-size: 20px;">0</b> / 20000 L</p>
+        <button class="btn" style="background:var(--orange)" onclick="Game.Mechanic.refuel()">KUP PALIWO PO AKTUALNEJ CENIE</button>
     </div>
     <div id="market-container"></div>
 </div>
@@ -94,7 +113,7 @@
     <div id="map"></div>
     <div id="active-missions-container"></div>
     <div class="card" style="border: 1px solid var(--neon)">
-        <h2 style="color:var(--neon)">📡 GIEŁDA ŁADUNKÓW (ODŚWIEŻA SIĘ...)</h2>
+        <h2 style="color:var(--neon)">📦 DOSTĘPNE FRACHTY</h2>
         <div id="freight-container"></div>
     </div>
 </div>
@@ -111,48 +130,51 @@ const Game = {
     isPaused: false,
     fuelPrice: 5.85,
     lastEventIdx: -1,
+    uniqueNames: ["Zibi", "Marian", "Kowalski", "Młody", "Stary", "Prezes", "Kaczor", "Siwy", "Orzeł", "Rex", "Bolo", "Chudy"],
     data: {
-        cash: 15000, fuel: 2000, maxFuel: 10000, reputation: 0,
+        cash: 20000, fuel: 5000, maxFuel: 20000, reputation: 0,
         homeCity: null, trucksOwned: [1, 0, 0],
-        drivers: [{ id: 0, name: "SZEF (TY)", currentCity: null, busyUntil: 0 }],
+        drivers: [{ id: "drv_0", name: "SZEF", currentCity: null, busyUntil: 0 }],
         missions: [],
         cities: {
             "Warszawa": [52.23, 21.01], "Kraków": [50.06, 19.94], "Gdańsk": [54.35, 18.64],
             "Wrocław": [51.10, 17.03], "Poznań": [52.40, 16.92], "Szczecin": [53.42, 14.55],
-            "Lublin": [51.24, 22.56], "Białystok": [53.13, 23.16], "Rzeszów": [50.04, 21.99]
+            "Lublin": [51.24, 22.56], "Białystok": [53.13, 23.16], "Rzeszów": [50.04, 21.99], "Katowice": [50.26, 19.02]
         },
         models: [
-            { name: "BUS EKSPRES", price: 5000, img: "https://cdn-icons-png.flaticon.com/512/1048/1048313.png", tier: 0 },
-            { name: "SOLO CIĘŻKI", price: 30000, img: "https://cdn-icons-png.flaticon.com/512/2555/2555013.png", tier: 1 },
-            { name: "ZESTAW TIR", price: 95000, img: "https://cdn-icons-png.flaticon.com/512/2165/2165011.png", tier: 2 }
+            { name: "BUS DOSTAWCZY", price: 6000, img: "https://cdn-icons-png.flaticon.com/512/1048/1048313.png", tier: 0 },
+            { name: "CIĘŻARÓWKA SOLO", price: 35000, img: "https://cdn-icons-png.flaticon.com/512/2555/2555013.png", tier: 1 },
+            { name: "CIĄGNIK SIODŁOWY", price: 110000, img: "https://cdn-icons-png.flaticon.com/512/2165/2165011.png", tier: 2 }
         ]
     },
 
     init() {
-        if(localStorage.getItem('truckEmpireSaveV6')) document.getElementById('load-box').style.display = 'block';
+        if(localStorage.getItem('truckEmpireSaveV7')) document.getElementById('load-box').style.display = 'block';
         const grid = document.getElementById('city-selection');
         Object.keys(this.data.cities).forEach(c => {
-            const b = document.createElement('button'); b.className = 'city-btn'; b.innerText = c;
+            const b = document.createElement('button'); b.className = 'btn'; b.style.background='#222'; b.innerText = c;
             b.onclick = () => this.startGame(c); grid.appendChild(b);
         });
         setInterval(() => {
-            this.fuelPrice = (5.10 + Math.random() * 1.5).toFixed(2);
+            this.fuelPrice = (4.80 + Math.random() * 2.2).toFixed(2);
             document.getElementById('val-fuel-price').innerText = this.fuelPrice;
-        }, 3000);
+        }, 4000);
         this.startCB();
     },
 
     startCB() {
-        const msgs = ["Mobilki, czysto na wylocie z Warszawy!", "Krokodyle stoją pod Poznaniem!", "Korek na A4, omijać górą!", "Koledzy, deszcz pod Gdańskiem, noga z gazu!", "Szerokości wszystkim życzę!", "Szukam ładunku na Rzeszów!", "Pod Białymstokiem suszą!", "Jak tam dróżka na Szczecin?"];
+        const msgs = ["Szerokości mobilki!", "Uważajcie na S7, wypadek!", "Suszą pod Kielcami!", "Krokodyle sprawdzają tacho w Katowicach!", "Pada deszcz, ślisko na trasie!", "Gdzie zjem dobrego schabowego?", "Czysto na obwodnicy!", "Ogień na tłoki, panowie!"];
         setInterval(() => {
-            document.getElementById('cb-content').innerText = ">>> CB 19: " + msgs[Math.floor(Math.random()*msgs.length)] + " <<<";
-        }, 10000);
+            if(this.isPaused) return;
+            document.getElementById('cb-content').innerText = ">>> CB-RADIO: " + msgs[Math.floor(Math.random()*msgs.length)] + " <<<";
+        }, 9000);
     },
 
     startGame(city) {
         this.data.homeCity = city;
         this.data.drivers[0].currentCity = city;
         document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('tutorial-overlay').style.display = 'flex';
         this.UI.initMap();
         this.Logistics.generateJobs();
         this.loop();
@@ -162,10 +184,10 @@ const Game = {
     Persistence: {
         save() {
             const save = { cash: Game.data.cash, fuel: Game.data.fuel, rep: Game.data.reputation, home: Game.data.homeCity, trucks: Game.data.trucksOwned, drivers: Game.data.drivers };
-            localStorage.setItem('truckEmpireSaveV6', JSON.stringify(save));
+            localStorage.setItem('truckEmpireSaveV7', JSON.stringify(save));
         },
         load() {
-            const saved = JSON.parse(localStorage.getItem('truckEmpireSaveV6'));
+            const saved = JSON.parse(localStorage.getItem('truckEmpireSaveV7'));
             Object.assign(Game.data, saved);
             Game.data.drivers.forEach(d => d.busyUntil = 0);
             this.startGameFromSave();
@@ -181,31 +203,26 @@ const Game = {
 
     Events: {
         pool: [
-            { t: "👮 MANDAT - PRĘDKOŚĆ", d: "Zbyt ciężka noga! Fotoradar zrobił zdjęcie.", fine: 800 },
-            { t: "🐊 KONTROLA ITD", d: "Szczegółowa kontrola tacho i stanu technicznego.", fine: 300 },
-            { t: "⛽ KRADZIEŻ PALIWA", d: "W nocy na parkingu spuszczono paliwo z baku!", fine: 1500 },
-            { t: "🎫 WYGRANA W LOTTO", d: "Kierowca kupił zdrapkę na stacji i dzieli się wygraną!", fine: -5000 },
-            { t: "🚧 ZAMKNIĘTY MOST", d: "Objazd wydłuża trasę i kosztuje!", fine: 400 },
-            { t: "🦌 ZDERZENIE Z SARNĄ", d: "Rozbity reflektor i zderzak. Naprawa natychmiastowa.", fine: 2200 },
-            { t: "📦 BONUS ZA TERMIN", d: "Klient jest zachwycony tempem. Daje premię!", fine: -1200 },
-            { t: "🌪️ ORKAN", d: "Silny wiatr przewrócił naczepę. Akcja ratunkowa!", fine: 5000 },
-            { t: "🥨 KOLEJKA NA ZAŁADUNEK", d: "Bałagan w magazynie. Kierowca traci czas i kasę.", fine: 600 },
-            { t: "📱 ZAKAZANY TELEFON", d: "Policja widziała telefon przy uchu. Mandat!", fine: 500 }
+            { t: "👮 MANDAT", d: "Zbyt szybka jazda przez teren zabudowany! Policja nie miała litości.", fine: 1000 },
+            { t: "🔧 AWARIA OPONY", d: "Wystrzał na autostradzie! Trzeba wezwać serwis mobilny.", fine: 1500 },
+            { t: "⛽ KONTROLA PALIWA", d: "Urząd celny sprawdza paliwo. Wszystko OK, ale stracono czas.", fine: 200 },
+            { t: "🌟 PREMIA", d: "Ekspresowy rozładunek! Klient dorzuca napiwek dla firmy.", fine: -2500 },
+            { t: "🚧 ROBOTY DROGOWE", d: "Ruch wahadłowy pod Radomiem. Gigantyczny korek.", fine: 500 },
+            { t: "😴 ZMĘCZENIE", d: "Kierowca musiał zjechać na pauzę 45-minutową poza planem.", fine: 0 },
+            { t: "📦 USZKODZENIE TOWARU", d: "Złe zabezpieczenie palet. Część towaru zniszczona.", fine: 3500 }
         ],
         trigger() {
             if(Game.data.missions.length === 0) return;
             let idx = Math.floor(Math.random()*this.pool.length);
-            while(idx === Game.lastEventIdx) idx = Math.floor(Math.random()*this.pool.length);
-            Game.lastEventIdx = idx;
-            
             const m = Game.data.missions[Math.floor(Math.random()*Game.data.missions.length)];
             const ev = this.pool[idx];
             Game.isPaused = true;
             document.getElementById('event-title').innerText = ev.t;
             document.getElementById('event-desc').innerText = ev.d;
-            document.getElementById('event-driver').innerText = "KIEROWCA: " + m.drvName;
+            document.getElementById('event-driver').innerText = "W TRASIE: " + m.drvName;
             document.getElementById('event-overlay').style.display = 'flex';
             if(ev.fine) Game.data.cash -= ev.fine;
+            Game.UI.renderAll();
         },
         close() { document.getElementById('event-overlay').style.display = 'none'; Game.isPaused = false; }
     },
@@ -213,27 +230,34 @@ const Game = {
     UI: {
         map: null, markers: {}, lines: {},
         initMap() {
-            this.map = L.map('map').setView([52.1, 19.2], 6);
+            this.map = L.map('map', { zoomSnap: 0.1 }).setView([52.1, 19.2], 6);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+            // Wyłączamy automatyczne przesuwanie przy dodawaniu markerów
         },
         switchTab(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.getElementById('screen-'+id).classList.add('active');
-            if(id === 'map' && this.map) setTimeout(() => this.map.invalidateSize(), 200);
+            if(id === 'map' && this.map) {
+                setTimeout(() => {
+                    this.map.invalidateSize();
+                    // Przywracamy widoczność tras
+                    Object.values(this.lines).forEach(l => l.bringToFront());
+                }, 250);
+            }
         },
         renderAll() {
-            document.getElementById('val-cash').innerText = Math.floor(Game.data.cash);
-            document.getElementById('val-fuel').innerText = Math.floor(Game.data.fuel);
-            document.getElementById('val-rep').innerText = Game.data.reputation;
+            document.getElementById('val-cash').innerText = Math.floor(Game.data.cash) + " PLN";
+            document.getElementById('val-fuel').innerText = Math.floor(Game.data.fuel) + " L";
+            document.getElementById('val-rep').innerText = Game.data.reputation + " XP";
             document.getElementById('fuel-txt').innerText = Math.floor(Game.data.fuel);
             this.renderMarket(); this.renderFreight(); this.renderDrivers();
         },
         renderMarket() {
-            let h = '';
+            let h = '<h3>🛒 SALON CIĘŻARÓWEK</h3>';
             Game.data.models.forEach((m, i) => {
-                const p = Math.floor(m.price * Math.pow(1.3, Game.data.trucksOwned[i]));
-                h += `<div class="card"><img src="${m.img}" class="truck-img"> <b>${m.name}</b> (${Game.data.trucksOwned[i]})<br><button class="btn" style="background:var(--green)" onclick="Game.Mechanic.buyTruck(${i},${p})">KUPUJ: ${p} PLN</button></div>`;
+                const p = Math.floor(m.price * Math.pow(1.35, Game.data.trucksOwned[i]));
+                h += `<div class="card"><img src="${m.img}" class="truck-img"> <b style="font-size:18px;">${m.name}</b><br>W posiadaniu: ${Game.data.trucksOwned[i]}<br><button class="btn" style="background:var(--green)" onclick="Game.Mechanic.buyTruck(${i},${p})">ZAKUP: ${p} PLN</button></div>`;
             });
             document.getElementById('market-container').innerHTML = h;
         },
@@ -242,87 +266,147 @@ const Game = {
             const best = Game.data.trucksOwned.reduce((m, q, i) => q > 0 ? i : m, 0);
             Game.Logistics.availableJobs.forEach(j => {
                 const can = best >= j.tier;
-                h += `<div class="card" style="border-right: 5px solid var(--neon)"><b>ŁADUNEK: ${j.item}</b><br>TRASA: ${j.start} → ${j.dest}<br>ZYSK: <span style="color:var(--green)">${j.reward} PLN</span><br><button class="btn" style="background:${can?'var(--neon)':'#222'}; color:${can?'#000':'#666'}" onclick="Game.Logistics.acceptJob('${j.id}')" ${can?'':'disabled'}>${can?'WYŚLIJ JEDNOSTKĘ':'BRAK SPRZĘTU'}</button></div>`;
+                h += `<div class="card" style="border-left: 8px solid var(--neon)">
+                    <span style="float:right; color:var(--gold); font-weight:bold;">${j.reward} PLN</span>
+                    <b>PRODUKT: ${j.item}</b><br>KIERUNEK: ${j.start} → ${j.dest}<br>
+                    <button class="btn" style="background:${can?'var(--neon)':'#222'}; color:${can?'#000':'#666'}" onclick="Game.Logistics.acceptJob('${j.id}')" ${can?'':'disabled'}>
+                        ${can?'AKCEPTUJ ZLECENIE':'ZBYT MAŁA FLOTA'}
+                    </button>
+                </div>`;
             });
-            document.getElementById('freight-container').innerHTML = h;
+            document.getElementById('freight-container').innerHTML = h || "<p>Oczekiwanie na nowe zlecenia...</p>";
         },
         renderDrivers() {
-            let h = '';
+            let h = '<h3>👔 TWOI PRACOWNICY</h3>';
             Game.data.drivers.forEach(d => {
-                const busy = d.busyUntil > Date.now();
-                h += `<div class="card">👤 <b>${d.name}</b><br>MIASTO: ${d.currentCity}<br>STATUS: ${busy?'<span style="color:var(--orange)">W TRASIE</span>':'<span style="color:var(--green)">GOTOWY</span>'}</div>`;
+                const isWorking = d.busyUntil > Date.now();
+                h += `<div class="card">
+                    <b>👤 ${d.name}</b><br>POBYT: ${d.currentCity}<br>
+                    STATUS: ${isWorking?'<span style="color:var(--orange)">W TRASIE</span>':'<span style="color:var(--green)">GOTOWY DO PRACY</span>'}
+                </div>`;
             });
-            h += `<button class="btn" style="background:var(--purple)" onclick="Game.HR.hire()">WERBUJ KIEROWCĘ (5000 PLN)</button>`;
+            h += `<button class="btn" style="background:var(--purple)" onclick="Game.HR.hire()">REKRUTUJ KIEROWCĘ (7000 PLN)</button>`;
             document.getElementById('driver-container').innerHTML = h;
         },
-        addLog(m) { const l = document.getElementById('log-panel'); l.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${m}</div>` + l.innerHTML; }
+        addLog(m) {
+            const l = document.getElementById('log-panel');
+            l.innerHTML = `<div style="border-left:2px solid var(--neon); padding-left:5px; margin-bottom:2px;">[LOG] ${m}</div>` + l.innerHTML;
+        }
     },
 
     Logistics: {
         availableJobs: [],
         generateJobs() {
             const cities = Object.keys(Game.data.cities);
+            const items = ["Elektronika", "Materiały budowlane", "Żywność", "Paliwo lotnicze", "Części samochodowe", "Meble", "Owoce", "Stal"];
             setInterval(() => {
-                if(this.availableJobs.length > 8) this.availableJobs.shift();
+                if(this.availableJobs.length > 12) this.availableJobs.shift();
                 const s = cities[Math.floor(Math.random()*cities.length)];
                 const d = cities[Math.floor(Math.random()*cities.length)];
                 if(s !== d) {
                     const t = Math.floor(Math.random()*3);
-                    this.availableJobs.push({ id: Math.random().toString(36).substr(2,4), item: "LOGISTYKA VIP", start: s, dest: d, reward: 3000+(t*5000), tier: t });
+                    this.availableJobs.push({ 
+                        id: Math.random().toString(36).substr(2,6), 
+                        item: items[Math.floor(Math.random()*items.length)], 
+                        start: s, dest: d, 
+                        reward: 5000 + (t * 7000) + Math.floor(Math.random()*2000), 
+                        tier: t 
+                    });
                     Game.UI.renderFreight();
                 }
-            }, 5000);
+            }, 6000);
         },
         async acceptJob(id) {
             const j = this.availableJobs.find(x => x.id === id);
             let drv = Game.data.drivers.find(d => d.busyUntil < Date.now() && d.currentCity === j.start);
             if(!drv) drv = Game.data.drivers.find(d => d.busyUntil < Date.now());
-            if(!drv) return alert("BRAK WOLNYCH KIEROWCÓW!");
-            if(Game.data.fuel < 300) return alert("PALIWO NA WYCZERPANIU!");
+            
+            if(!drv) return alert("BŁĄD: Wszyscy kierowcy są obecnie w trasie!");
+            if(Game.data.fuel < 500) return alert("BŁĄD: Brak paliwa w bazie głównej!");
 
-            const r1 = await this.getRoute(Game.data.cities[drv.currentCity], Game.data.cities[j.start]);
-            const r2 = await this.getRoute(Game.data.cities[j.start], Game.data.cities[j.dest]);
+            // TRASA: DOJAZD + TOWAR
+            const startPos = Game.data.cities[drv.currentCity];
+            const loadPos = Game.data.cities[j.start];
+            const endPos = Game.data.cities[j.dest];
+
+            const r1 = await this.getRoute(startPos, loadPos);
+            const r2 = await this.getRoute(loadPos, endPos);
             const path = [...r1, ...r2];
             
             const m = {
                 id: j.id, path: path, pIdx: r1.length, 
-                start: Date.now(), dur: path.length * 35, // HYPER TEMPO
-                reward: j.reward, dest: j.dest, drvId: drv.id, drvName: drv.name, status: 'dojazd', img: Game.data.models[j.tier].img
+                start: Date.now(), 
+                dur: path.length * 30, // SUPER SZYBKIE TEMPO
+                reward: j.reward, dest: j.dest, 
+                drvId: drv.id, drvName: drv.name, 
+                status: 'w drodze', 
+                img: Game.data.models[j.tier].img
             };
 
             drv.busyUntil = Date.now() + m.dur;
             Game.data.missions.push(m);
-            Game.data.fuel -= 200;
-            Game.UI.lines[j.id] = L.polyline(path, {color: 'yellow', weight: 4, opacity: 0.6}).addTo(Game.UI.map);
-            const tIcon = L.divIcon({ html: `<img src="${m.img}" class="map-icon-img">`, className: 'c' });
-            Game.UI.markers[j.id] = L.marker(Game.data.cities[drv.currentCity], {icon: tIcon}).addTo(Game.UI.map);
+            Game.data.fuel -= 400;
+            
+            // RYSOWANIE TRASY NA MAPIE
+            Game.UI.lines[j.id] = L.polyline(path, {color: '#ffff00', weight: 4, opacity: 0.8, dashArray: '10, 10'}).addTo(Game.UI.map);
+            const tIcon = L.divIcon({ 
+                html: `<img src="${m.img}" class="map-icon-img" id="img-${j.id}">`, 
+                className: 'custom-div-icon', 
+                iconSize: [50, 50] 
+            });
+            Game.UI.markers[j.id] = L.marker(startPos, {icon: tIcon}).addTo(Game.UI.map);
+            
             this.availableJobs = this.availableJobs.filter(x => x.id !== id);
             Game.UI.renderAll();
             Game.Persistence.save();
+            Game.UI.addLog(`Wysłano: ${drv.name} po ${j.item}.`);
         },
         async getRoute(s, e) {
-            const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${s[1]},${s[0]};${e[1]},${e[0]}?overview=full&geometries=geojson`);
-            const d = await r.json(); return d.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            try {
+                const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${s[1]},${s[0]};${e[1]},${e[0]}?overview=full&geometries=geojson`);
+                const d = await r.json(); 
+                return d.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            } catch(err) { 
+                return [s, e]; // Fallback
+            }
         }
     },
 
     Mechanic: {
-        buyTruck(i, p) { if(Game.data.cash >= p) { Game.data.cash -= p; Game.data.trucksOwned[i]++; Game.UI.renderAll(); Game.Persistence.save(); } },
+        buyTruck(i, p) { 
+            if(Game.data.cash >= p) { 
+                Game.data.cash -= p; Game.data.trucksOwned[i]++; 
+                Game.UI.renderAll(); Game.Persistence.save(); 
+                Game.UI.addLog(`Zakupiono nowy pojazd: ${Game.data.models[i].name}`);
+            } else {
+                alert("Brak środków na zakup tego pojazdu!");
+            }
+        },
         refuel() { 
             const amount = Game.data.maxFuel - Game.data.fuel;
             const cost = amount * Game.fuelPrice;
-            if(Game.data.cash >= cost) { Game.data.cash -= cost; Game.data.fuel = Game.data.maxFuel; Game.UI.renderAll(); Game.Persistence.save(); }
+            if(Game.data.cash >= cost) { 
+                Game.data.cash -= cost; Game.data.fuel = Game.data.maxFuel; 
+                Game.UI.renderAll(); Game.Persistence.save();
+                Game.UI.addLog(`Zatankowano bazę do pełna.`);
+            } else {
+                alert("Nie masz wystarczająco dużo pieniędzy!");
+            }
         }
     },
 
     HR: {
         hire() { 
-            if(Game.data.cash >= 5000) { 
-                Game.data.cash -= 5000; 
-                const newId = Date.now();
-                Game.data.drivers.push({id: newId, name: "DRIVER_"+Game.data.drivers.length, busyUntil: 0, currentCity: Game.data.homeCity}); 
+            if(Game.data.cash >= 7000) { 
+                Game.data.cash -= 7000; 
+                const randomName = Game.uniqueNames[Math.floor(Math.random()*Game.uniqueNames.length)] + " " + (Game.data.drivers.length);
+                const newId = "drv_" + Date.now();
+                Game.data.drivers.push({id: newId, name: randomName, busyUntil: 0, currentCity: Game.data.homeCity}); 
                 Game.UI.renderAll(); Game.Persistence.save();
-            } 
+                Game.UI.addLog(`Zatrudniono kierowcę: ${randomName}`);
+            } else {
+                alert("Koszty rekrutacji przekraczają Twój budżet!");
+            }
         }
     },
 
@@ -330,29 +414,45 @@ const Game = {
         setInterval(() => {
             if(Game.isPaused) return;
             const now = Date.now();
-            let html = '<h2 style="color:var(--orange)">🛰️ GPS LIVE MONITORING</h2>';
+            let html = '<h2 style="color:var(--gold)">🛰️ SYSTEM GPS (AKTYWNE JEDNOSTKI)</h2>';
+            
             Game.data.missions = Game.data.missions.filter(m => {
-                const prog = Math.min(1, (now - m.start) / m.dur);
+                const elapsed = now - m.start;
+                const prog = Math.min(1, elapsed / m.dur);
                 const idx = Math.floor(prog * (m.path.length - 1));
+
                 if(prog >= 1) {
-                    Game.data.cash += Number(m.reward); Game.data.reputation += 25;
+                    Game.data.cash += Number(m.reward); Game.data.reputation += 30;
                     const d = Game.data.drivers.find(x => x.id === m.drvId);
                     if(d) d.currentCity = m.dest;
-                    Game.UI.map.removeLayer(Game.UI.markers[m.id]); Game.UI.map.removeLayer(Game.UI.lines[m.id]);
-                    Game.UI.addLog(`ZYSK: ${m.reward} PLN od ${m.drvName}`);
+                    
+                    if(Game.UI.markers[m.id]) Game.UI.map.removeLayer(Game.UI.markers[m.id]);
+                    if(Game.UI.lines[m.id]) Game.UI.map.removeLayer(Game.UI.lines[m.id]);
+                    
+                    Game.UI.addLog(`Sukces! ${m.drvName} rozładował towar w: ${m.dest}. Zarobek: ${m.reward} PLN.`);
                     Game.Persistence.save();
+                    Game.UI.renderAll();
                     return false;
                 }
-                Game.UI.markers[m.id].setLatLng(m.path[idx]);
-                html += `<div class="card" style="border-left: 5px solid var(--neon)">
-                    <img src="${m.img}" style="width:30px"> <b>${m.drvName}</b> ➡ ${m.dest}
+
+                if(Game.UI.markers[m.id]) {
+                    Game.UI.markers[m.id].setLatLng(m.path[idx]);
+                    // Nawet przy dużym zoomie, ikona będzie się poruszać po trasie
+                }
+
+                html += `<div class="card" style="background:#000;">
+                    <img src="${m.img}" style="width:35px; vertical-align:middle;"> <b>${m.drvName}</b> <span style="color:var(--neon)">→ ${m.dest}</span>
                     <div class="progress-bar-container"><div class="progress-fill" style="width:${prog*100}%"></div></div>
+                    <small>Postęp trasy: ${Math.floor(prog*100)}%</small>
                 </div>`;
                 return true;
             });
+            
             document.getElementById('active-missions-container').innerHTML = html;
-            if(Math.random() > 0.997) Game.Events.trigger();
-        }, 50); // HYPER-LOOP
+            
+            // Losowe zdarzenia rzadziej, by nie denerwować, ale z unikatową szansą
+            if(Math.random() > 0.998) Game.Events.trigger();
+        }, 60); 
     }
 };
 
