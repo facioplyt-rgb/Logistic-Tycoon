@@ -680,6 +680,106 @@ App.Garage.render = function() {
     finalGarageRender.apply(App.Garage);
     App.Trailers.render();
 };
+/* --- MODUŁ 6: BANKING & LOANS --- */
+App.Bank = {
+    loanAmount: 0,
+    dailyInterest: 0.015, // 1.5% odsetek przy każdym rozliczeniu
+    maxLoan: 250000,
+
+    // 1. RENDEROWANIE PANELU BANKOWEGO W GARAŻU
+    render() {
+        const container = document.getElementById('sc-garage');
+        
+        let html = `
+            <h3 style="color:#ff00ff; margin-top:20px;">BANK LOGISTYCZNY</h3>
+            <div class="card" style="border-left: 4px solid #ff00ff">
+                <div style="display:flex; justify-content:space-between;">
+                    <span>Aktualne zadłużenie:</span>
+                    <b style="color:var(--danger)">${Math.floor(this.loanAmount).toLocaleString()} PLN</b>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                    <button class="btn" style="background:#330033; color:#ff00ff; border:1px solid #ff00ff; font-size:10px;" 
+                        onclick="App.Bank.takeLoan(50000)" ${this.loanAmount + 50000 > this.maxLoan ? 'disabled' : ''}>
+                        WEŹ 50 000 PLN
+                    </button>
+                    <button class="btn" style="background:#003300; color:var(--safe); border:1px solid var(--safe); font-size:10px;" 
+                        onclick="App.Bank.repayLoan(10000)" ${this.loanAmount <= 0 ? 'disabled' : ''}>
+                        SPŁAĆ 10 000 PLN
+                    </button>
+                </div>
+                <p style="font-size:9px; color:#666; margin-top:8px;">* Odsetki są automatycznie pobierane z każdego zysku za zlecenie.</p>
+            </div>
+        `;
+
+        const bankSection = document.createElement('div');
+        bankSection.innerHTML = html;
+        container.appendChild(bankSection);
+    },
+
+    // 2. LOGIKA KREDYTOWA
+    takeLoan(amount) {
+        if (this.loanAmount + amount <= this.maxLoan) {
+            this.loanAmount += amount;
+            App.state.cash += amount;
+            App.UI.updateHUD();
+            App.Garage.render();
+            console.log(`%c [BANK] Przyznano kredyt: ${amount} PLN`, "color: #ff00ff; font-weight: bold;");
+        } else {
+            alert("Osiągnąłeś limit kredytowy!");
+        }
+    },
+
+    repayLoan(amount) {
+        if (App.state.cash >= amount && this.loanAmount > 0) {
+            App.state.cash -= amount;
+            this.loanAmount -= amount;
+            if (this.loanAmount < 0) this.loanAmount = 0;
+            App.UI.updateHUD();
+            App.Garage.render();
+        }
+    },
+
+    // 3. AUTOMATYCZNE POBIERANIE RATY (HOOK DO ZYSKÓW)
+    applyInterest(reward) {
+        if (this.loanAmount > 0) {
+            const interest = Math.floor(reward * 0.10); // Bank zabiera 10% każdego zysku na poczet spłaty
+            const interestOnly = Math.floor(interest * 0.2); // Część to czyste odsetki dla banku
+            
+            this.loanAmount -= (interest - interestOnly);
+            if (this.loanAmount < 0) this.loanAmount = 0;
+            
+            console.log(`%c [BANK] Automatyczna spłata raty: -${interest} PLN`, "color: #ff00ff;");
+            return reward - interest;
+        }
+        return reward;
+    }
+};
+
+// INTEGRACJA: WPŁYW NA KOŃCZENIE MISJI
+const engineFinishWithBank = App.Engine.finish;
+App.Engine.finish = function(idx) {
+    const m = App.state.missions[idx];
+    
+    // Zanim dodasz gotówkę, bank pobiera ratę
+    const finalReward = App.Bank.applyInterest(m.job.reward);
+    
+    // Oryginalna logika (podmieniamy nagrodę w locie)
+    const originalReward = m.job.reward;
+    m.job.reward = finalReward;
+    
+    engineFinishWithBank.apply(App.Engine, [idx]);
+    
+    // Przywracamy dla porządku (choć obiekt i tak zaraz zniknie)
+    m.job.reward = originalReward;
+};
+
+// INTEGRACJA: RENDEROWANIE BANKU W GARAŻU
+const finalGarageWithBank = App.Garage.render;
+App.Garage.render = function() {
+    finalGarageWithBank.apply(App.Garage);
+    App.Bank.render();
+};
 
 </script>
 </body>
