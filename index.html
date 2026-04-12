@@ -902,6 +902,117 @@ App.Garage.hireGeneratedDriver = function(id) {
 
 // Dodajemy przycisk odświeżania rynku w HUD lub Garażu
 setInterval(() => App.Generators.refreshMarkets(), 300000); // Autoodświeżanie co 5 minut
+/* --- MODUŁ 8: NOTIFICATION SYSTEM --- */
+App.Notifications = {
+    // 1. STYLIZACJA POWIADOMIEŃ
+    init() {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            #toast-container {
+                position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
+                z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+                pointer-events: none; width: 90%; max-width: 350px;
+            }
+            .toast {
+                background: rgba(20, 22, 26, 0.95); border-left: 4px solid var(--neon);
+                color: #fff; padding: 12px 16px; border-radius: 4px; font-size: 13px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: toastIn 0.3s ease-out forwards;
+                display: flex; align-items: center; justify-content: space-between;
+            }
+            @keyframes toastIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .toast.hide { animation: toastOut 0.3s ease-in forwards; }
+            @keyframes toastOut {
+                to { opacity: 0; transform: scale(0.9); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    },
+
+    // 2. FUNKCJA WYŚWIETLANIA
+    show(msg, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        
+        // Kolory zależne od typu
+        const colors = {
+            info: 'var(--neon)',
+            success: 'var(--safe)',
+            warn: 'var(--warn)',
+            error: 'var(--danger)',
+            bank: '#ff00ff'
+        };
+        toast.style.borderLeftColor = colors[type] || colors.info;
+
+        toast.innerHTML = `<span>${msg}</span>`;
+        container.appendChild(toast);
+
+        // Usuwanie po 3 sekundach
+        setTimeout(() => {
+            toast.classList.add('hide');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+};
+
+// 3. INTEGRACJA Z ISTNIEJĄCYMI MODUŁAMI (NADPISANIE AKCJI)
+
+// Powiadomienia o zakupach aut i rekrutacji
+const oldBuyTruck = App.Garage.buyGeneratedTruck;
+App.Garage.buyGeneratedTruck = function(id) {
+    const offer = this.truckOffers.find(t => t.id === id);
+    if(App.state.cash >= offer.price) {
+        App.Notifications.show(`Zakupiono pojazd: ${offer.model}`, 'success');
+        oldBuyTruck.apply(this, [id]);
+    } else { App.Notifications.show(`Brak środków na: ${offer.model}`, 'error'); }
+};
+
+const oldHireDriver = App.Garage.hireGeneratedDriver;
+App.Garage.hireGeneratedDriver = function(id) {
+    const cand = this.candidates.find(c => c.id === id);
+    if(App.state.cash >= cand.wage) {
+        App.Notifications.show(`Zatrudniono: ${cand.name}`, 'success');
+        oldHireDriver.apply(this, [id]);
+    } else { App.Notifications.show(`Brak środków na zatrudnienie`, 'error'); }
+};
+
+// Powiadomienia o naczepach
+const oldBuyTrailer = App.Trailers.buy;
+App.Trailers.buy = function(typeId) {
+    const type = this.types.find(t => t.id === typeId);
+    if(App.state.cash >= type.price) {
+        App.Notifications.show(`Nowa naczepa: ${type.n}`, 'success');
+        oldBuyTrailer.apply(this, [typeId]);
+    } else { App.Notifications.show(`Brak środków na naczepę`, 'error'); }
+};
+
+// Powiadomienia o paliwie i serwisie
+const oldBuyFuel = App.Service.buyFuel;
+App.Service.buyFuel = function(amount) {
+    if(App.state.cash >= amount * this.fuelPrice) {
+        App.Notifications.show(`Dostawa paliwa: +${amount}L`, 'info');
+        oldBuyFuel.apply(this, [amount]);
+    } else { App.Notifications.show(`Brak kasy na paliwo!`, 'error'); }
+};
+
+// Powiadomienia Bankowe
+const oldTakeLoan = App.Bank.takeLoan;
+App.Bank.takeLoan = function(amount) {
+    if (this.loanAmount + amount <= this.maxLoan) {
+        App.Notifications.show(`Kredyt przyznany: +${amount} PLN`, 'bank');
+        oldTakeLoan.apply(this, [amount]);
+    } else { App.Notifications.show(`Bank odmówił pożyczki`, 'error'); }
+};
+
+// Inicjalizacja systemu przy starcie
+App.Notifications.init();
 
 </script>
 </body>
